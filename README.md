@@ -1,46 +1,226 @@
-# Getting Started with Create React App
+# 🌱 HORTI-IOT Web Platform
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A modern, professional web application for smart greenhouse management, designed for researchers and growers with role-based dashboards and real-time monitoring capabilities.
 
-## Available Scripts
+![Platform Preview](https://via.placeholder.com/800x400/22c55e/ffffff?text=HORTI-IOT+Platform)
 
-In the project directory, you can run:
+## 🚀 Features
 
-### `npm start`
+### 🔐 Authentication System
+- **JWT-based authentication** with secure token management
+- **Role-based access control** (Researcher/Grower)
+- **Protected routes** with automatic logout on token expiration
+- **Professional login interface** with role selection
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+### 📊 Researcher Dashboard
+- **Real-time climate monitoring** (Temperature, Humidity, CO2, Light)
+- **Interactive data visualization** with charts and graphs
+- **ML predictions display** with confidence scores
+- **Sensor status overview** with health monitoring
+- **Quick action buttons** for common tasks
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+### 💼 Grower Dashboard
+- **Financial metrics tracking** (Revenue, ROI, Profit Margin)
+- **Revenue vs costs analysis** with monthly breakdowns
+- **Investment allocation visualization** 
+- **Crop performance analytics** with profitability insights
+- **Business projections** and forecasting
 
-### `npm test`
+### 🎨 Modern UI/UX
+- **Beautiful, responsive design** built with Tailwind CSS
+- **Smooth animations** powered by Framer Motion
+- **Professional color scheme** with custom HORTI brand colors
+- **Mobile-first responsive layout**
+- **Interactive components** with hover effects
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## 🛠️ Tech Stack
 
-### `npm run build`
+- **Frontend**: React 18 with TypeScript
+- **Routing**: React Router DOM v7
+- **Styling**: Tailwind CSS v3
+- **Animations**: Framer Motion
+- **Charts**: Recharts
+- **HTTP Client**: Axios
+- **Authentication**: JWT with jwt-decode
+- **UI Components**: Headless UI & Heroicons
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## 📦 Installation
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+1. **Clone the repository**
+```bash
+git clone <repository-url>
+cd horti-iot-platform
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+2. **Install dependencies**
+```bash
+npm install
+```
 
-### `npm run eject`
+3. **Configure environment**
+```bash
+cp .env.example .env
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+4. **Start development server**
+```bash
+npm start
+```
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+5. **Build for production**
+```bash
+npm run build
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+## 🔧 Configuration
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+Update the `.env` file with your backend API endpoints:
 
-## Learn More
+```env
+REACT_APP_API_URL=http://localhost:5000/api
+REACT_APP_ML_SERVICE_URL=http://localhost:8000
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## 🧪 Demo Credentials
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+The platform includes demo authentication for testing:
+
+| Role | Email | Password |
+|------|-------|----------|
+| Researcher | researcher@demo.com | demo123 |
+| Grower | grower@demo.com | demo123 |
+
+## 📁 Project Structure
+
+```
+src/
+├── components/
+│   ├── auth/           # Authentication components
+│   │   ├── ProtectedRoute.tsx
+│   │   └── LoginForm.tsx
+│   ├── layout/         # Layout components
+│   │   ├── Header.tsx
+│   │   ├── Sidebar.tsx
+│   │   └── Layout.tsx
+│   └── common/         # Reusable components
+│       └── Card.tsx
+├── pages/              # Main page components
+│   ├── Login.tsx
+│   ├── ResearcherDashboard.tsx
+│   └── GrowerDashboard.tsx
+├── services/           # API services
+│   ├── api.ts
+│   ├── auth.service.ts
+│   ├── researcher.service.ts
+│   └── grower.service.ts
+├── context/            # React contexts
+│   └── AuthContext.tsx
+├── types/              # TypeScript type definitions
+│   └── index.ts
+└── App.tsx            # Main application component
+```
+
+## 🔌 API Integration
+
+The platform is designed to integrate with backend services:
+
+### Authentication Endpoints
+- `POST /auth/login` - User login
+- `POST /auth/logout` - User logout  
+- `GET /auth/validate` - Token validation
+- `POST /auth/refresh` - Token refresh
+
+### Researcher Endpoints
+- `GET /climate/current` - Current climate data
+- `GET /climate/data` - Historical climate data
+- `GET /sensors/data` - Sensor readings
+- `POST /ml/predict` - ML predictions
+- `POST /camera/upload` - Image upload
+
+### Grower Endpoints
+- `GET /financial/summary` - Financial overview
+- `GET /financial/revenue` - Revenue data
+- `GET /financial/roi` - ROI analysis
+- `GET /financial/investments` - Investment tracking
+
+## 🌟 Key Features Implemented
+
+### ✅ Authentication & Security
+- JWT token management with automatic refresh
+- Role-based routing and access control
+- Secure API interceptors
+- Token expiration handling
+
+### ✅ Real-time Data Simulation
+- Mock data for development and testing
+- Simulated real-time updates
+- Interactive data visualization
+- Responsive chart components
+
+### ✅ Professional UI
+- Modern login page with gradient backgrounds
+- Animated components and transitions
+- Responsive sidebar navigation
+- Beautiful data cards and metrics
+
+### ✅ Type Safety
+- Full TypeScript implementation
+- Comprehensive type definitions
+- API response typing
+- Component prop validation
+
+## 🚧 Future Enhancements
+
+- **WebSocket Integration**: Real-time data streaming
+- **Advanced ML Features**: Model training and deployment
+- **Camera Integration**: RGBD image analysis
+- **Data Export**: CSV/PDF report generation
+- **Multi-greenhouse Support**: Facility management
+- **Advanced Analytics**: Predictive insights
+- **Mobile App**: React Native companion
+- **Notification System**: Alerts and warnings
+
+## 📱 Available Scripts
+
+- `npm start` - Start development server (localhost:3000)
+- `npm build` - Create production build
+- `npm test` - Run test suite
+- `npm run eject` - Eject from Create React App
+
+## 🔍 Development Notes
+
+### Mock Data
+The application currently uses mock data for demonstration. Real data integration requires connecting to actual backend APIs.
+
+### Responsive Design
+The interface is fully responsive and optimized for:
+- Desktop (1920px+)
+- Laptop (1024px+) 
+- Tablet (768px+)
+- Mobile (320px+)
+
+### Browser Support
+- Chrome (latest)
+- Firefox (latest)
+- Safari (latest)
+- Edge (latest)
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📞 Support
+
+For support and questions, please contact the development team or create an issue in the repository.
+
+---
+
+**Built with ❤️ for smart agriculture and sustainable farming**
