@@ -94,6 +94,8 @@ export interface RevenueData {
   costs: number;
   profit: number;
   cropType?: string;
+  yieldKgM2?: number;
+  marketPrice?: number;
 }
 
 export interface ROIData {
