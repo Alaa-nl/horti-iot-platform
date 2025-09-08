@@ -116,7 +116,7 @@ const Login: React.FC = () => {
                   }`}
                 >
                   <div className="text-sm font-semibold">Researcher</div>
-                  <div className="text-xs mt-1">Data & Analytics</div>
+                  
                 </motion.button>
                 
                 <motion.button
@@ -134,7 +134,7 @@ const Login: React.FC = () => {
                   }`}
                 >
                   <div className="text-sm font-semibold">Grower</div>
-                  <div className="text-xs mt-1">Business & ROI</div>
+                  
                 </motion.button>
               </div>
             </div>
@@ -215,14 +215,7 @@ const Login: React.FC = () => {
               )}
             </motion.button>
 
-            {/* Demo Credentials */}
-            <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
-              <h4 className="text-sm font-semibold text-gray-700 mb-2">Demo Credentials</h4>
-              <div className="text-xs text-gray-600 space-y-1">
-                <div>Researcher: researcher@demo.com / demo123</div>
-                <div>Grower: grower@demo.com / demo123</div>
-              </div>
-            </div>
+            
           </form>
         </motion.div>
       </div>
