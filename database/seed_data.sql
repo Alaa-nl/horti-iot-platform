@@ -21,7 +21,7 @@ INSERT INTO users (id, email, password_hash, name, role, is_active, created_at, 
     uuid_generate_v4(),
     'grower@demo.com',
     '$2b$12$LQv3c1yqBwlVHpPd7sMYMOBSjd7EXGTr09ldHl1bQ8NQYjm6f/o7i', -- 'demo123' hashed
-    'John Grower',
+    'Alaa Grower',
     'grower',
     TRUE,
     CURRENT_TIMESTAMP,
