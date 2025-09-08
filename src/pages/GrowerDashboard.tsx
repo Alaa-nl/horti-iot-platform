@@ -642,31 +642,7 @@ const GrowerDashboard: React.FC = () => {
               </div>
             </div>
             
-            <div className="space-y-2">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full p-2 bg-green-50 border border-green-200 rounded-lg text-green-700 hover:bg-green-100 transition-colors duration-200 text-sm"
-              >
-                📊 Export P&L Report
-              </motion.button>
-              
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full p-2 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 hover:bg-blue-100 transition-colors duration-200 text-sm"
-              >
-                📎 Investment Calculator
-              </motion.button>
-              
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full p-2 bg-purple-50 border border-purple-200 rounded-lg text-purple-700 hover:bg-purple-100 transition-colors duration-200 text-sm"
-              >
-                🎯 Forecast Scenarios
-              </motion.button>
-            </div>
+           
 
             {/* AI-Driven Business Insights */}
             <div className="mt-4 p-3 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border border-green-200">

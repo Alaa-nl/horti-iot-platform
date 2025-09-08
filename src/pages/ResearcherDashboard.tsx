@@ -564,31 +564,7 @@ const ResearcherDashboard: React.FC = () => {
               </div>
             </div>
             
-            <div className="space-y-2">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full p-2 bg-horti-green-50 border border-horti-green-200 rounded-lg text-horti-green-700 hover:bg-horti-green-100 transition-colors duration-200 text-sm"
-              >
-                📷 RGBD Camera Capture
-              </motion.button>
-              
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full p-2 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 hover:bg-blue-100 transition-colors duration-200 text-sm"
-              >
-                🤖 ML Growth Prediction
-              </motion.button>
-              
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full p-2 bg-purple-50 border border-purple-200 rounded-lg text-purple-700 hover:bg-purple-100 transition-colors duration-200 text-sm"
-              >
-                📊 Export Data (CSV)
-              </motion.button>
-            </div>
+        
           </Card>
         </div>
       </div>

@@ -7,19 +7,11 @@ const Sidebar: React.FC = () => {
   const { user } = useAuth();
 
   const researcherNavItems = [
-    { name: 'Dashboard', href: '/researcher', icon: '📊' },
-    { name: 'Climate Data', href: '/researcher/climate', icon: '🌡️' },
-    { name: 'Sensors', href: '/researcher/sensors', icon: '📡' },
-    { name: 'ML Predictions', href: '/researcher/ml', icon: '🤖' },
-    { name: 'Camera Feed', href: '/researcher/camera', icon: '📷' },
+    { name: 'Dashboard', href: '/researcher', icon: '📊' }
   ];
 
   const growerNavItems = [
-    { name: 'Dashboard', href: '/grower', icon: '💼' },
-    { name: 'Financial Overview', href: '/grower/finance', icon: '💰' },
-    { name: 'ROI Analysis', href: '/grower/roi', icon: '📈' },
-    { name: 'Investments', href: '/grower/investments', icon: '💎' },
-    { name: 'Reports', href: '/grower/reports', icon: '📋' },
+    { name: 'Dashboard', href: '/grower', icon: '💼' }
   ];
 
   const navItems = user?.role === 'researcher' ? researcherNavItems : growerNavItems;
