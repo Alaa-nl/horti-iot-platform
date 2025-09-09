@@ -108,9 +108,7 @@ const greenhouseMetadata = {
 };
 
 const ResearcherDashboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('climate');
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [userPreferences, setUserPreferences] = useState({ chartView: 'combined', showDetails: false });
+  const [activeTab, setActiveTab] = useState('overview');
   const [currentClimate, setCurrentClimate] = useState<SimplifiedClimateData | null>(null);
   const [realtimeData, setRealtimeData] = useState<SimplifiedClimateData[]>(mockSimplifiedData);
 
@@ -157,10 +155,16 @@ const ResearcherDashboard: React.FC = () => {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-900">Research Dashboard</h1>
-          <div className="flex items-center space-x-2">
-            <div className="h-2 w-2 bg-green-400 rounded-full animate-pulse"></div>
-            <span className="text-sm text-gray-600">Live Data</span>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Research Dashboard</h1>
+            <p className="text-lg text-gray-600 mt-1">HORTI-IOT Data Center</p>
+          </div>
+          <div className="flex items-center space-x-3">
+            <div className="text-right">
+              <p className="text-sm text-gray-500">System Status</p>
+              <p className="text-lg font-semibold text-green-600">Operational</p>
+            </div>
+            <div className="h-3 w-3 bg-green-400 rounded-full animate-pulse"></div>
           </div>
         </div>
 
@@ -227,46 +231,40 @@ const ResearcherDashboard: React.FC = () => {
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8">
             <button
-              onClick={() => setActiveTab('climate')}
+              onClick={() => setActiveTab('overview')}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'climate'
+                activeTab === 'overview'
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              🌡️ Climate Data
+              📊 Environmental Overview
             </button>
             <button
-              onClick={() => setActiveTab('plants')}
+              onClick={() => setActiveTab('plant-analysis')}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'plants'
+                activeTab === 'plant-analysis'
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              🌱 Plant Monitoring
+              🌱 Plant Analysis
             </button>
             <button
-              onClick={() => setActiveTab('sensors')}
+              onClick={() => setActiveTab('system-status')}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'sensors'
+                activeTab === 'system-status'
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              📴 Sensors & ML
-            </button>
-            <button
-              onClick={() => setShowAdvanced(!showAdvanced)}
-              className="py-2 px-1 border-b-2 border-transparent text-gray-400 hover:text-gray-600 font-medium text-sm"
-            >
-              {showAdvanced ? '🔽' : '🔼'} Advanced
+              🔧 System Status
             </button>
           </nav>
         </div>
 
         {/* Tab Content */}
-        {activeTab === 'climate' && (
+        {activeTab === 'overview' && (
           <div className="grid grid-cols-1 gap-6">
             <Card>
               <div className="flex items-center justify-between mb-4">
@@ -326,7 +324,7 @@ const ResearcherDashboard: React.FC = () => {
           </div>
         )}
 
-        {activeTab === 'plants' && (
+        {activeTab === 'plant-analysis' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Plant Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -408,7 +406,7 @@ const ResearcherDashboard: React.FC = () => {
           </div>
         )}
 
-        {activeTab === 'sensors' && (
+        {activeTab === 'system-status' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Sensor Network Status */}
             <Card>
@@ -500,64 +498,44 @@ const ResearcherDashboard: React.FC = () => {
           </div>
         )}
 
-        {/* Advanced Features - Progressive Disclosure */}
-        {showAdvanced && (
-          <div className="bg-gray-50 p-6 rounded-lg border-2 border-gray-200">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">🔬 Advanced Research Tools</h3>
-              <button 
-                onClick={() => setUserPreferences(prev => ({ ...prev, showDetails: !prev.showDetails }))}
-                className="text-sm bg-gray-200 text-gray-700 px-3 py-1 rounded-full hover:bg-gray-300"
-              >
-                {userPreferences.showDetails ? 'Hide Details' : 'Show Details'}
-              </button>
+        {/* Research Summary */}
+        <Card>
+          <h3 className="text-xl font-semibold text-gray-900 mb-4">Research Summary</h3>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="p-4 bg-blue-50 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <span className="text-3xl">🏠</span>
+                <div>
+                  <p className="font-semibold text-gray-800">Greenhouse</p>
+                  <p className="text-sm text-gray-600">{greenhouseMetadata.location}</p>
+                  <p className="text-sm text-blue-600">{greenhouseMetadata.size.length}×{greenhouseMetadata.size.width}×{greenhouseMetadata.size.height}m</p>
+                </div>
+              </div>
             </div>
             
-            {userPreferences.showDetails && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card>
-                  <h4 className="text-md font-semibold text-gray-800 mb-3">Greenhouse Metadata</h4>
-                  <div className="space-y-2 text-xs text-gray-600">
-                    <div className="flex justify-between">
-                      <span>Location:</span>
-                      <span>{greenhouseMetadata.location}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Dimensions:</span>
-                      <span>{greenhouseMetadata.size.length}×{greenhouseMetadata.size.width}×{greenhouseMetadata.size.height}m</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Crop:</span>
-                      <span>{greenhouseMetadata.crop}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Planting Date:</span>
-                      <span>{new Date(greenhouseMetadata.plantingDate).toLocaleDateString()}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>CO₂ Target:</span>
-                      <span>{greenhouseMetadata.co2Target} ppm</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Climate System:</span>
-                      <span>{greenhouseMetadata.climateSystem}</span>
-                    </div>
-                  </div>
-                </Card>
-                
-                <Card>
-                  <h4 className="text-md font-semibold text-gray-800 mb-3">Research Actions</h4>
-                  <div className="space-y-2">
-                    <button className="w-full p-2 text-left bg-blue-50 hover:bg-blue-100 rounded text-xs">
-                      📄 Export Data (CSV)
-                    </button>
-                    
-                  </div>
-                </Card>
+            <div className="p-4 bg-green-50 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <span className="text-3xl">🍅</span>
+                <div>
+                  <p className="font-semibold text-gray-800">Current Crop</p>
+                  <p className="text-sm text-gray-600">{greenhouseMetadata.crop}</p>
+                  <p className="text-sm text-green-600">Planted: {new Date(greenhouseMetadata.plantingDate).toLocaleDateString()}</p>
+                </div>
               </div>
-            )}
+            </div>
+            
+            <div className="p-4 bg-purple-50 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <span className="text-3xl">⚙️</span>
+                <div>
+                  <p className="font-semibold text-gray-800">Climate Control</p>
+                  <p className="text-sm text-gray-600">{greenhouseMetadata.climateSystem}</p>
+                  <p className="text-sm text-purple-600">CO₂ Target: {greenhouseMetadata.co2Target} ppm</p>
+                </div>
+              </div>
+            </div>
           </div>
-        )}
+        </Card>
       </div>
     </Layout>
   );
