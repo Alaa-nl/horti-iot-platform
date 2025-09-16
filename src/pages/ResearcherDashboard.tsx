@@ -1,541 +1,581 @@
 import React, { useState, useEffect } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, RadialBarChart, RadialBar } from 'recharts';
 import Layout from '../components/layout/Layout';
-import Card from '../components/common/Card';
-import ErrorBoundary from '../components/common/ErrorBoundary';
+import FarmMap from '../components/common/FarmMap';
+import { motion } from 'framer-motion';
 
-// Simplified climate data focusing on 4 core research metrics
-interface SimplifiedClimateData {
-  id: string;
-  timestamp: string;
-  // Core 4 metrics for researchers
-  temperature: number; // °C
-  co2: number; // ppm
-  vpd: number; // kPa - Vapor Pressure Deficit
-  par: number; // μmol/m²/s - Photosynthetic Active Radiation
-  // Plant monitoring (2 key metrics)
-  headThickness: number; // mm
-  sapFlow: number; // g/h
+// Data interfaces
+interface FarmDetails {
+  farmName: string;
+  farmId: string;
+  location: string;
+  landArea: number;
+  cropsGrown: number;
+  previousYield: number;
 }
 
-const mockSimplifiedData: SimplifiedClimateData[] = [
-  { 
-    id: '1', 
-    timestamp: '2024-01-01T00:00:00Z', 
-    temperature: 22.5, 
-    co2: 1000, 
-    par: 280,
-    vpd: 0.8,
-    sapFlow: 45.2,
-    headThickness: 9.5
-  },
-  { 
-    id: '2', 
-    timestamp: '2024-01-01T00:05:00Z', 
-    temperature: 22.8, 
-    co2: 980, 
-    par: 290,
-    vpd: 0.75,
-    sapFlow: 46.1,
-    headThickness: 9.6
-  },
-  { 
-    id: '3', 
-    timestamp: '2024-01-01T00:10:00Z', 
-    temperature: 23.1, 
-    co2: 950, 
-    par: 305,
-    vpd: 0.72,
-    sapFlow: 47.3,
-    headThickness: 9.7
-  },
-  { 
-    id: '4', 
-    timestamp: '2024-01-01T00:15:00Z', 
-    temperature: 23.4, 
-    co2: 930, 
-    par: 315,
-    vpd: 0.70,
-    sapFlow: 48.5,
-    headThickness: 9.8
-  },
-  { 
-    id: '5', 
-    timestamp: '2024-01-01T00:20:00Z', 
-    temperature: 23.6, 
-    co2: 920, 
-    par: 325,
-    vpd: 0.68,
-    sapFlow: 49.2,
-    headThickness: 9.9
-  },
-  { 
-    id: '6', 
-    timestamp: '2024-01-01T00:25:00Z', 
-    temperature: 23.2, 
-    co2: 940, 
-    par: 320,
-    vpd: 0.71,
-    sapFlow: 48.8,
-    headThickness: 9.8
-  }
-];
+interface WeatherData {
+  today: {
+    temp: number;
+    condition: string;
+    humidity: number;
+    windSpeed: number;
+    rainProbability: number;
+  };
+  forecast: Array<{
+    day: string;
+    temp: number;
+    condition: string;
+  }>;
+}
 
-const mockSensorData = [
-  { name: 'Climate Sensors', value: 8, color: '#10B981', status: 'Active' },
-  { name: 'Sap Flow Sensors', value: 4, color: '#10B981', status: 'Active' },
-  { name: 'RGBD Cameras', value: 2, color: '#10B981', status: 'Active' },
-  { name: 'Irrigation Sensors', value: 3, color: '#F59E0B', status: 'Maintenance' },
-  { name: 'Light Sensors', value: 1, color: '#EF4444', status: 'Offline' },
-];
+interface SensorData {
+  temperature: { value: number; status: 'normal' | 'warning' | 'critical'; sensors: number };
+  workflow: { value: number; status: 'normal' | 'warning' | 'critical'; sensors: number };
+  moisture: { value: number; status: 'normal' | 'warning' | 'critical'; sensors: number };
+  windSpeed: { value: number; status: 'normal' | 'warning' | 'critical'; sensors: number };
+  humidity: { value: number; status: 'normal' | 'warning' | 'critical'; sensors: number };
+  smoke: { value: number; status: 'normal' | 'warning' | 'critical'; sensors: number };
+}
 
-// Simplified ML Predictions for researchers
-const mockMLPredictions = {
-  yieldForecast: { value: 85.2, confidence: 92, unit: 'kg/m²' },
-  diseaseRisk: { value: 15, confidence: 88, status: 'Low' },
-  growthRate: { value: 12.5, confidence: 95, unit: '%' },
-  optimalHarvestDate: { value: '2024-02-15', confidence: 85 }
-};
+interface DetectorData {
+  moisture: number;
+  waterConsumption: {
+    current: number;
+    previous: number;
+  };
+}
 
-// Essential greenhouse metadata for research
-const greenhouseMetadata = {
-  location: 'World Horti Center, Naaldwijk',
-  size: { length: 12.5, width: 6.4, height: 6.0, unit: 'm' },
-  crop: 'Xandor XR Tomato (Maxifort)',
-  plantingDate: '2022-09-12',
-  climateSystem: 'Hoogendoorn/Priva',
-  co2Target: 1000
-};
+interface AIRecommendation {
+  id: string;
+  type: 'irrigation' | 'fertilization' | 'pest_control' | 'harvest' | 'climate';
+  title: string;
+  description: string;
+  priority: 'high' | 'medium' | 'low';
+  confidence: number;
+  icon: string;
+  color: string;
+}
 
 const ResearcherDashboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('overview');
-  const [currentClimate, setCurrentClimate] = useState<SimplifiedClimateData | null>(null);
-  const [realtimeData, setRealtimeData] = useState<SimplifiedClimateData[]>(mockSimplifiedData);
+  // Farm details data
+  const farmDetails: FarmDetails = {
+    farmName: 'World Horti Center',
+    farmId: 'WHC-GH-A1',
+    location: 'Naaldwijk',
+    landArea: 80, // m²
+    cropsGrown: 3,
+    previousYield: 85 // tonnes
+  };
 
+  // Weather data
+  const [weatherData] = useState<WeatherData>({
+    today: {
+      temp: 29,
+      condition: 'Partly Cloudy',
+      humidity: 57,
+      windSpeed: 4.68,
+      rainProbability: 20
+    },
+    forecast: [
+      { day: 'FRI', temp: 29, condition: 'sunny' },
+      { day: 'SAT', temp: 33, condition: 'sunny' },
+      { day: 'SUN', temp: 39, condition: 'sunny' },
+      { day: 'MON', temp: 39, condition: 'sunny' }
+    ]
+  });
+
+  // Sensor data with real-time updates
+  const [sensorData, setSensorData] = useState<SensorData>({
+    temperature: { value: 22, status: 'normal', sensors: 5 },
+    workflow: { value: 5, status: 'warning', sensors: 3 },
+    moisture: { value: 36, status: 'critical', sensors: 8 },
+    windSpeed: { value: 1, status: 'normal', sensors: 2 },
+    humidity: { value: 1, status: 'normal', sensors: 4 },
+    smoke: { value: 38, status: 'critical', sensors: 6 }
+  });
+
+  // Detector data
+  const [detectorData] = useState<DetectorData>({
+    moisture: 56,
+    waterConsumption: {
+      current: 2340,
+      previous: 2810
+    }
+  });
+
+  // AI Recommendations
+  const [aiRecommendations] = useState<AIRecommendation[]>([
+    {
+      id: '1',
+      type: 'irrigation',
+      title: 'Optimize Irrigation',
+      description: 'Reduce water usage by 15% while maintaining optimal moisture levels',
+      priority: 'high',
+      confidence: 94,
+      icon: '💧',
+      color: '#3B82F6'
+    },
+    {
+      id: '2',
+      type: 'fertilization',
+      title: 'Nutrient Adjustment',
+      description: 'Increase nitrogen levels in Zone B for enhanced growth',
+      priority: 'medium',
+      confidence: 87,
+      icon: '🌱',
+      color: '#10B981'
+    },
+    {
+      id: '3',
+      type: 'pest_control',
+      title: 'Pest Prevention',
+      description: 'Apply preventive measures in Row 3-5 based on humidity patterns',
+      priority: 'medium',
+      confidence: 79,
+      icon: '🛡️',
+      color: '#F59E0B'
+    },
+    {
+      id: '4',
+      type: 'climate',
+      title: 'Temperature Control',
+      description: 'Adjust ventilation system during peak hours to optimize VPD',
+      priority: 'high',
+      confidence: 91,
+      icon: '🌡️',
+      color: '#EF4444'
+    },
+    {
+      id: '5',
+      type: 'harvest',
+      title: 'Harvest Timing',
+      description: 'Optimal harvest window predicted for next week',
+      priority: 'low',
+      confidence: 83,
+      icon: '🍅',
+      color: '#8B5CF6'
+    }
+  ]);
+
+  // Crop yield data for pie chart
+  const yieldData = [
+    { name: 'Tomatoes', value: 44.3, fill: '#EF4444' },
+    { name: 'Lettuce', value: 28.4, fill: '#10B981' },
+    { name: 'Peppers', value: 27.3, fill: '#F59E0B' }
+  ];
+
+  // Real-time updates
   useEffect(() => {
-    // Simulate real-time updates
     const interval = setInterval(() => {
-      const newData: SimplifiedClimateData = {
-        id: Date.now().toString(),
-        timestamp: new Date().toISOString(),
-        temperature: 18.5 + Math.random() * 4.5, // 18.5-23°C range
-        co2: 900 + Math.random() * 200, // 900-1100 ppm
-        par: 250 + Math.random() * 100, // μmol/m²/s
-        vpd: 0.6 + Math.random() * 0.4, // 0.6-1.0 kPa
-        sapFlow: 40 + Math.random() * 20, // g/h
-        headThickness: 9 + Math.random() * 2 // mm (target ~10mm)
-      };
-      
-      setCurrentClimate(newData);
-      setRealtimeData(prev => [...prev.slice(-11), newData]);
-    }, 5000);
+      setSensorData(prev => ({
+        temperature: {
+          ...prev.temperature,
+          value: Math.max(18, Math.min(28, prev.temperature.value + (Math.random() - 0.5) * 2)),
+          status: Math.random() > 0.8 ? 'warning' : 'normal'
+        },
+        workflow: {
+          ...prev.workflow,
+          value: Math.max(1, Math.min(10, prev.workflow.value + (Math.random() - 0.5))),
+          status: Math.random() > 0.7 ? 'warning' : 'normal'
+        },
+        moisture: {
+          ...prev.moisture,
+          value: Math.max(20, Math.min(80, prev.moisture.value + (Math.random() - 0.5) * 5)),
+          status: prev.moisture.value < 40 ? 'critical' : prev.moisture.value < 60 ? 'warning' : 'normal'
+        },
+        windSpeed: {
+          ...prev.windSpeed,
+          value: Math.max(0, Math.min(5, prev.windSpeed.value + (Math.random() - 0.5))),
+          status: 'normal'
+        },
+        humidity: {
+          ...prev.humidity,
+          value: Math.max(0, Math.min(5, prev.humidity.value + (Math.random() - 0.5))),
+          status: 'normal'
+        },
+        smoke: {
+          ...prev.smoke,
+          value: Math.max(10, Math.min(80, prev.smoke.value + (Math.random() - 0.5) * 3)),
+          status: prev.smoke.value < 30 ? 'normal' : prev.smoke.value < 50 ? 'warning' : 'critical'
+        }
+      }));
+    }, 3000);
 
     return () => clearInterval(interval);
   }, []);
 
-  const formatTime = (timestamp: string) => {
-    return new Date(timestamp).toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    });
+  const getSensorStatusColor = (status: string) => {
+    switch (status) {
+      case 'normal': return 'from-green-500 to-emerald-600';
+      case 'warning': return 'from-yellow-500 to-orange-600';
+      case 'critical': return 'from-red-500 to-pink-600';
+      default: return 'from-gray-500 to-gray-600';
+    }
   };
 
-  const chartData = realtimeData.filter(item => item && item.timestamp).map(item => ({
-    time: formatTime(item.timestamp),
-    temperature: Number(item.temperature || 0).toFixed(1),
-    co2: Math.round(Number(item.co2 || 0)),
-    par: Math.round(Number(item.par || 0)),
-    vpd: Number(item.vpd || 0).toFixed(2),
-    sapFlow: Number(item.sapFlow || 0).toFixed(1),
-    headThickness: Number(item.headThickness || 0).toFixed(1),
-  }));
+  const getSensorStatusBg = (status: string) => {
+    switch (status) {
+      case 'normal': return 'bg-green-50 border-green-200';
+      case 'warning': return 'bg-yellow-50 border-yellow-200';
+      case 'critical': return 'bg-red-50 border-red-200';
+      default: return 'bg-gray-50 border-gray-200';
+    }
+  };
+
+  const getWeatherIcon = (condition: string) => {
+    switch (condition.toLowerCase()) {
+      case 'sunny': return '☀️';
+      case 'cloudy': return '☁️';
+      case 'partly cloudy': return '⛅';
+      case 'rainy': return '🌧️';
+      default: return '☀️';
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'high': return 'border-red-500 bg-red-50';
+      case 'medium': return 'border-yellow-500 bg-yellow-50';
+      case 'low': return 'border-green-500 bg-green-50';
+      default: return 'border-gray-500 bg-gray-50';
+    }
+  };
 
   return (
     <Layout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Research Dashboard</h1>
-            <p className="text-lg text-gray-600 mt-1">HORTI-IOT Data Center</p>
-          </div>
-          <div className="flex items-center space-x-3">
-            <div className="text-right">
-              <p className="text-sm text-gray-500">System Status</p>
-              <p className="text-lg font-semibold text-green-600">Operational</p>
-            </div>
-            <div className="h-3 w-3 bg-green-400 rounded-full animate-pulse"></div>
-          </div>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 p-6">
 
-        {/* Core Research Metrics - Simplified to 4 key environmental metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card>
-            <div className="text-center">
-              <p className="text-sm font-medium text-gray-600 mb-2">Temperature</p>
-              <p className="text-3xl font-bold text-orange-600">
-                {currentClimate ? `${currentClimate.temperature.toFixed(1)}°C` : '--'}
-              </p>
-              <p className="text-xs text-green-600 mt-2">✓ Optimal Range</p>
-              <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
-                <div className="bg-orange-500 h-2 rounded-full" style={{ width: '85%' }}></div>
-              </div>
-              <p className="text-xs text-gray-500 mt-1">Target: 18.5-23°C</p>
-            </div>
-          </Card>
+        {/* Main Grid Layout */}
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 max-w-7xl mx-auto">
 
-          <Card>
-            <div className="text-center">
-              <p className="text-sm font-medium text-gray-600 mb-2">CO₂</p>
-              <p className="text-3xl font-bold text-green-600">
-                {currentClimate ? `${currentClimate.co2.toFixed(0)}` : '--'}
-              </p>
-              <p className="text-xs text-gray-500 mt-2">ppm</p>
-              <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
-                <div className="bg-green-500 h-2 rounded-full" style={{ width: `${currentClimate ? (currentClimate.co2 / 1100) * 100 : 0}%` }}></div>
-              </div>
-              <p className="text-xs text-green-600 mt-1">Target: 1000 ppm</p>
-            </div>
-          </Card>
-
-          <Card>
-            <div className="text-center">
-              <p className="text-sm font-medium text-gray-600 mb-2">VPD</p>
-              <p className="text-3xl font-bold text-purple-600">
-                {currentClimate ? `${currentClimate.vpd.toFixed(2)}` : '--'}
-              </p>
-              <p className="text-xs text-gray-500 mt-2">kPa</p>
-              <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
-                <div className="bg-purple-500 h-2 rounded-full" style={{ width: `${currentClimate ? (currentClimate.vpd / 1.0) * 100 : 0}%` }}></div>
-              </div>
-              <p className="text-xs text-purple-600 mt-1">Optimal: 0.6-1.0</p>
-            </div>
-          </Card>
-
-          <Card>
-            <div className="text-center">
-              <p className="text-sm font-medium text-gray-600 mb-2">PAR Light</p>
-              <p className="text-3xl font-bold text-yellow-600">
-                {currentClimate ? `${currentClimate.par.toFixed(0)}` : '--'}
-              </p>
-              <p className="text-xs text-gray-500 mt-2">μmol/m²/s</p>
-              <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
-                <div className="bg-yellow-500 h-2 rounded-full" style={{ width: `${currentClimate ? (currentClimate.par / 400) * 100 : 0}%` }}></div>
-              </div>
-              <p className="text-xs text-yellow-600 mt-1">DLI: 18 mol/m²</p>
-            </div>
-          </Card>
-        </div>
-
-        {/* Tab Navigation */}
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8">
-            <button
-              onClick={() => setActiveTab('overview')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'overview'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              📊 Environmental Overview
-            </button>
-            <button
-              onClick={() => setActiveTab('plant-analysis')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'plant-analysis'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              🌱 Plant Analysis
-            </button>
-            <button
-              onClick={() => setActiveTab('system-status')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'system-status'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              🔧 System Status
-            </button>
-          </nav>
-        </div>
-
-        {/* Tab Content */}
-        {activeTab === 'overview' && (
-          <div className="grid grid-cols-1 gap-6">
-            <Card>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Environmental Conditions</h3>
-                
-              </div>
-              <div className="h-80">
-                <ErrorBoundary>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="time" />
-                      <YAxis />
-                      <Tooltip />
-                      <Line 
-                        type="monotone" 
-                        dataKey="temperature" 
-                        stroke="#f97316" 
-                        strokeWidth={3}
-                        name="Temperature (°C)"
-                        dot={{ fill: '#f97316', strokeWidth: 2, r: 4 }}
-                      />
-                      <Line 
-                        type="monotone" 
-                        dataKey="co2" 
-                        stroke="#22c55e" 
-                        strokeWidth={2}
-                        name="CO₂ (ppm)"
-                        dot={{ fill: '#22c55e', strokeWidth: 2, r: 3 }}
-                      />
-                      <Line 
-                        type="monotone" 
-                        dataKey="vpd" 
-                        stroke="#8b5cf6" 
-                        strokeWidth={2}
-                        name="VPD (kPa)"
-                        dot={{ fill: '#8b5cf6', strokeWidth: 2, r: 3 }}
-                      />
-                      <Line 
-                        type="monotone" 
-                        dataKey="par" 
-                        stroke="#f59e0b" 
-                        strokeWidth={2}
-                        name="PAR (μmol/m²/s)"
-                        dot={{ fill: '#f59e0b', strokeWidth: 2, r: 3 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </ErrorBoundary>
-              </div>
-              <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                <p className="text-sm text-blue-700">
-                  📊 <strong>Research Insight:</strong> All 4 core environmental parameters are within optimal ranges for Xandor XR tomato growth.
-                </p>
-              </div>
-            </Card>
-          </div>
-        )}
-
-        {activeTab === 'plant-analysis' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Plant Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
-                <div className="text-center">
-                  <p className="text-sm font-medium text-gray-600 mb-2">Head Thickness</p>
-                  <p className="text-4xl font-bold text-red-600">
-                    {currentClimate ? `${currentClimate.headThickness.toFixed(1)}` : '--'}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">mm</p>
-                  <p className={`text-xs mt-2 ${
-                    currentClimate && currentClimate.headThickness < 10 ? 'text-yellow-600' : 'text-green-600'
-                  }`}>
-                    {currentClimate && currentClimate.headThickness < 10 ? '⚠️ Below optimal (10mm)' : '✅ Optimal range'}
-                  </p>
-                  <div className="w-full bg-gray-200 rounded-full h-3 mt-3">
-                    <div 
-                      className={`h-3 rounded-full ${
-                        currentClimate && currentClimate.headThickness >= 10 ? 'bg-green-500' : 'bg-yellow-500'
-                      }`} 
-                      style={{ width: `${Math.min((currentClimate?.headThickness || 0) / 12 * 100, 100)}%` }}
-                    ></div>
-                  </div>
-                </div>
-              </Card>
-
-              <Card>
-                <div className="text-center">
-                  <p className="text-sm font-medium text-gray-600 mb-2">Sap Flow</p>
-                  <p className="text-4xl font-bold text-indigo-600">
-                    {currentClimate ? `${currentClimate.sapFlow.toFixed(1)}` : '--'}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">g/h</p>
-                  <p className="text-xs text-indigo-600 mt-2">🔄 Active transpiration</p>
-                  <div className="w-full bg-gray-200 rounded-full h-3 mt-3">
-                    <div className="bg-indigo-500 h-3 rounded-full" style={{ width: `${currentClimate ? (currentClimate.sapFlow / 60) * 100 : 0}%` }}></div>
-                  </div>
-                </div>
-              </Card>
-            </div>
-
-            {/* Plant Growth Chart */}
-            <Card>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Plant Growth Trends</h3>
-              <div className="h-64">
-                <ErrorBoundary>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="time" />
-                      <YAxis />
-                      <Tooltip />
-                      <Line 
-                        type="monotone" 
-                        dataKey="headThickness" 
-                        stroke="#ef4444" 
-                        strokeWidth={4}
-                        name="Head Thickness (mm)"
-                        dot={{ fill: '#ef4444', strokeWidth: 2, r: 5 }}
-                      />
-                      <Line 
-                        type="monotone" 
-                        dataKey="sapFlow" 
-                        stroke="#6366f1" 
-                        strokeWidth={3}
-                        name="Sap Flow (g/h)"
-                        dot={{ fill: '#6366f1', strokeWidth: 2, r: 4 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </ErrorBoundary>
-              </div>
-              <div className="mt-4 p-3 bg-green-50 rounded-lg">
-                <p className="text-sm text-green-700">
-                  🌱 <strong>Growth Analysis:</strong> Strong correlation between sap flow and head thickness development observed.
-                </p>
-              </div>
-            </Card>
-          </div>
-        )}
-
-        {activeTab === 'system-status' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Sensor Network Status */}
-            <Card>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">HORTI-IOT Sensor Network</h3>
+          {/* Left Column - Farm Details */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="xl:col-span-1 space-y-6"
+          >
+            {/* Farm Details Card */}
+            <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 backdrop-blur-sm">
+              <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
+                Farm Details
+              </h3>
               <div className="space-y-4">
-                <div className="text-center p-4 bg-green-50 rounded-lg">
-                  <div className="text-3xl font-bold text-green-600">
-                    {mockSensorData.filter(s => s.status === 'Active').length}/{mockSensorData.length}
-                  </div>
-                  <p className="text-sm text-gray-600 mt-1">Systems Operational</p>
-                  <div className="w-full bg-gray-200 rounded-full h-3 mt-3">
-                    <div className="bg-green-500 h-3 rounded-full" style={{ width: `${(mockSensorData.filter(s => s.status === 'Active').length / mockSensorData.length) * 100}%` }}></div>
+                <div className="border-l-4 border-blue-500 pl-4">
+                  <p className="text-xs text-gray-500 font-medium">Farm Name</p>
+                  <p className="text-sm font-bold text-gray-800">{farmDetails.farmName}</p>
+                </div>
+                <div className="border-l-4 border-purple-500 pl-4">
+                  <p className="text-xs text-gray-500 font-medium">Farm ID</p>
+                  <p className="text-sm font-bold text-gray-800">{farmDetails.farmId}</p>
+                </div>
+                <div className="border-l-4 border-green-500 pl-4">
+                  <p className="text-xs text-gray-500 font-medium">Location</p>
+                  <p className="text-sm font-bold text-gray-800">{farmDetails.location}</p>
+                </div>
+                <div className="border-l-4 border-yellow-500 pl-4">
+                  <p className="text-xs text-gray-500 font-medium">Land Area</p>
+                  <p className="text-sm font-bold text-gray-800">{farmDetails.landArea} m²</p>
+                </div>
+                <div className="border-l-4 border-red-500 pl-4">
+                  <p className="text-xs text-gray-500 font-medium">Number of crops grown</p>
+                  <p className="text-sm font-bold text-gray-800">{farmDetails.cropsGrown}</p>
+                </div>
+                <div className="border-l-4 border-indigo-500 pl-4">
+                  <p className="text-xs text-gray-500 font-medium">Previous Crop yield</p>
+                  <p className="text-sm font-bold text-gray-800">{farmDetails.previousYield} kg/m²</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Moisture Detector Card */}
+            <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-gray-800">Moisture Detector</h3>
+                <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                  <div className="w-3 h-3 bg-white rounded-full"></div>
+                </div>
+              </div>
+
+              {/* Moisture Level Circle */}
+              <div className="relative mb-6">
+                <ResponsiveContainer width="100%" height={200}>
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { value: detectorData.moisture, fill: '#3B82F6' },
+                        { value: 100 - detectorData.moisture, fill: '#E5E7EB' }
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      startAngle={90}
+                      endAngle={450}
+                      dataKey="value"
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-blue-600">{detectorData.moisture}%</div>
+                    <div className="text-sm text-gray-600">Moisture</div>
                   </div>
                 </div>
-                
-                <div className="space-y-3">
-                  {mockSensorData.map((sensor, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <div 
-                          className={`w-4 h-4 rounded-full ${
-                            sensor.status === 'Active' ? 'bg-green-500' : 
-                            sensor.status === 'Maintenance' ? 'bg-yellow-500' : 'bg-red-500'
-                          }`}
-                        ></div>
-                        <span className="text-sm font-medium text-gray-700">{sensor.name}</span>
+              </div>
+
+              {/* Water Consumption */}
+              <div className="space-y-3">
+                <h4 className="font-semibold text-gray-700">Water Consumed (Previous vs Current)</h4>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Previous</span>
+                  <span className="font-bold text-gray-800">{detectorData.waterConsumption.previous} liters</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Current</span>
+                  <span className="font-bold text-green-600">{detectorData.waterConsumption.current} liters</span>
+                </div>
+                <div className="mt-2 p-2 bg-green-50 rounded-lg">
+                  <p className="text-xs text-green-700 text-center">
+                    Saved: {detectorData.waterConsumption.previous - detectorData.waterConsumption.current} liters
+                  </p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Middle Column - Weather and Sensors */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="xl:col-span-2 space-y-6"
+          >
+            {/* Weather Card */}
+            <div className="bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700 rounded-3xl shadow-2xl p-6 text-white">
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h3 className="text-2xl font-bold mb-1">Today's Weather</h3>
+                  <p className="text-blue-100 text-sm">{weatherData.today.condition}</p>
+                </div>
+                <div className="text-right">
+                  <div className="text-5xl font-light">{weatherData.today.temp}°</div>
+                  <div className="flex items-center mt-2 text-blue-100">
+                    <span className="text-2xl mr-2">{getWeatherIcon(weatherData.today.condition)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Weather Stats */}
+              <div className="grid grid-cols-3 gap-4 mb-6">
+                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 text-center">
+                  <p className="text-xs text-blue-100 mb-1">Humidity</p>
+                  <p className="text-lg font-bold">{weatherData.today.humidity}%</p>
+                </div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 text-center">
+                  <p className="text-xs text-blue-100 mb-1">Wind Speed</p>
+                  <p className="text-lg font-bold">{weatherData.today.windSpeed} m/s</p>
+                </div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 text-center">
+                  <p className="text-xs text-blue-100 mb-1">Rain Probability</p>
+                  <p className="text-lg font-bold">{weatherData.today.rainProbability}%</p>
+                </div>
+              </div>
+
+              {/* Forecast */}
+              <div className="grid grid-cols-4 gap-2">
+                {weatherData.forecast.map((day, index) => (
+                  <div key={index} className="text-center p-3 bg-white/10 backdrop-blur-sm rounded-2xl">
+                    <p className="text-xs text-blue-100 mb-1">{day.day}</p>
+                    <div className="text-lg mb-1">{getWeatherIcon(day.condition)}</div>
+                    <p className="font-bold text-sm">{day.temp}°</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Sensor Grid */}
+            <div className="grid grid-cols-3 gap-4">
+              {Object.entries(sensorData).map(([key, sensor]) => (
+                <motion.div
+                  key={key}
+                  whileHover={{ scale: 1.02 }}
+                  className={`relative overflow-hidden rounded-2xl border-2 shadow-lg transition-all duration-300 ${getSensorStatusBg(sensor.status)}`}
+                >
+                  <div className="p-4">
+                    {/* Status Indicator */}
+                    <div className="absolute top-2 right-2">
+                      <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${getSensorStatusColor(sensor.status)} shadow-lg`}></div>
+                    </div>
+
+                    {/* Sensor Count Badge */}
+                    <div className="absolute top-2 left-2">
+                      <span className="bg-white/80 backdrop-blur-sm text-xs font-bold px-2 py-1 rounded-full shadow-sm">
+                        {sensor.sensors}
+                      </span>
+                    </div>
+
+                    {/* Value */}
+                    <div className="text-center mt-4">
+                      <div className={`text-4xl font-bold bg-gradient-to-r ${getSensorStatusColor(sensor.status)} bg-clip-text text-transparent`}>
+                        {sensor.value}
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm text-gray-600">{sensor.value}</span>
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          sensor.status === 'Active' ? 'bg-green-100 text-green-700' : 
-                          sensor.status === 'Maintenance' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'
-                        }`}>
-                          {sensor.status}
-                        </span>
+                      <p className="text-sm font-medium text-gray-700 capitalize mt-2">
+                        {key.replace(/([A-Z])/g, ' $1')} sensor
+                      </p>
+                    </div>
+
+                    {/* Animated Background Element */}
+                    <div className={`absolute -bottom-2 -right-2 w-16 h-16 bg-gradient-to-r ${getSensorStatusColor(sensor.status)} opacity-10 rounded-full`}></div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Farm Map */}
+            <div className="h-96">
+              <FarmMap className="h-full" />
+            </div>
+
+            {/* Crop Yield Pie Chart */}
+            <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6">
+              <h3 className="text-lg font-bold text-gray-800 mb-4">Crop Yield Distribution</h3>
+              <div className="flex items-center">
+                <div className="w-1/2">
+                  <ResponsiveContainer width="100%" height={200}>
+                    <PieChart>
+                      <Pie
+                        data={yieldData}
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={80}
+                        paddingAngle={2}
+                        dataKey="value"
+                      >
+                        {yieldData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.fill} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="w-1/2 space-y-3">
+                  {yieldData.map((item, index) => (
+                    <div key={index} className="flex items-center">
+                      <div
+                        className="w-4 h-4 rounded-full mr-3 shadow-sm"
+                        style={{ backgroundColor: item.fill }}
+                      ></div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-700">{item.name}</p>
+                        <p className="text-lg font-bold text-gray-800">{item.value}%</p>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
-            </Card>
+            </div>
+          </motion.div>
 
-            {/* ML Predictions & Analytics */}
-            <Card>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">🤖 AI Predictions & Analysis</h3>
+          {/* Right Column - AI Recommendations */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="xl:col-span-1"
+          >
+            <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-bold text-gray-800">AI Recommendations</h3>
+                <div className="flex items-center text-sm text-gray-500">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse"></div>
+                  Smart Analytics
+                </div>
+              </div>
+
               <div className="space-y-4">
-                <div className="p-4 bg-green-50 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-700">Yield Forecast</span>
-                    <span className="text-lg font-bold text-green-600">
-                      {mockMLPredictions.yieldForecast.value} {mockMLPredictions.yieldForecast.unit}
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-green-600 h-2 rounded-full" style={{ width: `${mockMLPredictions.yieldForecast.confidence}%` }}></div>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">Confidence: {mockMLPredictions.yieldForecast.confidence}%</p>
-                </div>
-                
-                <div className="p-4 bg-blue-50 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-700">Disease Risk</span>
-                    <span className="text-lg font-bold text-green-600">{mockMLPredictions.diseaseRisk.status}</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-green-600 h-2 rounded-full" style={{ width: '15%' }}></div>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">Risk Level: {mockMLPredictions.diseaseRisk.value}%</p>
-                </div>
-                
-                <div className="p-4 bg-purple-50 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-700">Growth Rate</span>
-                    <span className="text-lg font-bold text-blue-600">+{mockMLPredictions.growthRate.value}%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-blue-600 h-2 rounded-full" style={{ width: '75%' }}></div>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">Above baseline growth</p>
-                </div>
-                
-                <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
-                  <p className="text-sm text-gray-700 mb-2">🎯 <strong>Optimal Harvest:</strong></p>
-                  <p className="text-lg font-bold text-blue-600">{mockMLPredictions.optimalHarvestDate.value}</p>
-                  <p className="text-xs text-gray-500 mt-1">Based on current growth patterns ({mockMLPredictions.optimalHarvestDate.confidence}% confidence)</p>
-                </div>
-              </div>
-            </Card>
-          </div>
-        )}
+                {aiRecommendations.map((recommendation) => (
+                  <motion.div
+                    key={recommendation.id}
+                    whileHover={{ scale: 1.02 }}
+                    className={`relative p-4 rounded-2xl border-2 transition-all duration-300 cursor-pointer ${getPriorityColor(recommendation.priority)}`}
+                  >
+                    {/* Priority Badge */}
+                    <div className="absolute top-2 right-2">
+                      <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                        recommendation.priority === 'high' ? 'bg-red-500 text-white' :
+                        recommendation.priority === 'medium' ? 'bg-yellow-500 text-white' :
+                        'bg-green-500 text-white'
+                      }`}>
+                        {recommendation.priority.toUpperCase()}
+                      </span>
+                    </div>
 
-        {/* Research Summary */}
-        <Card>
-          <h3 className="text-xl font-semibold text-gray-900 mb-4">Research Summary</h3>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="p-4 bg-blue-50 rounded-lg">
-              <div className="flex items-center space-x-3">
-                <span className="text-3xl">🏠</span>
-                <div>
-                  <p className="font-semibold text-gray-800">Greenhouse</p>
-                  <p className="text-sm text-gray-600">{greenhouseMetadata.location}</p>
-                  <p className="text-sm text-blue-600">{greenhouseMetadata.size.length}×{greenhouseMetadata.size.width}×{greenhouseMetadata.size.height}m</p>
+                    {/* Content */}
+                    <div className="pr-16">
+                      <div className="flex items-center mb-2">
+                        <span className="text-2xl mr-3">{recommendation.icon}</span>
+                        <h4 className="font-bold text-gray-800 text-sm">{recommendation.title}</h4>
+                      </div>
+                      <p className="text-xs text-gray-600 leading-relaxed mb-3">
+                        {recommendation.description}
+                      </p>
+
+                      {/* Confidence Bar */}
+                      <div className="mb-2">
+                        <div className="flex justify-between text-xs text-gray-600 mb-1">
+                          <span>Confidence</span>
+                          <span>{recommendation.confidence}%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                          <motion.div
+                            className="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${recommendation.confidence}%` }}
+                            transition={{ duration: 1, delay: 0.2 }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Action Button */}
+                      <button
+                        className="w-full mt-3 py-2 px-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-semibold rounded-xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5"
+                      >
+                        Apply Recommendation
+                      </button>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* AI Insights Summary */}
+              <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl border border-blue-200">
+                <div className="flex items-center mb-2">
+                  <span className="text-lg mr-2">🤖</span>
+                  <h4 className="font-bold text-gray-800 text-sm">AI System Status</h4>
+                </div>
+                <div className="grid grid-cols-2 gap-4 text-xs">
+                  <div className="text-center">
+                    <p className="text-gray-600">Models Active</p>
+                    <p className="font-bold text-blue-600">7/8</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-gray-600">Accuracy</p>
+                    <p className="font-bold text-green-600">94.2%</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-gray-600">Data Points</p>
+                    <p className="font-bold text-purple-600">2.1M</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-gray-600">Predictions</p>
+                    <p className="font-bold text-orange-600">Real-time</p>
+                  </div>
                 </div>
               </div>
             </div>
-            
-            <div className="p-4 bg-green-50 rounded-lg">
-              <div className="flex items-center space-x-3">
-                <span className="text-3xl">🍅</span>
-                <div>
-                  <p className="font-semibold text-gray-800">Current Crop</p>
-                  <p className="text-sm text-gray-600">{greenhouseMetadata.crop}</p>
-                  <p className="text-sm text-green-600">Planted: {new Date(greenhouseMetadata.plantingDate).toLocaleDateString()}</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="p-4 bg-purple-50 rounded-lg">
-              <div className="flex items-center space-x-3">
-                <span className="text-3xl">⚙️</span>
-                <div>
-                  <p className="font-semibold text-gray-800">Climate Control</p>
-                  <p className="text-sm text-gray-600">{greenhouseMetadata.climateSystem}</p>
-                  <p className="text-sm text-purple-600">CO₂ Target: {greenhouseMetadata.co2Target} ppm</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Card>
+          </motion.div>
+        </div>
       </div>
     </Layout>
   );

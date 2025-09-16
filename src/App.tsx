@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import ResearcherDashboard from './pages/ResearcherDashboard';
 import GrowerDashboard from './pages/GrowerDashboard';
+import StatisticsPage from './pages/StatisticsPage';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ 
@@ -53,6 +54,12 @@ const AppRoutes: React.FC = () => {
       <Route path="/researcher" element={
         <ProtectedRoute allowedRole="researcher">
           <ResearcherDashboard />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/researcher/statistics" element={
+        <ProtectedRoute allowedRole="researcher">
+          <StatisticsPage />
         </ProtectedRoute>
       } />
       
