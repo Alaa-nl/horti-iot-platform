@@ -1,11 +1,13 @@
 -- HORTI-IOT Platform Database Schema
--- Based on internship requirements and research paper specifications
--- PostgreSQL implementation with time-series optimization
+-- Based on real data analysis and internship requirements
+-- PostgreSQL with TimescaleDB for time-series optimization
+-- Updated to match actual sensor data structure
 
 -- Enable necessary extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pg_stat_statements";
 CREATE EXTENSION IF NOT EXISTS "btree_gin";
+CREATE EXTENSION IF NOT EXISTS "timescaledb" CASCADE;
 
 -- =====================================================
 -- 1. USER MANAGEMENT & AUTHENTICATION
@@ -38,35 +40,59 @@ CREATE TABLE user_sessions (
 -- 2. GREENHOUSE METADATA & CONFIGURATION
 -- =====================================================
 
--- Greenhouse facilities
+-- Greenhouse facilities (World Horti Centre lab configuration)
 CREATE TABLE greenhouses (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
-    location VARCHAR(255) NOT NULL,
+    location VARCHAR(255) NOT NULL, -- e.g., "World Horti Center, Naaldwijk, Netherlands"
     dimensions JSONB NOT NULL, -- {length: 12.5, width: 6.4, height: 6.0, unit: "m"}
     area_m2 DECIMAL(8,2) NOT NULL,
-    crop_type VARCHAR(100),
-    variety VARCHAR(100),
+    crop_type VARCHAR(100) DEFAULT 'tomato',
+    variety VARCHAR(100), -- e.g., "Xandor XR"
+    rootstock VARCHAR(100), -- e.g., "Maxifort"
     planting_date DATE,
-    climate_system VARCHAR(100),
-    lighting_system VARCHAR(100),
+    supplier VARCHAR(100), -- e.g., "Axia Vegetable Seeds"
+    substrate_info VARCHAR(200), -- e.g., "Cocopeat, Forteco Profit, Slabs - Van der Knaap Group"
+    climate_system VARCHAR(100) DEFAULT 'Hoogendoorn and Priva',
+    lighting_system VARCHAR(100) DEFAULT 'LED - DLI 18 mol/m2 per day',
     growing_system VARCHAR(100),
+    co2_target_ppm INTEGER DEFAULT 1000, -- Applied during light periods
+    temperature_range_c VARCHAR(50) DEFAULT '18.5-23°C', -- RTR based temperature
     configuration JSONB, -- Additional metadata
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Sensor definitions and metadata
+-- Plant tracking for individual plant measurements
+CREATE TABLE plants (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    greenhouse_id UUID NOT NULL REFERENCES greenhouses(id) ON DELETE CASCADE,
+    plant_code VARCHAR(20) UNIQUE NOT NULL, -- 'stem051', 'stem136' etc.
+    variety VARCHAR(100),
+    planting_date DATE,
+    row_number INTEGER,
+    position_in_row INTEGER,
+    is_monitored BOOLEAN DEFAULT false,
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Sensor definitions and metadata (based on real sensor codes)
 CREATE TABLE sensors (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     greenhouse_id UUID NOT NULL REFERENCES greenhouses(id) ON DELETE CASCADE,
-    sensor_id VARCHAR(100) NOT NULL, -- External sensor identifier
-    sensor_type VARCHAR(50) NOT NULL, -- 'climate', 'sap_flow', 'rgbd_camera', 'irrigation'
+    plant_id UUID REFERENCES plants(id) ON DELETE SET NULL, -- For plant-specific sensors
+    sensor_code VARCHAR(20) NOT NULL, -- 'stem051', 'stem136', 'ttyACM0'
+    device_identifier VARCHAR(50), -- Physical device ID
+    sensor_type VARCHAR(50) NOT NULL, -- 'sap_flow', 'stem_diameter', 'lai', 'climate', 'rgbd_camera'
     sensor_name VARCHAR(100) NOT NULL,
-    unit VARCHAR(20) NOT NULL,
-    location VARCHAR(100),
-    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'maintenance', 'error')),
+    manufacturer VARCHAR(100), -- e.g., '2GROW', 'Intel RealSense', 'Hoogendoorn'
+    model VARCHAR(100), -- e.g., 'Dynagage SF', 'D435', 'Priva'
+    unit VARCHAR(20), -- 'g/h', 'mm', 'LAI units', '°C'
+    location_in_greenhouse VARCHAR(100),
+    installation_date DATE,
     calibration_date TIMESTAMP WITH TIME ZONE,
+    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'maintenance', 'error')),
     metadata JSONB, -- Additional sensor configuration
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -77,25 +103,35 @@ CREATE TABLE sensors (
 -- =====================================================
 
 -- Climate data (5-minute intervals as per research paper)
-CREATE TABLE climate_data (
+-- Based on actual Excel structure: Climate January 2024-May 2024.xlsx
+CREATE TABLE climate_measurements (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    timestamp TIMESTAMPTZ NOT NULL,
     greenhouse_id UUID NOT NULL REFERENCES greenhouses(id) ON DELETE CASCADE,
-    timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
-    
-    -- Core climate measurements (Table 3 from research paper)
-    temperature DECIMAL(5,2), -- °C
-    absolute_humidity DECIMAL(6,2), -- g/m³
-    co2_concentration DECIMAL(7,2), -- ppm
-    radiation DECIMAL(8,2), -- W/m²
-    par_light DECIMAL(8,2), -- µmol/m²/s - Photosynthetic Active Radiation
-    vpd DECIMAL(5,3), -- kPa - Vapor Pressure Deficit
-    radiation_out_pyrgeometer DECIMAL(8,2), -- W/m² - outgoing radiation
-    humidity_deficit DECIMAL(6,2), -- g/m³
-    
+
+    -- Core climate measurements (following HORTI-IOT data principles)
+    temperature_c DECIMAL(5,2), -- °C - greenhouse temperature
+    absolute_humidity_gm3 DECIMAL(6,2), -- g/m³ - absolute moisture content
+    co2_concentration_ppm INTEGER, -- ppm - CO2 levels (typically 1000 during light periods)
+    radiation_wm2 DECIMAL(8,2), -- W/m² - solar radiation
+    par_umol_m2_s DECIMAL(8,2), -- µmol/m²/s - Photosynthetic Active Radiation
+    vpd_kpa DECIMAL(6,3), -- kPa - Vapor Pressure Deficit (plant vs air)
+    radiation_out_pyrgeometer_wm2 DECIMAL(8,2), -- W/m² - outgoing radiation
+    humidity_deficit_gm3 DECIMAL(6,2), -- g/m³ - saturated AH minus AH
+
+    -- External conditions
+    outside_temperature_c DECIMAL(5,2), -- °C
+    outside_humidity_percent DECIMAL(5,2), -- %
+    wind_speed_ms DECIMAL(5,2), -- m/s
+
     -- Metadata and quality indicators
     data_quality VARCHAR(20) DEFAULT 'good' CHECK (data_quality IN ('good', 'poor', 'interpolated')),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    source_system VARCHAR(50) DEFAULT 'Hoogendoorn/Priva', -- Data source
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Convert to TimescaleDB hypertable
+SELECT create_hypertable('climate_measurements', 'timestamp', chunk_time_interval => INTERVAL '1 day');
 
 -- Growth data (weekly intervals as specified in research paper)
 CREATE TABLE growth_data (
@@ -116,68 +152,123 @@ CREATE TABLE growth_data (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Sap flow data (5-minute intervals, 2GROW system)
-CREATE TABLE sap_flow_data (
+-- Sap flow & stem diameter measurements (5-minute intervals, 2GROW system)
+-- Based on actual data: DateTime, Diameter051, Sapflow051, Diameter136, Sapflow136
+CREATE TABLE sap_flow_measurements (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    timestamp TIMESTAMPTZ NOT NULL,
     greenhouse_id UUID NOT NULL REFERENCES greenhouses(id) ON DELETE CASCADE,
-    sensor_id UUID NOT NULL REFERENCES sensors(id) ON DELETE CASCADE,
-    timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
-    
-    -- Sap flow measurements
-    sap_flow_rate DECIMAL(6,2) NOT NULL, -- g/h
-    stem_diameter DECIMAL(5,2), -- mm
-    
-    -- Quality indicators
+    plant_id UUID NOT NULL REFERENCES plants(id) ON DELETE CASCADE,
+    sensor_code VARCHAR(20) NOT NULL, -- 'stem051', 'stem136'
+
+    -- Measurements (matching real data precision)
+    sap_flow_rate_gh DECIMAL(12,6), -- g/h, can be NULL/NA
+    stem_diameter_mm DECIMAL(12,6) NOT NULL, -- mm, high precision
+
+    -- Data quality and metadata
+    data_quality VARCHAR(20) DEFAULT 'good' CHECK (data_quality IN ('good', 'poor', 'interpolated')),
+    is_interpolated BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Convert to TimescaleDB hypertable for optimal time-series performance
+SELECT create_hypertable('sap_flow_measurements', 'timestamp', chunk_time_interval => INTERVAL '1 day');
+
+-- LAI measurements (10-second intervals based on real data)
+-- Based on: 20230920-091810+0200 1 1.577766 0 25.40088
+CREATE TABLE lai_measurements (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    timestamp TIMESTAMPTZ NOT NULL,
+    greenhouse_id UUID NOT NULL REFERENCES greenhouses(id) ON DELETE CASCADE,
+    sensor_id INTEGER NOT NULL, -- Sensor ID from data (1, 2, etc.)
+    device_code VARCHAR(20) NOT NULL, -- 'ttyACM0' etc.
+
+    -- LAI measurements
+    lai_value DECIMAL(8,6) NOT NULL, -- Leaf Area Index
+    status_code INTEGER DEFAULT 0, -- Status from sensor
+    temperature_c DECIMAL(6,3) NOT NULL, -- Temperature reading
+
+    -- Data quality
     data_quality VARCHAR(20) DEFAULT 'good',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
--- Irrigation data (5-minute intervals)
-CREATE TABLE irrigation_data (
+-- Convert to TimescaleDB hypertable
+SELECT create_hypertable('lai_measurements', 'timestamp', chunk_time_interval => INTERVAL '1 hour');
+
+-- Irrigation data (5-minute intervals) - Based on real data structure
+CREATE TABLE irrigation_measurements (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    timestamp TIMESTAMPTZ NOT NULL,
     greenhouse_id UUID NOT NULL REFERENCES greenhouses(id) ON DELETE CASCADE,
-    timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
-    
-    -- Water and nutrient delivery
-    water_given DECIMAL(6,2), -- l/m²
-    water_given_total DECIMAL(8,2), -- l
-    ec_given DECIMAL(5,2), -- mS/cm - Electrical Conductivity
-    ph_given DECIMAL(4,2), -- pH level
-    
-    -- Drainage monitoring
-    drained_water_amount DECIMAL(8,2), -- l
-    drained_water_ec DECIMAL(5,2), -- mS/cm
-    absorbed_water_amount DECIMAL(8,2), -- l
-    
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+
+    -- Water delivery (following HORTI-IOT data principles)
+    water_given_lm2 DECIMAL(8,3), -- l/m² - amount of water supplied to plants
+    water_given_total_l DECIMAL(10,2), -- l - total water amount
+    water_ec_mscm DECIMAL(6,3), -- mS/cm - Electrical Conductivity of supplied water
+    water_ph DECIMAL(4,2), -- pH level of supplied water
+
+    -- Drainage and uptake monitoring
+    drained_water_amount_l DECIMAL(8,2), -- l - amount of water drained
+    drained_water_ec_mscm DECIMAL(5,2), -- mS/cm - EC of drained water
+    absorbed_water_amount_l DECIMAL(8,2), -- l - water uptake by plants
+
+    -- System information
+    irrigation_cycle_id INTEGER, -- Irrigation event identifier
+    data_quality VARCHAR(20) DEFAULT 'good',
+    source_system VARCHAR(50) DEFAULT 'Priva',
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
--- RGBD camera image data and analysis
-CREATE TABLE camera_data (
+-- Convert to TimescaleDB hypertable
+SELECT create_hypertable('irrigation_measurements', 'timestamp', chunk_time_interval => INTERVAL '1 day');
+
+-- RGBD camera image data and analysis (Intel RealSense D435)
+-- Based on head thickness monitoring - Scenario 2 from research paper
+CREATE TABLE camera_images (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    timestamp TIMESTAMPTZ NOT NULL,
     greenhouse_id UUID NOT NULL REFERENCES greenhouses(id) ON DELETE CASCADE,
-    sensor_id UUID NOT NULL REFERENCES sensors(id) ON DELETE CASCADE,
-    timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
-    
-    -- Image storage
-    image_path VARCHAR(500) NOT NULL, -- Path to stored image
+    plant_id UUID REFERENCES plants(id) ON DELETE CASCADE, -- Plant being monitored
+    camera_sensor_id UUID NOT NULL REFERENCES sensors(id) ON DELETE CASCADE,
+
+    -- Image storage (150-second intervals)
+    image_path VARCHAR(500) NOT NULL, -- Path to stored image (Raspberry Pi 4)
+    s3_bucket VARCHAR(100), -- S3 bucket for cloud storage
+    s3_key VARCHAR(500), -- S3 object key
     image_type VARCHAR(20) DEFAULT 'rgbd' CHECK (image_type IN ('rgb', 'depth', 'rgbd')),
-    resolution VARCHAR(20),
+    resolution VARCHAR(20) DEFAULT '1920x1080', -- Intel RealSense D435 resolution
     file_size_bytes BIGINT,
-    
-    -- Image analysis results
-    head_thickness_pixels DECIMAL(8,2), -- Measured in pixels
-    head_thickness_mm DECIMAL(5,2), -- Converted to mm
-    plant_health_analysis JSONB, -- ML analysis results
-    pest_detection JSONB, -- Pest detection results
-    disease_indicators JSONB, -- Disease detection
-    
-    -- Metadata (GDPR considerations as per research paper)
-    metadata JSONB, -- Location, camera settings, etc.
-    is_shareable BOOLEAN DEFAULT TRUE, -- GDPR compliance
-    
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    angle_degrees INTEGER DEFAULT 45, -- Camera angle (45 degrees as per research)
+
+    -- ML Analysis Results (YOLO model predictions)
+    head_thickness_pixels DECIMAL(8,2), -- Measured in pixels by YOLO
+    head_thickness_mm DECIMAL(5,2), -- Converted to mm (target: ~10mm)
+    yolo_model_version VARCHAR(50), -- YOLOv8, YOLOv10, YOLOv11 etc.
+    detection_confidence DECIMAL(5,4), -- Model confidence score
+    bounding_box_coordinates JSONB, -- {x1, y1, x2, y2} for detected head
+    plant_health_score DECIMAL(5,2), -- Overall health assessment
+
+    -- Plant condition detection
+    is_weak_growth BOOLEAN DEFAULT FALSE, -- thickness < 10mm
+    is_excessive_growth BOOLEAN DEFAULT FALSE, -- thickness > 10mm
+    pest_detection_results JSONB, -- Pest detection from YOLO
+    disease_indicators JSONB, -- Disease detection results
+
+    -- Camera metadata (GDPR sensitive as per research paper)
+    camera_metadata JSONB, -- Location, date, time, photographer info
+    is_gdpr_sensitive BOOLEAN DEFAULT TRUE, -- Contains metadata
+    is_shareable BOOLEAN DEFAULT FALSE, -- GDPR compliance - metadata sensitive
+    anonymized_version_path VARCHAR(500), -- Path to anonymized version
+
+    -- Processing status
+    is_processed BOOLEAN DEFAULT FALSE,
+    processing_error TEXT,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Convert to TimescaleDB hypertable
+SELECT create_hypertable('camera_images', 'timestamp', chunk_time_interval => INTERVAL '1 day');
 
 -- =====================================================
 -- 4. MACHINE LEARNING & PREDICTIONS
@@ -411,13 +502,26 @@ CREATE TABLE api_logs (
 -- 7. INDEXES FOR PERFORMANCE (Time-series optimization)
 -- =====================================================
 
--- Time-series data indexes (critical for performance)
-CREATE INDEX idx_climate_data_timestamp ON climate_data(greenhouse_id, timestamp DESC);
-CREATE INDEX idx_climate_data_time_temp ON climate_data(timestamp, temperature) WHERE temperature IS NOT NULL;
-CREATE INDEX idx_sap_flow_timestamp ON sap_flow_data(greenhouse_id, timestamp DESC);
-CREATE INDEX idx_irrigation_timestamp ON irrigation_data(greenhouse_id, timestamp DESC);
+-- Time-series data indexes (critical for performance) - Updated for new table names
+CREATE INDEX idx_climate_measurements_timestamp ON climate_measurements(greenhouse_id, timestamp DESC);
+CREATE INDEX idx_climate_measurements_temp ON climate_measurements(timestamp, temperature_c) WHERE temperature_c IS NOT NULL;
+CREATE INDEX idx_sap_flow_measurements_timestamp ON sap_flow_measurements(greenhouse_id, timestamp DESC);
+CREATE INDEX idx_sap_flow_measurements_plant ON sap_flow_measurements(plant_id, timestamp DESC);
+CREATE INDEX idx_sap_flow_measurements_sensor ON sap_flow_measurements(sensor_code, timestamp DESC);
+CREATE INDEX idx_irrigation_measurements_timestamp ON irrigation_measurements(greenhouse_id, timestamp DESC);
+CREATE INDEX idx_lai_measurements_timestamp ON lai_measurements(greenhouse_id, timestamp DESC);
+CREATE INDEX idx_lai_measurements_device ON lai_measurements(device_code, timestamp DESC);
 CREATE INDEX idx_growth_data_timestamp ON growth_data(greenhouse_id, timestamp DESC);
-CREATE INDEX idx_camera_data_timestamp ON camera_data(greenhouse_id, timestamp DESC);
+CREATE INDEX idx_camera_images_timestamp ON camera_images(greenhouse_id, timestamp DESC);
+CREATE INDEX idx_camera_images_plant ON camera_images(plant_id, timestamp DESC);
+CREATE INDEX idx_camera_images_processed ON camera_images(is_processed, timestamp DESC) WHERE is_processed = FALSE;
+
+-- Plant and sensor relationship indexes
+CREATE INDEX idx_plants_greenhouse ON plants(greenhouse_id);
+CREATE INDEX idx_plants_code ON plants(plant_code);
+CREATE INDEX idx_sensors_code ON sensors(sensor_code);
+CREATE INDEX idx_sensors_type ON sensors(sensor_type, greenhouse_id);
+CREATE INDEX idx_sensors_plant ON sensors(plant_id) WHERE plant_id IS NOT NULL;
 
 -- User and session indexes
 CREATE INDEX idx_users_email ON users(email);
@@ -449,19 +553,47 @@ CREATE INDEX idx_market_data_date ON market_data(date DESC, crop_type);
 -- 9. VIEWS FOR COMMON QUERIES
 -- =====================================================
 
--- Latest sensor readings view
+-- Latest sensor readings view (updated for new table structure)
 CREATE VIEW latest_climate_readings AS
-SELECT DISTINCT ON (greenhouse_id) 
+SELECT DISTINCT ON (greenhouse_id)
     greenhouse_id,
     timestamp,
-    temperature,
-    absolute_humidity,
-    co2_concentration,
-    radiation,
-    par_light,
-    vpd
-FROM climate_data 
+    temperature_c,
+    absolute_humidity_gm3,
+    co2_concentration_ppm,
+    radiation_wm2,
+    par_umol_m2_s,
+    vpd_kpa,
+    outside_temperature_c,
+    data_quality
+FROM climate_measurements
 ORDER BY greenhouse_id, timestamp DESC;
+
+-- Latest sap flow and diameter measurements per plant
+CREATE VIEW latest_sap_flow_readings AS
+SELECT DISTINCT ON (plant_id)
+    sf.plant_id,
+    sf.sensor_code,
+    sf.timestamp,
+    sf.sap_flow_rate_gh,
+    sf.stem_diameter_mm,
+    p.plant_code,
+    sf.data_quality
+FROM sap_flow_measurements sf
+JOIN plants p ON sf.plant_id = p.id
+ORDER BY plant_id, timestamp DESC;
+
+-- Real-time LAI measurements view
+CREATE VIEW latest_lai_readings AS
+SELECT DISTINCT ON (device_code)
+    device_code,
+    timestamp,
+    lai_value,
+    temperature_c,
+    greenhouse_id,
+    data_quality
+FROM lai_measurements
+ORDER BY device_code, timestamp DESC;
 
 -- Current month financial summary
 CREATE VIEW current_month_financial_summary AS
@@ -506,25 +638,71 @@ CREATE TRIGGER update_greenhouses_updated_at BEFORE UPDATE ON greenhouses FOR EA
 CREATE TRIGGER update_sensors_updated_at BEFORE UPDATE ON sensors FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_investments_updated_at BEFORE UPDATE ON investments FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- Data quality validation trigger for climate data
-CREATE OR REPLACE FUNCTION validate_climate_data()
+-- Data quality validation triggers based on real data analysis
+
+-- Climate data validation (based on observed ranges)
+CREATE OR REPLACE FUNCTION validate_climate_measurements()
 RETURNS TRIGGER AS $$
 BEGIN
-    -- Validate temperature range (-10°C to 50°C)
-    IF NEW.temperature IS NOT NULL AND (NEW.temperature < -10 OR NEW.temperature > 50) THEN
+    -- Validate temperature range (observed: 18.5-23°C in greenhouse, -10 to 50°C reasonable range)
+    IF NEW.temperature_c IS NOT NULL AND (NEW.temperature_c < -10 OR NEW.temperature_c > 50) THEN
         NEW.data_quality = 'poor';
     END IF;
-    
-    -- Validate CO2 range (200-2000 ppm)
-    IF NEW.co2_concentration IS NOT NULL AND (NEW.co2_concentration < 200 OR NEW.co2_concentration > 2000) THEN
+
+    -- Validate CO2 range (200-2000 ppm, target 1000 ppm during light periods)
+    IF NEW.co2_concentration_ppm IS NOT NULL AND (NEW.co2_concentration_ppm < 200 OR NEW.co2_concentration_ppm > 2000) THEN
         NEW.data_quality = 'poor';
     END IF;
-    
+
+    -- Validate radiation (non-negative)
+    IF NEW.radiation_wm2 IS NOT NULL AND NEW.radiation_wm2 < 0 THEN
+        NEW.data_quality = 'poor';
+    END IF;
+
     RETURN NEW;
 END;
 $$ language 'plpgsql';
 
-CREATE TRIGGER validate_climate_data_trigger BEFORE INSERT OR UPDATE ON climate_data FOR EACH ROW EXECUTE FUNCTION validate_climate_data();
+-- Sap flow data validation (based on observed ranges: 40-71 g/h)
+CREATE OR REPLACE FUNCTION validate_sap_flow_measurements()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Validate sap flow rate (should be positive if not NULL)
+    IF NEW.sap_flow_rate_gh IS NOT NULL AND NEW.sap_flow_rate_gh < 0 THEN
+        NEW.data_quality = 'poor';
+    END IF;
+
+    -- Validate stem diameter (observed range: 10-14mm)
+    IF NEW.stem_diameter_mm IS NOT NULL AND (NEW.stem_diameter_mm < 5 OR NEW.stem_diameter_mm > 25) THEN
+        NEW.data_quality = 'poor';
+    END IF;
+
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+-- LAI measurements validation (observed range: 1.4-1.7)
+CREATE OR REPLACE FUNCTION validate_lai_measurements()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Validate LAI value (typically 0-10 range)
+    IF NEW.lai_value IS NOT NULL AND (NEW.lai_value < 0 OR NEW.lai_value > 10) THEN
+        NEW.data_quality = 'poor';
+    END IF;
+
+    -- Validate temperature (observed ~25-27°C)
+    IF NEW.temperature_c IS NOT NULL AND (NEW.temperature_c < -10 OR NEW.temperature_c > 50) THEN
+        NEW.data_quality = 'poor';
+    END IF;
+
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+-- Apply validation triggers
+CREATE TRIGGER validate_climate_measurements_trigger BEFORE INSERT OR UPDATE ON climate_measurements FOR EACH ROW EXECUTE FUNCTION validate_climate_measurements();
+CREATE TRIGGER validate_sap_flow_measurements_trigger BEFORE INSERT OR UPDATE ON sap_flow_measurements FOR EACH ROW EXECUTE FUNCTION validate_sap_flow_measurements();
+CREATE TRIGGER validate_lai_measurements_trigger BEFORE INSERT OR UPDATE ON lai_measurements FOR EACH ROW EXECUTE FUNCTION validate_lai_measurements();
 
 -- =====================================================
 -- 11. SECURITY & ROW LEVEL SECURITY (RLS)
