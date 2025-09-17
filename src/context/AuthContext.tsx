@@ -112,7 +112,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const mockUser: User = {
         id: credentials.role === 'researcher' ? '1' : '2',
         email: credentials.email,
-        name: credentials.role === 'researcher' ? 'Dr. Research' : 'Alaa farmer',
+        name: credentials.role === 'researcher' ? 'Researcher' : 'Alaa farmer',
         role: credentials.role,
         createdAt: new Date().toISOString(),
         lastLogin: new Date().toISOString(),

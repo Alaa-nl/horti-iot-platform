@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, RadialBarChart, RadialBar } from 'recharts';
 import Layout from '../components/layout/Layout';
-import FarmMap from '../components/common/FarmMap';
+import RealMap from '../components/common/RealMap';
 import { motion } from 'framer-motion';
+// Use KNMI weather service for Netherlands-specific data
+import { fetchKNMIWeatherByCoordinates, KNMIWeatherData } from '../services/knmiWeatherService';
+import { greenhouseService } from '../services/greenhouseService';
+import { Greenhouse, GREENHOUSES } from '../types/greenhouse';
+import GreenhouseSelector from '../components/greenhouse/GreenhouseSelector';
 
 // Data interfaces
 interface FarmDetails {
@@ -21,6 +26,10 @@ interface WeatherData {
     humidity: number;
     windSpeed: number;
     rainProbability: number;
+    feelsLike?: number;
+    pressure?: number;
+    sunrise?: string;
+    sunset?: string;
   };
   forecast: Array<{
     day: string;
@@ -46,44 +55,37 @@ interface DetectorData {
   };
 }
 
-interface AIRecommendation {
-  id: string;
-  type: 'irrigation' | 'fertilization' | 'pest_control' | 'harvest' | 'climate';
-  title: string;
-  description: string;
-  priority: 'high' | 'medium' | 'low';
-  confidence: number;
-  icon: string;
-  color: string;
-}
 
 const ResearcherDashboard: React.FC = () => {
-  // Farm details data
-  const farmDetails: FarmDetails = {
-    farmName: 'World Horti Center',
-    farmId: 'WHC-GH-A1',
-    location: 'Naaldwijk',
-    landArea: 80, // m²
-    cropsGrown: 3,
-    previousYield: 85 // tonnes
-  };
+  // Greenhouse state
+  const [selectedGreenhouse, setSelectedGreenhouse] = useState<Greenhouse | null>(null);
+  const [greenhouses, setGreenhouses] = useState<Greenhouse[]>([]);
+  const [greenhouseLoading, setGreenhouseLoading] = useState(true);
+
+  // Dynamic farm details based on selected greenhouse
+  const [farmDetails, setFarmDetails] = useState<FarmDetails>({
+    farmName: 'Loading...',
+    farmId: '',
+    location: '',
+    landArea: 0,
+    cropsGrown: 0,
+    previousYield: 0
+  });
 
   // Weather data
-  const [weatherData] = useState<WeatherData>({
+  const [weatherData, setWeatherData] = useState<WeatherData>({
     today: {
-      temp: 29,
-      condition: 'Partly Cloudy',
-      humidity: 57,
-      windSpeed: 4.68,
-      rainProbability: 20
+      temp: 22,
+      condition: 'Loading...',
+      humidity: 0,
+      windSpeed: 0,
+      rainProbability: 0
     },
-    forecast: [
-      { day: 'FRI', temp: 29, condition: 'sunny' },
-      { day: 'SAT', temp: 33, condition: 'sunny' },
-      { day: 'SUN', temp: 39, condition: 'sunny' },
-      { day: 'MON', temp: 39, condition: 'sunny' }
-    ]
+    forecast: []
   });
+  const [knmiStation, setKnmiStation] = useState<string>('');
+  const [weatherLoading, setWeatherLoading] = useState(true);
+  const [weatherError, setWeatherError] = useState<string | null>(null);
 
   // Sensor data with real-time updates
   const [sensorData, setSensorData] = useState<SensorData>({
@@ -96,7 +98,7 @@ const ResearcherDashboard: React.FC = () => {
   });
 
   // Detector data
-  const [detectorData] = useState<DetectorData>({
+  const [detectorData, setDetectorData] = useState<DetectorData>({
     moisture: 56,
     waterConsumption: {
       current: 2340,
@@ -104,106 +106,192 @@ const ResearcherDashboard: React.FC = () => {
     }
   });
 
-  // AI Recommendations
-  const [aiRecommendations] = useState<AIRecommendation[]>([
-    {
-      id: '1',
-      type: 'irrigation',
-      title: 'Optimize Irrigation',
-      description: 'Reduce water usage by 15% while maintaining optimal moisture levels',
-      priority: 'high',
-      confidence: 94,
-      icon: '💧',
-      color: '#3B82F6'
-    },
-    {
-      id: '2',
-      type: 'fertilization',
-      title: 'Nutrient Adjustment',
-      description: 'Increase nitrogen levels in Zone B for enhanced growth',
-      priority: 'medium',
-      confidence: 87,
-      icon: '🌱',
-      color: '#10B981'
-    },
-    {
-      id: '3',
-      type: 'pest_control',
-      title: 'Pest Prevention',
-      description: 'Apply preventive measures in Row 3-5 based on humidity patterns',
-      priority: 'medium',
-      confidence: 79,
-      icon: '🛡️',
-      color: '#F59E0B'
-    },
-    {
-      id: '4',
-      type: 'climate',
-      title: 'Temperature Control',
-      description: 'Adjust ventilation system during peak hours to optimize VPD',
-      priority: 'high',
-      confidence: 91,
-      icon: '🌡️',
-      color: '#EF4444'
-    },
-    {
-      id: '5',
-      type: 'harvest',
-      title: 'Harvest Timing',
-      description: 'Optimal harvest window predicted for next week',
-      priority: 'low',
-      confidence: 83,
-      icon: '🍅',
-      color: '#8B5CF6'
-    }
-  ]);
 
-  // Crop yield data for pie chart
-  const yieldData = [
-    { name: 'Tomatoes', value: 44.3, fill: '#EF4444' },
-    { name: 'Lettuce', value: 28.4, fill: '#10B981' },
-    { name: 'Peppers', value: 27.3, fill: '#F59E0B' }
-  ];
+  // Crop yield data for pie chart (dynamically calculated)
+  const [yieldData, setYieldData] = useState<Array<{name: string, value: number, fill: string}>>([]);
 
-  // Real-time updates
+  // Initialize greenhouses on mount
   useEffect(() => {
-    const interval = setInterval(() => {
-      setSensorData(prev => ({
+    const initializeGreenhouses = async () => {
+      setGreenhouseLoading(true);
+      try {
+        const allGreenhouses = await greenhouseService.getAllGreenhouses();
+        setGreenhouses(allGreenhouses);
+
+        // Load saved greenhouse or default to first
+        const savedGreenhouse = await greenhouseService.loadSavedGreenhouse();
+        if (savedGreenhouse) {
+          setSelectedGreenhouse(savedGreenhouse);
+        }
+      } catch (error) {
+        console.error('Error loading greenhouses:', error);
+      } finally {
+        setGreenhouseLoading(false);
+      }
+    };
+
+    initializeGreenhouses();
+  }, []);
+
+  // Handle greenhouse selection
+  const handleGreenhouseSelect = async (greenhouse: Greenhouse) => {
+    setGreenhouseLoading(true);
+    setSelectedGreenhouse(greenhouse);
+    greenhouseService.saveGreenhouseSelection(greenhouse.id);
+
+    // Fetch fresh data for selected greenhouse
+    try {
+      const freshData = await greenhouseService.getGreenhouseById(greenhouse.id);
+      if (freshData) {
+        setSelectedGreenhouse(freshData);
+      }
+    } catch (error) {
+      console.error('Error fetching greenhouse data:', error);
+    } finally {
+      setGreenhouseLoading(false);
+    }
+  };
+
+  // Update farm details when greenhouse changes
+  useEffect(() => {
+    if (selectedGreenhouse) {
+      setFarmDetails({
+        farmName: selectedGreenhouse.name,
+        farmId: selectedGreenhouse.id,
+        location: `${selectedGreenhouse.location.city}, ${selectedGreenhouse.location.region}`,
+        landArea: selectedGreenhouse.details.landArea,
+        cropsGrown: selectedGreenhouse.crops.length,
+        previousYield: selectedGreenhouse.performance.previousYield
+      });
+
+      // Update sensor data from greenhouse
+      const sensorStatus = (value: number, optimal: {min: number, max: number}) => {
+        if (value < optimal.min || value > optimal.max) return 'critical' as const;
+        if (value < optimal.min + 5 || value > optimal.max - 5) return 'warning' as const;
+        return 'normal' as const;
+      };
+
+      setSensorData({
         temperature: {
-          ...prev.temperature,
-          value: Math.max(18, Math.min(28, prev.temperature.value + (Math.random() - 0.5) * 2)),
-          status: Math.random() > 0.8 ? 'warning' : 'normal'
+          value: selectedGreenhouse.sensors.temperature,
+          status: sensorStatus(selectedGreenhouse.sensors.temperature, {min: 20, max: 26}),
+          sensors: 5
         },
         workflow: {
-          ...prev.workflow,
-          value: Math.max(1, Math.min(10, prev.workflow.value + (Math.random() - 0.5))),
-          status: Math.random() > 0.7 ? 'warning' : 'normal'
+          value: 5,
+          status: 'normal',
+          sensors: 3
         },
         moisture: {
-          ...prev.moisture,
-          value: Math.max(20, Math.min(80, prev.moisture.value + (Math.random() - 0.5) * 5)),
-          status: prev.moisture.value < 40 ? 'critical' : prev.moisture.value < 60 ? 'warning' : 'normal'
+          value: selectedGreenhouse.sensors.moisture,
+          status: sensorStatus(selectedGreenhouse.sensors.moisture, {min: 35, max: 55}),
+          sensors: 8
         },
         windSpeed: {
-          ...prev.windSpeed,
-          value: Math.max(0, Math.min(5, prev.windSpeed.value + (Math.random() - 0.5))),
-          status: 'normal'
+          value: 2,
+          status: 'normal',
+          sensors: 2
         },
         humidity: {
-          ...prev.humidity,
-          value: Math.max(0, Math.min(5, prev.humidity.value + (Math.random() - 0.5))),
-          status: 'normal'
+          value: selectedGreenhouse.sensors.humidity,
+          status: sensorStatus(selectedGreenhouse.sensors.humidity, {min: 50, max: 70}),
+          sensors: 4
         },
         smoke: {
-          ...prev.smoke,
-          value: Math.max(10, Math.min(80, prev.smoke.value + (Math.random() - 0.5) * 3)),
-          status: prev.smoke.value < 30 ? 'normal' : prev.smoke.value < 50 ? 'warning' : 'critical'
+          value: selectedGreenhouse.sensors.co2 > 1000 ? 60 : 30,
+          status: selectedGreenhouse.sensors.co2 > 1000 ? 'warning' : 'normal',
+          sensors: 6
         }
-      }));
-    }, 3000);
+      });
 
-    return () => clearInterval(interval);
-  }, []);
+      // Update detector data
+      setDetectorData({
+        moisture: selectedGreenhouse.sensors.moisture,
+        waterConsumption: {
+          current: selectedGreenhouse.performance.waterUsage,
+          previous: Math.round(selectedGreenhouse.performance.waterUsage * 1.2)
+        }
+      });
+
+      // Calculate crop yield distribution
+      const totalArea = selectedGreenhouse.crops.reduce((sum, crop) => sum + crop.area, 0);
+      const cropColors: {[key: string]: string} = {
+        'Tomatoes': '#EF4444',
+        'Lettuce': '#10B981',
+        'Peppers': '#F59E0B',
+        'Cucumbers': '#3B82F6',
+        'Strawberries': '#EC4899',
+        'Herbs': '#8B5CF6',
+        'Eggplant': '#6366F1',
+        'Zucchini': '#14B8A6',
+        'Microgreens': '#84CC16',
+        'Cherry Tomatoes': '#F97316',
+        'Leafy Greens': '#22C55E'
+      };
+
+      const yields = selectedGreenhouse.crops.map(crop => ({
+        name: crop.name,
+        value: Math.round((crop.area / totalArea) * 100 * 10) / 10,
+        fill: cropColors[crop.name] || '#6B7280'
+      }));
+
+      setYieldData(yields);
+    }
+  }, [selectedGreenhouse]);
+
+  // Fetch weather data based on selected greenhouse
+  useEffect(() => {
+    if (!selectedGreenhouse) return;
+
+    const loadWeatherData = async () => {
+      setWeatherLoading(true);
+      setWeatherError(null);
+      try {
+        // Use greenhouse coordinates for weather
+        const knmiData = await fetchKNMIWeatherByCoordinates(
+          selectedGreenhouse.location.coordinates.lat,
+          selectedGreenhouse.location.coordinates.lon,
+          selectedGreenhouse.location.city
+        );
+
+        // Convert KNMI data to component format
+        setWeatherData({
+          today: {
+            temp: knmiData.today.temp,
+            condition: knmiData.today.condition,
+            humidity: knmiData.today.humidity,
+            windSpeed: knmiData.today.windSpeed,
+            rainProbability: knmiData.today.rainProbability,
+            feelsLike: knmiData.today.feelsLike,
+            pressure: knmiData.today.pressure,
+            sunrise: knmiData.today.sunrise,
+            sunset: knmiData.today.sunset
+          },
+          forecast: knmiData.forecast.map(day => ({
+            day: day.day,
+            temp: day.temp,
+            condition: day.condition.toLowerCase()
+          }))
+        });
+
+        if (knmiData.station) {
+          setKnmiStation(`${knmiData.station.name}`);
+        }
+      } catch (error) {
+        setWeatherError('Failed to fetch weather data');
+        console.error('Weather fetch error:', error);
+      } finally {
+        setWeatherLoading(false);
+      }
+    };
+
+    loadWeatherData();
+    // Refresh weather data every 10 minutes
+    const weatherInterval = setInterval(loadWeatherData, 10 * 60 * 1000);
+
+    return () => clearInterval(weatherInterval);
+  }, [selectedGreenhouse]);
+
 
   const getSensorStatusColor = (status: string) => {
     switch (status) {
@@ -229,22 +317,26 @@ const ResearcherDashboard: React.FC = () => {
       case 'cloudy': return '☁️';
       case 'partly cloudy': return '⛅';
       case 'rainy': return '🌧️';
+      case 'weather data unavailable': return '❌';
+      case 'unavailable': return '❓';
       default: return '☀️';
     }
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'border-red-500 bg-red-50';
-      case 'medium': return 'border-yellow-500 bg-yellow-50';
-      case 'low': return 'border-green-500 bg-green-50';
-      default: return 'border-gray-500 bg-gray-50';
-    }
-  };
 
   return (
     <Layout>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 p-6">
+
+        {/* Greenhouse Selector at the top */}
+        <div className="max-w-7xl mx-auto mb-6">
+          <GreenhouseSelector
+            greenhouses={greenhouses}
+            selectedGreenhouse={selectedGreenhouse}
+            onSelect={handleGreenhouseSelect}
+            loading={greenhouseLoading}
+          />
+        </div>
 
         {/* Main Grid Layout */}
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 max-w-7xl mx-auto">
@@ -352,14 +444,46 @@ const ResearcherDashboard: React.FC = () => {
             className="xl:col-span-2 space-y-6"
           >
             {/* Weather Card */}
-            <div className="bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700 rounded-3xl shadow-2xl p-6 text-white">
+            <div className="bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700 rounded-3xl shadow-2xl p-6 text-white relative">
+              {weatherLoading && (
+                <div className="absolute inset-0 bg-blue-900/50 backdrop-blur-sm rounded-3xl flex items-center justify-center z-10">
+                  <div className="text-white text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-2"></div>
+                    <p className="text-sm">Loading weather...</p>
+                  </div>
+                </div>
+              )}
+              {weatherError && (
+                <div className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                  ⚠️ Using fallback data
+                </div>
+              )}
+              <div className="absolute top-2 right-2 flex items-center bg-blue-400/20 backdrop-blur-sm px-2 py-1 rounded-full">
+                <img src="https://cdn.knmi.nl/assets/logo-82cc91c2a3.svg" alt="KNMI" className="h-3 mr-1" />
+                <span className="text-xs text-white font-medium">KNMI Data</span>
+              </div>
               <div className="flex justify-between items-start mb-6">
                 <div>
                   <h3 className="text-2xl font-bold mb-1">Today's Weather</h3>
                   <p className="text-blue-100 text-sm">{weatherData.today.condition}</p>
+                  <p className="text-blue-200 text-xs mt-1">
+                    {selectedGreenhouse?.location.city || 'Loading...'}
+                  </p>
+                  {knmiStation && (
+                    <p className="text-blue-200 text-xs">Station: {knmiStation}</p>
+                  )}
+                  {weatherData.today.sunrise && weatherData.today.sunset && (
+                    <div className="mt-2 text-xs text-blue-200">
+                      <span className="mr-3">☀️ {weatherData.today.sunrise}</span>
+                      <span>🌙 {weatherData.today.sunset}</span>
+                    </div>
+                  )}
                 </div>
                 <div className="text-right">
-                  <div className="text-5xl font-light">{weatherData.today.temp}°</div>
+                  <div className="text-5xl font-light">{weatherData.today.temp}°C</div>
+                  {weatherData.today.feelsLike && (
+                    <p className="text-xs text-blue-200 mt-1">Feels like {weatherData.today.feelsLike}°C</p>
+                  )}
                   <div className="flex items-center mt-2 text-blue-100">
                     <span className="text-2xl mr-2">{getWeatherIcon(weatherData.today.condition)}</span>
                   </div>
@@ -377,20 +501,28 @@ const ResearcherDashboard: React.FC = () => {
                   <p className="text-lg font-bold">{weatherData.today.windSpeed} m/s</p>
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 text-center">
-                  <p className="text-xs text-blue-100 mb-1">Rain Probability</p>
-                  <p className="text-lg font-bold">{weatherData.today.rainProbability}%</p>
+                  <p className="text-xs text-blue-100 mb-1">{weatherData.today.pressure ? 'Pressure' : 'Rain Chance'}</p>
+                  <p className="text-lg font-bold">
+                    {weatherData.today.pressure ? `${weatherData.today.pressure} hPa` : `${weatherData.today.rainProbability}%`}
+                  </p>
                 </div>
               </div>
 
               {/* Forecast */}
               <div className="grid grid-cols-4 gap-2">
-                {weatherData.forecast.map((day, index) => (
-                  <div key={index} className="text-center p-3 bg-white/10 backdrop-blur-sm rounded-2xl">
-                    <p className="text-xs text-blue-100 mb-1">{day.day}</p>
-                    <div className="text-lg mb-1">{getWeatherIcon(day.condition)}</div>
-                    <p className="font-bold text-sm">{day.temp}°</p>
+                {weatherData.forecast.length > 0 ? (
+                  weatherData.forecast.map((day, index) => (
+                    <div key={index} className="text-center p-3 bg-white/10 backdrop-blur-sm rounded-2xl">
+                      <p className="text-xs text-blue-100 mb-1">{day.day}</p>
+                      <div className="text-lg mb-1">{getWeatherIcon(day.condition)}</div>
+                      <p className="font-bold text-sm">{day.temp}°C</p>
+                    </div>
+                  ))
+                ) : (
+                  <div className="col-span-4 text-center text-blue-200 text-sm">
+                    {weatherLoading ? 'Loading forecast...' : 'No forecast available'}
                   </div>
-                ))}
+                )}
               </div>
             </div>
 
@@ -432,9 +564,33 @@ const ResearcherDashboard: React.FC = () => {
               ))}
             </div>
 
-            {/* Farm Map */}
+            {/* Real Map */}
             <div className="h-96">
-              <FarmMap className="h-full" />
+              {selectedGreenhouse ? (
+                <RealMap
+                  center={{
+                    lat: selectedGreenhouse.location.coordinates.lat,
+                    lng: selectedGreenhouse.location.coordinates.lon
+                  }}
+                  zoom={16}
+                  className="h-full"
+                  markers={[
+                    {
+                      id: selectedGreenhouse.id,
+                      lat: selectedGreenhouse.location.coordinates.lat,
+                      lng: selectedGreenhouse.location.coordinates.lon,
+                      title: selectedGreenhouse.name,
+                      type: 'greenhouse',
+                      status: 'active',
+                      description: `${selectedGreenhouse.details.landArea}m² ${selectedGreenhouse.details.type} greenhouse with ${selectedGreenhouse.crops.length} crop types.`
+                    }
+                  ]}
+                />
+              ) : (
+                <div className="h-full bg-gray-100 rounded-3xl flex items-center justify-center">
+                  <p className="text-gray-500">Select a greenhouse to view map</p>
+                </div>
+              )}
             </div>
 
             {/* Crop Yield Pie Chart */}
@@ -478,103 +634,6 @@ const ResearcherDashboard: React.FC = () => {
             </div>
           </motion.div>
 
-          {/* Right Column - AI Recommendations */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="xl:col-span-1"
-          >
-            <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-bold text-gray-800">AI Recommendations</h3>
-                <div className="flex items-center text-sm text-gray-500">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse"></div>
-                  Smart Analytics
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                {aiRecommendations.map((recommendation) => (
-                  <motion.div
-                    key={recommendation.id}
-                    whileHover={{ scale: 1.02 }}
-                    className={`relative p-4 rounded-2xl border-2 transition-all duration-300 cursor-pointer ${getPriorityColor(recommendation.priority)}`}
-                  >
-                    {/* Priority Badge */}
-                    <div className="absolute top-2 right-2">
-                      <span className={`text-xs font-bold px-2 py-1 rounded-full ${
-                        recommendation.priority === 'high' ? 'bg-red-500 text-white' :
-                        recommendation.priority === 'medium' ? 'bg-yellow-500 text-white' :
-                        'bg-green-500 text-white'
-                      }`}>
-                        {recommendation.priority.toUpperCase()}
-                      </span>
-                    </div>
-
-                    {/* Content */}
-                    <div className="pr-16">
-                      <div className="flex items-center mb-2">
-                        <span className="text-2xl mr-3">{recommendation.icon}</span>
-                        <h4 className="font-bold text-gray-800 text-sm">{recommendation.title}</h4>
-                      </div>
-                      <p className="text-xs text-gray-600 leading-relaxed mb-3">
-                        {recommendation.description}
-                      </p>
-
-                      {/* Confidence Bar */}
-                      <div className="mb-2">
-                        <div className="flex justify-between text-xs text-gray-600 mb-1">
-                          <span>Confidence</span>
-                          <span>{recommendation.confidence}%</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                          <motion.div
-                            className="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full"
-                            initial={{ width: 0 }}
-                            animate={{ width: `${recommendation.confidence}%` }}
-                            transition={{ duration: 1, delay: 0.2 }}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Action Button */}
-                      <button
-                        className="w-full mt-3 py-2 px-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-semibold rounded-xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5"
-                      >
-                        Apply Recommendation
-                      </button>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-
-              {/* AI Insights Summary */}
-              <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl border border-blue-200">
-                <div className="flex items-center mb-2">
-                  <span className="text-lg mr-2">🤖</span>
-                  <h4 className="font-bold text-gray-800 text-sm">AI System Status</h4>
-                </div>
-                <div className="grid grid-cols-2 gap-4 text-xs">
-                  <div className="text-center">
-                    <p className="text-gray-600">Models Active</p>
-                    <p className="font-bold text-blue-600">7/8</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-gray-600">Accuracy</p>
-                    <p className="font-bold text-green-600">94.2%</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-gray-600">Data Points</p>
-                    <p className="font-bold text-purple-600">2.1M</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-gray-600">Predictions</p>
-                    <p className="font-bold text-orange-600">Real-time</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
         </div>
       </div>
     </Layout>

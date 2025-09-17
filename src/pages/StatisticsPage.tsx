@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ScatterChart, Scatter, ComposedChart, Legend } from 'recharts';
 import Layout from '../components/layout/Layout';
-import FarmMap from '../components/common/FarmMap';
 import { motion } from 'framer-motion';
 
 const StatisticsPage: React.FC = () => {
@@ -363,76 +362,6 @@ const StatisticsPage: React.FC = () => {
               </div>
             </motion.section>
 
-            {/* Farm Location Analysis */}
-            <motion.section
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
-              className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6"
-            >
-              <h2 className="text-xl font-bold text-gray-800 mb-6">Farm Location & Sensor Distribution</h2>
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2">
-                  <FarmMap className="h-80" />
-                </div>
-                <div className="space-y-4">
-                  <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-100 rounded-2xl">
-                    <h4 className="font-bold text-gray-800 mb-3">Sensor Coverage</h4>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Climate Sensors</span>
-                        <span className="font-semibold text-green-600">8 active</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Soil Sensors</span>
-                        <span className="font-semibold text-blue-600">12 active</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Camera Systems</span>
-                        <span className="font-semibold text-purple-600">4 active</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Irrigation Points</span>
-                        <span className="font-semibold text-orange-600">6 active</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl">
-                    <h4 className="font-bold text-gray-800 mb-3">Coverage Analytics</h4>
-                    <div className="space-y-3">
-                      <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span className="text-gray-600">Area Coverage</span>
-                          <span className="font-semibold text-blue-600">94%</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div className="h-full bg-blue-500 rounded-full" style={{ width: '94%' }}></div>
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span className="text-gray-600">Signal Strength</span>
-                          <span className="font-semibold text-green-600">89%</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div className="h-full bg-green-500 rounded-full" style={{ width: '89%' }}></div>
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span className="text-gray-600">Data Accuracy</span>
-                          <span className="font-semibold text-purple-600">97%</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div className="h-full bg-purple-500 rounded-full" style={{ width: '97%' }}></div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.section>
 
             {/* Cost Analysis Section */}
             <motion.section

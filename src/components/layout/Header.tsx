@@ -20,18 +20,6 @@ const Header: React.FC = () => {
         </div>
 
         <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
-            <div className="h-8 w-8 bg-horti-green-100 rounded-full flex items-center justify-center">
-              <span className="text-horti-green-600 font-medium text-sm">
-                {user?.name?.charAt(0) || user?.email?.charAt(0)}
-              </span>
-            </div>
-            <div>
-              <div className="text-sm font-medium text-gray-900">{user?.name || user?.email}</div>
-              <div className="text-xs text-gray-500 capitalize">{user?.role}</div>
-            </div>
-          </div>
-
           <button
             onClick={logout}
             className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-horti-green-500 transition-colors duration-200"
