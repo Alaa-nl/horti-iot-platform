@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, RadialBarChart, RadialBar } from 'recharts';
+import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import Layout from '../components/layout/Layout';
 import RealMap from '../components/common/RealMap';
 import { motion } from 'framer-motion';
 // Use KNMI weather service for Netherlands-specific data
-import { fetchKNMIWeatherByCoordinates, KNMIWeatherData } from '../services/knmiWeatherService';
+import { fetchKNMIWeatherByCoordinates } from '../services/knmiWeatherService';
 import { greenhouseService } from '../services/greenhouseService';
-import { Greenhouse, GREENHOUSES } from '../types/greenhouse';
+import { Greenhouse } from '../types/greenhouse';
 import GreenhouseSelector from '../components/greenhouse/GreenhouseSelector';
 
 // Data interfaces
@@ -38,25 +38,39 @@ interface WeatherData {
   }>;
 }
 
-interface SensorData {
-  temperature: { value: number; status: 'normal' | 'warning' | 'critical'; sensors: number };
-  workflow: { value: number; status: 'normal' | 'warning' | 'critical'; sensors: number };
-  moisture: { value: number; status: 'normal' | 'warning' | 'critical'; sensors: number };
-  windSpeed: { value: number; status: 'normal' | 'warning' | 'critical'; sensors: number };
-  humidity: { value: number; status: 'normal' | 'warning' | 'critical'; sensors: number };
-  smoke: { value: number; status: 'normal' | 'warning' | 'critical'; sensors: number };
+
+
+interface HeadThicknessPrediction {
+  current: number;
+  unit: string;
+  forecast: Array<{
+    date: string;
+    day: string;
+    predicted: number;
+    confidence: number;
+    trend: 'up' | 'down' | 'stable';
+  }>;
+  lastUpdated: string;
 }
 
-interface DetectorData {
-  moisture: number;
-  waterConsumption: {
-    current: number;
-    previous: number;
-  };
+interface SapFlowPrediction {
+  current: number;
+  unit: string;
+  predictions: Array<{
+    time: string;
+    predicted: number;
+    actual?: number;
+  }>;
+  nextUpdate: number; // seconds until next update
+  accuracy: number;
+  lastUpdated: string;
 }
 
 
 const ResearcherDashboard: React.FC = () => {
+  // Sidebar state (starts closed)
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   // Greenhouse state
   const [selectedGreenhouse, setSelectedGreenhouse] = useState<Greenhouse | null>(null);
   const [greenhouses, setGreenhouses] = useState<Greenhouse[]>([]);
@@ -87,28 +101,93 @@ const ResearcherDashboard: React.FC = () => {
   const [weatherLoading, setWeatherLoading] = useState(true);
   const [weatherError, setWeatherError] = useState<string | null>(null);
 
-  // Sensor data with real-time updates
-  const [sensorData, setSensorData] = useState<SensorData>({
-    temperature: { value: 22, status: 'normal', sensors: 5 },
-    workflow: { value: 5, status: 'warning', sensors: 3 },
-    moisture: { value: 36, status: 'critical', sensors: 8 },
-    windSpeed: { value: 1, status: 'normal', sensors: 2 },
-    humidity: { value: 1, status: 'normal', sensors: 4 },
-    smoke: { value: 38, status: 'critical', sensors: 6 }
+
+
+
+  // ML Predictions State
+  const [headThickness, setHeadThickness] = useState<HeadThicknessPrediction>({
+    current: 12.5,
+    unit: 'cm',
+    forecast: [
+      { date: '2025-09-23', day: 'Tomorrow', predicted: 13.2, confidence: 92, trend: 'up' },
+      { date: '2025-09-24', day: 'Thu', predicted: 14.1, confidence: 87, trend: 'up' },
+      { date: '2025-09-25', day: 'Fri', predicted: 14.8, confidence: 82, trend: 'stable' }
+    ],
+    lastUpdated: new Date().toLocaleTimeString()
   });
 
-  // Detector data
-  const [detectorData, setDetectorData] = useState<DetectorData>({
-    moisture: 56,
-    waterConsumption: {
-      current: 2340,
-      previous: 2810
+  const [sapFlow, setSapFlow] = useState<SapFlowPrediction>({
+    current: 45.2,
+    unit: 'g/h',
+    predictions: [],
+    nextUpdate: 300,
+    accuracy: 94.5,
+    lastUpdated: new Date().toLocaleTimeString()
+  });
+
+
+  // Initialize sap flow predictions
+  useEffect(() => {
+    // Generate initial 30-minute predictions
+    const now = new Date();
+    const predictions: Array<{time: string; predicted: number; actual?: number}> = [];
+    for (let i = 0; i < 30; i++) {
+      const time = new Date(now.getTime() + i * 60000);
+      const base = 45 + Math.sin(i / 5) * 10;
+      predictions.push({
+        time: time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        predicted: Math.round((base + Math.random() * 5) * 10) / 10,
+        actual: i < 10 ? Math.round((base + Math.random() * 3) * 10) / 10 : undefined
+      });
     }
-  });
+    setSapFlow(prev => ({ ...prev, predictions }));
 
+    // Update sap flow every 5 seconds for demo (would be 5 minutes in production)
+    const sapFlowInterval = setInterval(() => {
+      setSapFlow(prev => {
+        const now = new Date();
+        const newPredictions = [...prev.predictions.slice(1)];
+        const lastValue = newPredictions[newPredictions.length - 1]?.predicted || 45;
+        newPredictions.push({
+          time: new Date(now.getTime() + 29 * 60000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          predicted: Math.round((lastValue + (Math.random() - 0.5) * 3) * 10) / 10
+        });
 
-  // Crop yield data for pie chart (dynamically calculated)
-  const [yieldData, setYieldData] = useState<Array<{name: string, value: number, fill: string}>>([]);
+        // Update actuals
+        const updatedPredictions = newPredictions.map((pred, idx) => {
+          if (idx < 10 && !pred.actual) {
+            return {
+              ...pred,
+              actual: Math.round((pred.predicted + (Math.random() - 0.5) * 2) * 10) / 10
+            };
+          }
+          return pred;
+        });
+
+        return {
+          ...prev,
+          current: updatedPredictions[0]?.actual || updatedPredictions[0]?.predicted || 45,
+          predictions: updatedPredictions,
+          lastUpdated: new Date().toLocaleTimeString(),
+          nextUpdate: 300
+        };
+      });
+    }, 5000);
+
+    // Update head thickness daily (simulated with faster interval for demo)
+    const headThicknessInterval = setInterval(() => {
+      setHeadThickness(prev => ({
+        ...prev,
+        current: Math.round((prev.current + (Math.random() - 0.3) * 0.5) * 10) / 10,
+        lastUpdated: new Date().toLocaleTimeString()
+      }));
+    }, 30000);
+
+    return () => {
+      clearInterval(sapFlowInterval);
+      clearInterval(headThicknessInterval);
+    };
+  }, []);
 
   // Initialize greenhouses on mount
   useEffect(() => {
@@ -164,78 +243,7 @@ const ResearcherDashboard: React.FC = () => {
         previousYield: selectedGreenhouse.performance.previousYield
       });
 
-      // Update sensor data from greenhouse
-      const sensorStatus = (value: number, optimal: {min: number, max: number}) => {
-        if (value < optimal.min || value > optimal.max) return 'critical' as const;
-        if (value < optimal.min + 5 || value > optimal.max - 5) return 'warning' as const;
-        return 'normal' as const;
-      };
 
-      setSensorData({
-        temperature: {
-          value: selectedGreenhouse.sensors.temperature,
-          status: sensorStatus(selectedGreenhouse.sensors.temperature, {min: 20, max: 26}),
-          sensors: 5
-        },
-        workflow: {
-          value: 5,
-          status: 'normal',
-          sensors: 3
-        },
-        moisture: {
-          value: selectedGreenhouse.sensors.moisture,
-          status: sensorStatus(selectedGreenhouse.sensors.moisture, {min: 35, max: 55}),
-          sensors: 8
-        },
-        windSpeed: {
-          value: 2,
-          status: 'normal',
-          sensors: 2
-        },
-        humidity: {
-          value: selectedGreenhouse.sensors.humidity,
-          status: sensorStatus(selectedGreenhouse.sensors.humidity, {min: 50, max: 70}),
-          sensors: 4
-        },
-        smoke: {
-          value: selectedGreenhouse.sensors.co2 > 1000 ? 60 : 30,
-          status: selectedGreenhouse.sensors.co2 > 1000 ? 'warning' : 'normal',
-          sensors: 6
-        }
-      });
-
-      // Update detector data
-      setDetectorData({
-        moisture: selectedGreenhouse.sensors.moisture,
-        waterConsumption: {
-          current: selectedGreenhouse.performance.waterUsage,
-          previous: Math.round(selectedGreenhouse.performance.waterUsage * 1.2)
-        }
-      });
-
-      // Calculate crop yield distribution
-      const totalArea = selectedGreenhouse.crops.reduce((sum, crop) => sum + crop.area, 0);
-      const cropColors: {[key: string]: string} = {
-        'Tomatoes': '#EF4444',
-        'Lettuce': '#10B981',
-        'Peppers': '#F59E0B',
-        'Cucumbers': '#3B82F6',
-        'Strawberries': '#EC4899',
-        'Herbs': '#8B5CF6',
-        'Eggplant': '#6366F1',
-        'Zucchini': '#14B8A6',
-        'Microgreens': '#84CC16',
-        'Cherry Tomatoes': '#F97316',
-        'Leafy Greens': '#22C55E'
-      };
-
-      const yields = selectedGreenhouse.crops.map(crop => ({
-        name: crop.name,
-        value: Math.round((crop.area / totalArea) * 100 * 10) / 10,
-        fill: cropColors[crop.name] || '#6B7280'
-      }));
-
-      setYieldData(yields);
     }
   }, [selectedGreenhouse]);
 
@@ -293,23 +301,6 @@ const ResearcherDashboard: React.FC = () => {
   }, [selectedGreenhouse]);
 
 
-  const getSensorStatusColor = (status: string) => {
-    switch (status) {
-      case 'normal': return 'from-green-500 to-emerald-600';
-      case 'warning': return 'from-yellow-500 to-orange-600';
-      case 'critical': return 'from-red-500 to-pink-600';
-      default: return 'from-gray-500 to-gray-600';
-    }
-  };
-
-  const getSensorStatusBg = (status: string) => {
-    switch (status) {
-      case 'normal': return 'bg-green-50 border-green-200';
-      case 'warning': return 'bg-yellow-50 border-yellow-200';
-      case 'critical': return 'bg-red-50 border-red-200';
-      default: return 'bg-gray-50 border-gray-200';
-    }
-  };
 
   const getWeatherIcon = (condition: string) => {
     switch (condition.toLowerCase()) {
@@ -326,127 +317,149 @@ const ResearcherDashboard: React.FC = () => {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 p-6">
+      {/* Professional Left Sidebar */}
+      <motion.div
+        initial={false}
+        animate={{
+          x: sidebarOpen ? 0 : '-100%'
+        }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        className="fixed left-0 top-0 h-full w-80 bg-white shadow-2xl z-50 overflow-y-auto"
+        onMouseEnter={() => setSidebarOpen(true)}
+        onMouseLeave={() => setSidebarOpen(false)}
+      >
 
-        {/* Greenhouse Selector at the top */}
-        <div className="max-w-7xl mx-auto mb-6">
-          <GreenhouseSelector
-            greenhouses={greenhouses}
-            selectedGreenhouse={selectedGreenhouse}
-            onSelect={handleGreenhouseSelect}
-            loading={greenhouseLoading}
-          />
+        {/* Researcher Profile */}
+        <div className="p-4">
+          <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-200">
+            <div className="flex items-center mb-3">
+              <div className="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center text-white font-bold text-lg mr-3">
+                R
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-gray-800">Dr. Sarah Johnson</h3>
+                <p className="text-xs text-gray-600">Senior Researcher</p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Main Grid Layout */}
-        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 max-w-7xl mx-auto">
+        {/* Account Menu */}
+        <div className="p-4">
+          <div className="space-y-2">
+            <button className="w-full flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors">
+              <span className="text-sm font-medium text-gray-700">👤 My Account</span>
+              <span className="text-blue-600">→</span>
+            </button>
+          </div>
+        </div>
 
-          {/* Left Column - Farm Details */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="xl:col-span-1 space-y-6"
-          >
-            {/* Farm Details Card */}
-            <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 backdrop-blur-sm">
-              <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
-                Farm Details
-              </h3>
-              <div className="space-y-4">
-                <div className="border-l-4 border-blue-500 pl-4">
-                  <p className="text-xs text-gray-500 font-medium">Farm Name</p>
-                  <p className="text-sm font-bold text-gray-800">{farmDetails.farmName}</p>
-                </div>
-                <div className="border-l-4 border-purple-500 pl-4">
-                  <p className="text-xs text-gray-500 font-medium">Farm ID</p>
-                  <p className="text-sm font-bold text-gray-800">{farmDetails.farmId}</p>
-                </div>
-                <div className="border-l-4 border-green-500 pl-4">
-                  <p className="text-xs text-gray-500 font-medium">Location</p>
-                  <p className="text-sm font-bold text-gray-800">{farmDetails.location}</p>
-                </div>
-                <div className="border-l-4 border-yellow-500 pl-4">
-                  <p className="text-xs text-gray-500 font-medium">Land Area</p>
-                  <p className="text-sm font-bold text-gray-800">{farmDetails.landArea} m²</p>
-                </div>
-                <div className="border-l-4 border-red-500 pl-4">
-                  <p className="text-xs text-gray-500 font-medium">Number of crops grown</p>
-                  <p className="text-sm font-bold text-gray-800">{farmDetails.cropsGrown}</p>
-                </div>
-                <div className="border-l-4 border-indigo-500 pl-4">
-                  <p className="text-xs text-gray-500 font-medium">Previous Crop yield</p>
-                  <p className="text-sm font-bold text-gray-800">{farmDetails.previousYield} kg/m²</p>
-                </div>
-              </div>
+        {/* Greenhouse Information */}
+        <div className="p-4 flex-1">
+          <h3 className="text-sm font-semibold text-gray-800 mb-3">Greenhouse Information</h3>
+          <div className="space-y-3">
+            <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+              <p className="text-xs text-gray-500 font-medium mb-1">Location:</p>
+              <p className="text-sm font-bold text-gray-800">
+                {selectedGreenhouse ? `${selectedGreenhouse.location.city}, ${selectedGreenhouse.location.region}` : 'No greenhouse selected'}
+              </p>
             </div>
+            <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+              <p className="text-xs text-gray-500 font-medium mb-1">Farm ID:</p>
+              <p className="text-sm font-bold text-gray-800">
+                {selectedGreenhouse ? selectedGreenhouse.id : 'N/A'}
+              </p>
+            </div>
+          </div>
+        </div>
 
-            {/* Moisture Detector Card */}
-            <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-gray-800">Moisture Detector</h3>
-                <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                  <div className="w-3 h-3 bg-white rounded-full"></div>
-                </div>
+        {/* Logout Button - At Bottom */}
+        <div className="p-4 border-t border-gray-200">
+          <button
+            onClick={() => {
+              if (window.confirm('Are you sure you want to logout?')) {
+                // Clear any stored data
+                localStorage.clear();
+                sessionStorage.clear();
+                // Redirect to login or home page
+                window.location.href = '/';
+              }
+            }}
+            className="w-full flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200 hover:bg-red-100 transition-colors"
+          >
+            <span className="text-sm font-medium text-gray-700">🚪 Logout</span>
+            <span className="text-red-600">→</span>
+          </button>
+        </div>
+      </motion.div>
+
+      {/* Sidebar Trigger Area */}
+      <div
+        className="fixed left-0 top-0 w-1 h-full z-40 cursor-pointer"
+        onMouseEnter={() => setSidebarOpen(true)}
+      ></div>
+
+      {/* Overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/20 z-40"
+          onClick={() => setSidebarOpen(false)}
+        ></div>
+      )}
+
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-green-50 p-4">
+
+        {/* Top Section - Greenhouse Selector with Farm Details and Weather */}
+        <div className="max-w-full mx-auto mb-8 px-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Left: Greenhouse Selector merged with Farm Details */}
+            <div className="bg-white rounded-3xl shadow-xl border border-emerald-100 p-8 hover:shadow-2xl transition-all duration-300 hover:border-emerald-200">
+              <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                <span className="w-3 h-3 bg-emerald-500 rounded-full mr-3 animate-pulse"></span>
+                🏡 Greenhouse Control Panel
+              </h2>
+
+              {/* Greenhouse Selector */}
+              <div className="mb-6">
+                <GreenhouseSelector
+                  greenhouses={greenhouses}
+                  selectedGreenhouse={selectedGreenhouse}
+                  onSelect={handleGreenhouseSelect}
+                  loading={greenhouseLoading}
+                />
               </div>
 
-              {/* Moisture Level Circle */}
-              <div className="relative mb-6">
-                <ResponsiveContainer width="100%" height={200}>
-                  <PieChart>
-                    <Pie
-                      data={[
-                        { value: detectorData.moisture, fill: '#3B82F6' },
-                        { value: 100 - detectorData.moisture, fill: '#E5E7EB' }
-                      ]}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={80}
-                      startAngle={90}
-                      endAngle={450}
-                      dataKey="value"
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-blue-600">{detectorData.moisture}%</div>
-                    <div className="text-sm text-gray-600">Moisture</div>
+              {/* Farm Details Grid */}
+              {selectedGreenhouse && (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                  <div className="bg-emerald-50 rounded-2xl p-4 border border-emerald-200 hover:bg-emerald-100 transition-colors duration-200">
+                    <p className="text-xs text-gray-500 font-medium">Farm ID</p>
+                    <p className="text-sm font-bold text-gray-800 truncate">{farmDetails.farmId}</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                    <p className="text-xs text-gray-500 font-medium">Location</p>
+                    <p className="text-sm font-bold text-gray-800 truncate">{farmDetails.location}</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                    <p className="text-xs text-gray-500 font-medium">Land Area</p>
+                    <p className="text-sm font-bold text-gray-800">{farmDetails.landArea} m²</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                    <p className="text-xs text-gray-500 font-medium">Crops</p>
+                    <p className="text-sm font-bold text-gray-800">{farmDetails.cropsGrown} types</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                    <p className="text-xs text-gray-500 font-medium">Previous Yield</p>
+                    <p className="text-sm font-bold text-gray-800">{farmDetails.previousYield} kg/m²</p>
                   </div>
                 </div>
-              </div>
-
-              {/* Water Consumption */}
-              <div className="space-y-3">
-                <h4 className="font-semibold text-gray-700">Water Consumed (Previous vs Current)</h4>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Previous</span>
-                  <span className="font-bold text-gray-800">{detectorData.waterConsumption.previous} liters</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Current</span>
-                  <span className="font-bold text-green-600">{detectorData.waterConsumption.current} liters</span>
-                </div>
-                <div className="mt-2 p-2 bg-green-50 rounded-lg">
-                  <p className="text-xs text-green-700 text-center">
-                    Saved: {detectorData.waterConsumption.previous - detectorData.waterConsumption.current} liters
-                  </p>
-                </div>
-              </div>
+              )}
             </div>
-          </motion.div>
 
-          {/* Middle Column - Weather and Sensors */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="xl:col-span-2 space-y-6"
-          >
-            {/* Weather Card */}
-            <div className="bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700 rounded-3xl shadow-2xl p-6 text-white relative">
+            {/* Right: Weather Card */}
+            <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 rounded-3xl shadow-xl p-8 text-white relative overflow-hidden hover:shadow-2xl transition-all duration-300 backdrop-blur-sm">
               {weatherLoading && (
-                <div className="absolute inset-0 bg-blue-900/50 backdrop-blur-sm rounded-3xl flex items-center justify-center z-10">
+                <div className="absolute inset-0 bg-blue-900/50 backdrop-blur-sm rounded-2xl flex items-center justify-center z-10">
                   <div className="text-white text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-2"></div>
                     <p className="text-sm">Loading weather...</p>
@@ -458,50 +471,41 @@ const ResearcherDashboard: React.FC = () => {
                   ⚠️ Using fallback data
                 </div>
               )}
-              <div className="absolute top-2 right-2 flex items-center bg-blue-400/20 backdrop-blur-sm px-2 py-1 rounded-full">
-                <img src="https://cdn.knmi.nl/assets/logo-82cc91c2a3.svg" alt="KNMI" className="h-3 mr-1" />
-                <span className="text-xs text-white font-medium">KNMI Data</span>
-              </div>
-              <div className="flex justify-between items-start mb-6">
+
+              <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h3 className="text-2xl font-bold mb-1">Today's Weather</h3>
-                  <p className="text-blue-100 text-sm">{weatherData.today.condition}</p>
-                  <p className="text-blue-200 text-xs mt-1">
+                  <h3 className="text-xl font-bold mb-1">Today's Weather</h3>
+                  <p className="text-white/80 text-sm">{weatherData.today.condition}</p>
+                  <p className="text-white/70 text-xs mt-1">
                     {selectedGreenhouse?.location.city || 'Loading...'}
                   </p>
                   {knmiStation && (
-                    <p className="text-blue-200 text-xs">Station: {knmiStation}</p>
-                  )}
-                  {weatherData.today.sunrise && weatherData.today.sunset && (
-                    <div className="mt-2 text-xs text-blue-200">
-                      <span className="mr-3">☀️ {weatherData.today.sunrise}</span>
-                      <span>🌙 {weatherData.today.sunset}</span>
-                    </div>
+                    <p className="text-white/70 text-xs">Station: {knmiStation}</p>
                   )}
                 </div>
                 <div className="text-right">
-                  <div className="text-5xl font-light">{weatherData.today.temp}°C</div>
+                  <div className="text-4xl font-light">{weatherData.today.temp}°C</div>
                   {weatherData.today.feelsLike && (
-                    <p className="text-xs text-blue-200 mt-1">Feels like {weatherData.today.feelsLike}°C</p>
+                    <p className="text-xs text-white/70 mt-1">Feels like {weatherData.today.feelsLike}°C</p>
                   )}
-                  <div className="flex items-center mt-2 text-blue-100">
-                    <span className="text-2xl mr-2">{getWeatherIcon(weatherData.today.condition)}</span>
+                  <div className="flex items-center justify-end mt-2">
+                    <span className="text-4xl">{getWeatherIcon(weatherData.today.condition)}</span>
                   </div>
                 </div>
               </div>
 
               {/* Weather Stats */}
-              <div className="grid grid-cols-3 gap-4 mb-6">
-                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 text-center">
-                  <p className="text-xs text-blue-100 mb-1">Humidity</p>
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 text-center hover:bg-white/30 transition-colors duration-200 border border-white/10">
+                  <p className="text-xs text-white/70 mb-1">💧 Humidity</p>
                   <p className="text-lg font-bold">{weatherData.today.humidity}%</p>
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 text-center">
-                  <p className="text-xs text-blue-100 mb-1">Wind Speed</p>
+                <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 text-center hover:bg-white/30 transition-colors duration-200 border border-white/10">
+                  <p className="text-xs text-white/70 mb-1">💨 Wind</p>
                   <p className="text-lg font-bold">{weatherData.today.windSpeed} m/s</p>
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 text-center">
-                  <p className="text-xs text-blue-100 mb-1">{weatherData.today.pressure ? 'Pressure' : 'Rain Chance'}</p>
+                <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 text-center hover:bg-white/30 transition-colors duration-200 border border-white/10">
+                  <p className="text-xs text-white/70 mb-1">{weatherData.today.pressure ? '🌡️ Pressure' : '🌧️ Rain'}</p>
                   <p className="text-lg font-bold">
                     {weatherData.today.pressure ? `${weatherData.today.pressure} hPa` : `${weatherData.today.rainProbability}%`}
                   </p>
@@ -512,128 +516,265 @@ const ResearcherDashboard: React.FC = () => {
               <div className="grid grid-cols-4 gap-2">
                 {weatherData.forecast.length > 0 ? (
                   weatherData.forecast.map((day, index) => (
-                    <div key={index} className="text-center p-3 bg-white/10 backdrop-blur-sm rounded-2xl">
-                      <p className="text-xs text-blue-100 mb-1">{day.day}</p>
-                      <div className="text-lg mb-1">{getWeatherIcon(day.condition)}</div>
+                    <div key={index} className="text-center p-3 bg-white/15 backdrop-blur-sm rounded-xl border border-white/10 hover:bg-white/20 transition-colors">
+                      <p className="text-xs text-white/70 mb-1">{day.day}</p>
+                      <div className="text-2xl mb-1">{getWeatherIcon(day.condition)}</div>
                       <p className="font-bold text-sm">{day.temp}°C</p>
                     </div>
                   ))
                 ) : (
-                  <div className="col-span-4 text-center text-blue-200 text-sm">
+                  <div className="col-span-4 text-center text-white/70 text-sm">
                     {weatherLoading ? 'Loading forecast...' : 'No forecast available'}
                   </div>
                 )}
               </div>
-            </div>
 
-            {/* Sensor Grid */}
-            <div className="grid grid-cols-3 gap-4">
-              {Object.entries(sensorData).map(([key, sensor]) => (
-                <motion.div
-                  key={key}
-                  whileHover={{ scale: 1.02 }}
-                  className={`relative overflow-hidden rounded-2xl border-2 shadow-lg transition-all duration-300 ${getSensorStatusBg(sensor.status)}`}
-                >
-                  <div className="p-4">
-                    {/* Status Indicator */}
-                    <div className="absolute top-2 right-2">
-                      <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${getSensorStatusColor(sensor.status)} shadow-lg`}></div>
-                    </div>
-
-                    {/* Sensor Count Badge */}
-                    <div className="absolute top-2 left-2">
-                      <span className="bg-white/80 backdrop-blur-sm text-xs font-bold px-2 py-1 rounded-full shadow-sm">
-                        {sensor.sensors}
-                      </span>
-                    </div>
-
-                    {/* Value */}
-                    <div className="text-center mt-4">
-                      <div className={`text-4xl font-bold bg-gradient-to-r ${getSensorStatusColor(sensor.status)} bg-clip-text text-transparent`}>
-                        {sensor.value}
-                      </div>
-                      <p className="text-sm font-medium text-gray-700 capitalize mt-2">
-                        {key.replace(/([A-Z])/g, ' $1')} sensor
-                      </p>
-                    </div>
-
-                    {/* Animated Background Element */}
-                    <div className={`absolute -bottom-2 -right-2 w-16 h-16 bg-gradient-to-r ${getSensorStatusColor(sensor.status)} opacity-10 rounded-full`}></div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-
-            {/* Real Map */}
-            <div className="h-96">
-              {selectedGreenhouse ? (
-                <RealMap
-                  center={{
-                    lat: selectedGreenhouse.location.coordinates.lat,
-                    lng: selectedGreenhouse.location.coordinates.lon
-                  }}
-                  zoom={16}
-                  className="h-full"
-                  markers={[
-                    {
-                      id: selectedGreenhouse.id,
-                      lat: selectedGreenhouse.location.coordinates.lat,
-                      lng: selectedGreenhouse.location.coordinates.lon,
-                      title: selectedGreenhouse.name,
-                      type: 'greenhouse',
-                      status: 'active',
-                      description: `${selectedGreenhouse.details.landArea}m² ${selectedGreenhouse.details.type} greenhouse with ${selectedGreenhouse.crops.length} crop types.`
-                    }
-                  ]}
-                />
-              ) : (
-                <div className="h-full bg-gray-100 rounded-3xl flex items-center justify-center">
-                  <p className="text-gray-500">Select a greenhouse to view map</p>
+              {weatherData.today.sunrise && weatherData.today.sunset && (
+                <div className="mt-4 pt-4 border-t border-white/20 flex justify-center gap-6 text-sm text-white/80">
+                  <span className="bg-white/10 px-3 py-1 rounded-full">☀️ {weatherData.today.sunrise}</span>
+                  <span className="bg-white/10 px-3 py-1 rounded-full">🌙 {weatherData.today.sunset}</span>
                 </div>
               )}
             </div>
+          </div>
+        </div>
 
-            {/* Crop Yield Pie Chart */}
-            <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6">
-              <h3 className="text-lg font-bold text-gray-800 mb-4">Crop Yield Distribution</h3>
-              <div className="flex items-center">
-                <div className="w-1/2">
-                  <ResponsiveContainer width="100%" height={200}>
-                    <PieChart>
-                      <Pie
-                        data={yieldData}
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={80}
-                        paddingAngle={2}
-                        dataKey="value"
-                      >
-                        {yieldData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.fill} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
+        {/* Modern Horizontal Layout - 12 Column Grid System */}
+        <div className="max-w-full mx-auto px-4">
+          {/* Main Content Grid */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="grid grid-cols-1 lg:grid-cols-12 gap-6"
+          >
+            {/* ML Predictions and Map Section - Full width */}
+            <div className="col-span-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Head Thickness Prediction Panel */}
+              <div className="bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-gray-100 p-4 hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)] transition-all duration-300">
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-lg font-semibold text-gray-900">Head Thickness</h3>
+                    <div className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-medium">
+                      AI Prediction
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-600">89% accuracy</p>
+                </div>
+
+                {/* Current Value Display */}
+                <div className="bg-emerald-50 rounded-lg p-4 mb-4">
+                  <div className="flex items-baseline justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600 mb-1">Current Measurement</p>
+                      <div className="flex items-baseline">
+                        <span className="text-2xl font-bold text-emerald-700">{headThickness.current}</span>
+                        <span className="text-sm text-emerald-600 ml-1">{headThickness.unit}</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-gray-500">Last Updated</p>
+                      <p className="text-xs font-medium text-gray-700">{headThickness.lastUpdated}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3-Day Forecast Chart */}
+                <div className="mb-4">
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">3-Day Forecast</h4>
+                  <ResponsiveContainer width="100%" height={140}>
+                    <AreaChart data={headThickness.forecast}>
+                      <defs>
+                        <linearGradient id="headThicknessGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#10B981" stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor="#10B981" stopOpacity={0.1}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                      <XAxis dataKey="day" tick={{ fontSize: 12 }} stroke="#6B7280" />
+                      <YAxis tick={{ fontSize: 12 }} stroke="#6B7280" domain={['dataMin - 1', 'dataMax + 1']} />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '8px' }}
+                        labelStyle={{ color: '#111827', fontWeight: 'bold' }}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="predicted"
+                        stroke="#10B981"
+                        strokeWidth={2}
+                        fill="url(#headThicknessGradient)"
+                      />
+                    </AreaChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="w-1/2 space-y-3">
-                  {yieldData.map((item, index) => (
-                    <div key={index} className="flex items-center">
-                      <div
-                        className="w-4 h-4 rounded-full mr-3 shadow-sm"
-                        style={{ backgroundColor: item.fill }}
-                      ></div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-700">{item.name}</p>
-                        <p className="text-lg font-bold text-gray-800">{item.value}%</p>
+
+                {/* Daily Predictions */}
+                <div className="space-y-2">
+                  {headThickness.forecast.map((day, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                      <div className="flex items-center">
+                        <div className={`w-2 h-8 rounded-full mr-3 ${
+                          day.trend === 'up' ? 'bg-green-500' :
+                          day.trend === 'down' ? 'bg-red-500' : 'bg-yellow-500'
+                        }`}></div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-800">{day.day}</p>
+                          <p className="text-xs text-gray-500">{day.date}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-bold text-gray-800">{day.predicted} {headThickness.unit}</p>
+                        <p className="text-xs text-gray-500">Confidence: {day.confidence}%</p>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
-            </div>
-          </motion.div>
 
+              {/* Sap Flow Prediction Panel */}
+              <div className="bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-gray-100 p-4 hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)] transition-all duration-300">
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-lg font-semibold text-gray-900">Sap Flow</h3>
+                    <div className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium">
+                      Real-Time
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-600">Updates every 5 minutes</p>
+                </div>
+
+                {/* Current Value and Stats */}
+                <div className="bg-green-50 rounded-lg p-4 mb-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-600 mb-1">Current Flow Rate</p>
+                      <div className="flex items-baseline">
+                        <span className="text-2xl font-bold text-green-700">{sapFlow.current}</span>
+                        <span className="text-lg text-green-600 ml-2">{sapFlow.unit}</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-gray-600 mb-1">Model Accuracy</p>
+                      <div className="flex items-center justify-end">
+                        <span className="text-2xl font-bold text-green-700">{sapFlow.accuracy}%</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-green-200">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-600">Last Updated: {sapFlow.lastUpdated}</span>
+                      <span className="text-gray-600">Next Update: {Math.floor(sapFlow.nextUpdate / 60)}m {sapFlow.nextUpdate % 60}s</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 30-Minute Forecast Timeline */}
+                <div className="mb-4">
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">30-Minute Forecast</h4>
+                  <div className="overflow-x-auto">
+                    <ResponsiveContainer width="100%" height={140}>
+                      <LineChart data={sapFlow.predictions.slice(0, 30)}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                        <XAxis
+                          dataKey="time"
+                          tick={{ fontSize: 10 }}
+                          stroke="#6B7280"
+                          interval={4}
+                        />
+                        <YAxis
+                          tick={{ fontSize: 12 }}
+                          stroke="#6B7280"
+                          domain={['dataMin - 5', 'dataMax + 5']}
+                        />
+                        <Tooltip
+                          contentStyle={{ backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '8px' }}
+                          labelStyle={{ color: '#111827', fontWeight: 'bold' }}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="predicted"
+                          stroke="#10B981"
+                          strokeWidth={2}
+                          dot={false}
+                          name="Predicted"
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="actual"
+                          stroke="#3B82F6"
+                          strokeWidth={2}
+                          strokeDasharray="5 5"
+                          dot={false}
+                          name="Actual"
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* Legend and Stats */}
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center">
+                      <div className="w-3 h-0.5 bg-green-500 mr-2"></div>
+                      <span className="text-xs text-gray-600">Predicted</span>
+                    </div>
+                    <div className="flex items-center">
+                      <div className="w-3 h-0.5 bg-blue-500 mr-2" style={{ borderTop: '2px dashed' }}></div>
+                      <span className="text-xs text-gray-600">Actual</span>
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    Scroll for more →
+                  </div>
+                </div>
+              </div>
+
+              {/* Greenhouse Location Map Panel */}
+              <div className="bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-gray-100 p-4 hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)] transition-all duration-300">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Greenhouse Location</h3>
+                  <div className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-medium">
+                    Live Map
+                  </div>
+                </div>
+                <div className="h-96">
+                  {selectedGreenhouse ? (
+                    <RealMap
+                      center={{
+                        lat: selectedGreenhouse.location.coordinates.lat,
+                        lng: selectedGreenhouse.location.coordinates.lon
+                      }}
+                      zoom={16}
+                      className="h-full rounded-lg"
+                      markers={[
+                        {
+                          id: selectedGreenhouse.id,
+                          lat: selectedGreenhouse.location.coordinates.lat,
+                          lng: selectedGreenhouse.location.coordinates.lon,
+                          title: selectedGreenhouse.name,
+                          type: 'greenhouse',
+                          status: 'active',
+                          description: `${selectedGreenhouse.details.landArea}m² ${selectedGreenhouse.details.type} greenhouse with ${selectedGreenhouse.crops.length} crop types.`
+                        }
+                      ]}
+                    />
+                  ) : (
+                    <div className="h-full bg-gray-50 rounded-lg flex items-center justify-center">
+                      <p className="text-gray-500 text-sm">Select a greenhouse to view map</p>
+                    </div>
+                  )}
+                </div>
+                <div className="mt-3 pt-3 border-t border-gray-200">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">📍 {selectedGreenhouse?.location.city || 'N/A'}</span>
+                    <span className="text-gray-600">🌱 {selectedGreenhouse?.crops.length || 0} crops</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+          </motion.div>
         </div>
       </div>
     </Layout>

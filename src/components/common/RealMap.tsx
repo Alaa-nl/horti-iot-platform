@@ -199,31 +199,6 @@ const RealMap: React.FC<RealMapProps> = ({
         ))}
       </MapContainer>
 
-      {/* Legend */}
-      <div className="absolute bottom-4 left-4 z-[1000] bg-white/95 backdrop-blur-sm rounded-2xl p-3 shadow-lg">
-        <h4 className="text-xs font-semibold text-gray-800 mb-2">Map Legend</h4>
-        <div className="space-y-1">
-          <div className="flex items-center text-xs">
-            <span className="text-lg mr-2">🏠</span>
-            <span className="text-gray-600">Greenhouse</span>
-          </div>
-          <div className="flex items-center text-xs">
-            <span className="text-lg mr-2">📡</span>
-            <span className="text-gray-600">Sensors</span>
-          </div>
-          <div className="flex items-center text-xs">
-            <span className="text-lg mr-2">💧</span>
-            <span className="text-gray-600">Irrigation</span>
-          </div>
-          <div className="flex items-center text-xs">
-            <span className="text-lg mr-2">⚠️</span>
-            <span className="text-gray-600">Alerts</span>
-          </div>
-        </div>
-        <div className="mt-2 pt-2 border-t border-gray-200 text-xs text-gray-500">
-          Powered by OpenStreetMap
-        </div>
-      </div>
     </motion.div>
   );
 };
