@@ -1,10 +1,10 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
-import { User, LoginCredentials, AuthResponse } from '../types';
-import { authService } from '../services/auth.service';
+import { LoginCredentials } from '../types';
+import { authService, User as AuthUser } from '../services/authService';
 import { jwtDecode } from 'jwt-decode';
 
 interface AuthState {
-  user: User | null;
+  user: AuthUser | null;
   token: string | null;
   isLoading: boolean;
   error: string | null;
@@ -12,7 +12,7 @@ interface AuthState {
 
 interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   clearError: () => void;
 }
 
@@ -20,7 +20,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 type AuthAction =
   | { type: 'LOGIN_START' }
-  | { type: 'LOGIN_SUCCESS'; payload: { user: User; token: string } }
+  | { type: 'LOGIN_SUCCESS'; payload: { user: AuthUser; token: string } }
   | { type: 'LOGIN_ERROR'; payload: string }
   | { type: 'LOGOUT' }
   | { type: 'CLEAR_ERROR' }
@@ -97,33 +97,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const login = async (credentials: LoginCredentials) => {
     dispatch({ type: 'LOGIN_START' });
     try {
-      // Demo credentials validation
-      const validCredentials = {
-        researcher: { email: 'researcher@demo.com', password: 'demo123' },
-        grower: { email: 'grower@demo.com', password: 'demo123' }
-      };
+      // Use real database authentication
+      const response = await authService.login(credentials);
 
-      const expectedCredentials = validCredentials[credentials.role];
-      
-      if (credentials.email !== expectedCredentials.email || credentials.password !== expectedCredentials.password) {
-        throw new Error('Invalid email or password. Please use the demo credentials provided.');
-      }
-
-      const mockUser: User = {
-        id: credentials.role === 'researcher' ? '1' : '2',
-        email: credentials.email,
-        name: credentials.role === 'researcher' ? 'Researcher' : 'Alaa farmer',
-        role: credentials.role,
-        createdAt: new Date().toISOString(),
-        lastLogin: new Date().toISOString(),
-      };
-
-      const mockToken = 'mock-jwt-token-' + Date.now();
-      
       // Store in localStorage
-      localStorage.setItem('user', JSON.stringify({ user: mockUser, token: mockToken }));
-      
-      dispatch({ type: 'LOGIN_SUCCESS', payload: { user: mockUser, token: mockToken } });
+      localStorage.setItem('user', JSON.stringify({ user: response.user, token: response.token }));
+
+      dispatch({ type: 'LOGIN_SUCCESS', payload: { user: response.user, token: response.token } });
     } catch (error: any) {
       const errorMessage = error.message || 'Login failed';
       dispatch({ type: 'LOGIN_ERROR', payload: errorMessage });
@@ -131,9 +111,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('user');
-    dispatch({ type: 'LOGOUT' });
+  const logout = async () => {
+    try {
+      await authService.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      localStorage.removeItem('user');
+      dispatch({ type: 'LOGOUT' });
+    }
   };
 
   const clearError = () => {

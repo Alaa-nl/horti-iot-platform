@@ -8,6 +8,8 @@ import { fetchKNMIWeatherByCoordinates } from '../services/knmiWeatherService';
 import { greenhouseService } from '../services/greenhouseService';
 import { Greenhouse } from '../types/greenhouse';
 import GreenhouseSelector from '../components/greenhouse/GreenhouseSelector';
+import { useAuth } from '../context/AuthContext';
+import authService from '../services/authService';
 
 // Data interfaces
 interface FarmDetails {
@@ -71,6 +73,9 @@ const ResearcherDashboard: React.FC = () => {
   // Sidebar state (starts closed)
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // Authentication state - get from AuthContext
+  const { user, logout } = useAuth();
+
   // Greenhouse state
   const [selectedGreenhouse, setSelectedGreenhouse] = useState<Greenhouse | null>(null);
   const [greenhouses, setGreenhouses] = useState<Greenhouse[]>([]);
@@ -101,8 +106,17 @@ const ResearcherDashboard: React.FC = () => {
   const [weatherLoading, setWeatherLoading] = useState(true);
   const [weatherError, setWeatherError] = useState<string | null>(null);
 
+  // Detector data state
+  const [detectorData, setDetectorData] = useState<any>({
+    moisture: 0,
+    waterConsumption: {
+      current: 0,
+      previous: 0
+    }
+  });
 
-
+  // Yield data state
+  const [yieldData, setYieldData] = useState<any[]>([]);
 
   // ML Predictions State
   const [headThickness, setHeadThickness] = useState<HeadThicknessPrediction>({
@@ -204,6 +218,8 @@ const ResearcherDashboard: React.FC = () => {
         }
       } catch (error) {
         console.error('Error loading greenhouses:', error);
+        // Log error if database operation fails
+        console.error('Database connection required for greenhouse operations');
       } finally {
         setGreenhouseLoading(false);
       }
@@ -302,6 +318,15 @@ const ResearcherDashboard: React.FC = () => {
 
 
 
+  // Handle logout using AuthContext
+  const handleLogout = async () => {
+    if (window.confirm('Are you sure you want to logout?')) {
+      await logout();
+    }
+  };
+
+
+
   const getWeatherIcon = (condition: string) => {
     switch (condition.toLowerCase()) {
       case 'sunny': return '☀️';
@@ -313,6 +338,7 @@ const ResearcherDashboard: React.FC = () => {
       default: return '☀️';
     }
   };
+
 
 
   return (
@@ -334,11 +360,15 @@ const ResearcherDashboard: React.FC = () => {
           <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-200">
             <div className="flex items-center mb-3">
               <div className="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center text-white font-bold text-lg mr-3">
-                R
+                {user ? user.name.charAt(0).toUpperCase() : 'G'}
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-gray-800">Dr. Sarah Johnson</h3>
-                <p className="text-xs text-gray-600">Senior Researcher</p>
+                <h3 className="text-sm font-semibold text-gray-800">
+                  {user ? user.name : 'Guest User'}
+                </h3>
+                <p className="text-xs text-gray-600">
+                  {user ? (user.role === 'researcher' ? 'Researcher' : 'Grower') : 'Not Authenticated'}
+                </p>
               </div>
             </div>
           </div>
@@ -376,15 +406,7 @@ const ResearcherDashboard: React.FC = () => {
         {/* Logout Button - At Bottom */}
         <div className="p-4 border-t border-gray-200">
           <button
-            onClick={() => {
-              if (window.confirm('Are you sure you want to logout?')) {
-                // Clear any stored data
-                localStorage.clear();
-                sessionStorage.clear();
-                // Redirect to login or home page
-                window.location.href = '/';
-              }
-            }}
+            onClick={handleLogout}
             className="w-full flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200 hover:bg-red-100 transition-colors"
           >
             <span className="text-sm font-medium text-gray-700">🚪 Logout</span>
