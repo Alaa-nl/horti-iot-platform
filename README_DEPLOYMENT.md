@@ -133,3 +133,25 @@ Environment-specific configs for development/production
   docker-compose up -d
 
   The easiest way is npm run dev:all - it handles everything for you!
+
+  1. Start the database and pgAdmin:
+  docker-compose up -d postgres pgadmin
+
+  2. Access pgAdmin at:
+  http://localhost:8080
+
+  3. Login with:
+  - Email: admin@horti-iot.com
+  - Password: admin123
+
+  4. Connect to your database:
+  - Right-click "Servers" → "Register" → "Server"
+  - Name: HORTI-IOT
+  - Connection tab:
+    - Host: postgres (or localhost if running outside Docker)
+    - Port: 5432
+    - Database: horti_iot
+    - Username: horti_user
+    - Password: horti_password
+
+  That's your database web interface on http://localhost:8080!
