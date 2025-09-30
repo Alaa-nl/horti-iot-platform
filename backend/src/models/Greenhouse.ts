@@ -41,8 +41,24 @@ export interface GreenhouseResponse {
       height: number;
     };
   };
-  crops: string[];
-  equipment: string[];
+  crops: {
+    type: string;
+    variety: string;
+    plantingDate: Date | null;
+    supplier: string;
+  };
+  equipment: {
+    climate: {
+      name: string;
+      type: string;
+      status: string;
+    };
+    lighting: {
+      name: string;
+      type: string;
+      status: string;
+    };
+  };
   performance: {
     previousYield: number;
   };

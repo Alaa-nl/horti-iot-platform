@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { motion } from 'framer-motion';
 import Layout from '../components/layout/Layout';
 import RealMap from '../components/common/RealMap';
-import { motion } from 'framer-motion';
 // Use KNMI weather service for Netherlands-specific data
 import { fetchKNMIWeatherByCoordinates } from '../services/knmiWeatherService';
 import { greenhouseService } from '../services/greenhouseService';
@@ -70,8 +70,6 @@ interface SapFlowPrediction {
 
 
 const ResearcherDashboard: React.FC = () => {
-  // Sidebar state (starts closed)
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Authentication state - get from AuthContext
   const { user, logout } = useAuth();
@@ -341,94 +339,40 @@ const ResearcherDashboard: React.FC = () => {
 
 
 
+  const greenhouseContent = (
+    <div>
+      <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Greenhouse Information</h3>
+      <div className="space-y-3">
+        <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-200">
+          <p className="text-xs text-gray-500 font-medium mb-1">Selected Greenhouse:</p>
+          <p className="text-sm font-bold text-gray-800">
+            {selectedGreenhouse ? selectedGreenhouse.name : 'No greenhouse selected'}
+          </p>
+        </div>
+        <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+          <p className="text-xs text-gray-500 font-medium mb-1">Location:</p>
+          <p className="text-sm font-bold text-gray-800">
+            {selectedGreenhouse ? `${selectedGreenhouse.location.city}, ${selectedGreenhouse.location.region}` : 'No greenhouse selected'}
+          </p>
+        </div>
+        <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+          <p className="text-xs text-gray-500 font-medium mb-1">Farm ID:</p>
+          <p className="text-sm font-bold text-gray-800">
+            {selectedGreenhouse ? selectedGreenhouse.id : 'N/A'}
+          </p>
+        </div>
+        {selectedGreenhouse && (
+          <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+            <p className="text-xs text-gray-500 font-medium mb-1">Land Area:</p>
+            <p className="text-sm font-bold text-gray-800">{farmDetails.landArea} m²</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   return (
-    <Layout>
-      {/* Professional Left Sidebar */}
-      <motion.div
-        initial={false}
-        animate={{
-          x: sidebarOpen ? 0 : '-100%'
-        }}
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="fixed left-0 top-0 h-full w-80 bg-white shadow-2xl z-50 overflow-y-auto"
-        onMouseEnter={() => setSidebarOpen(true)}
-        onMouseLeave={() => setSidebarOpen(false)}
-      >
-
-        {/* Researcher Profile */}
-        <div className="p-4">
-          <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-200">
-            <div className="flex items-center mb-3">
-              <div className="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center text-white font-bold text-lg mr-3">
-                {user ? user.name.charAt(0).toUpperCase() : 'G'}
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold text-gray-800">
-                  {user ? user.name : 'Guest User'}
-                </h3>
-                <p className="text-xs text-gray-600">
-                  {user ? (user.role === 'researcher' ? 'Researcher' : 'Grower') : 'Not Authenticated'}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Account Menu */}
-        <div className="p-4">
-          <div className="space-y-2">
-            <button className="w-full flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors">
-              <span className="text-sm font-medium text-gray-700">👤 My Account</span>
-              <span className="text-blue-600">→</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Greenhouse Information */}
-        <div className="p-4 flex-1">
-          <h3 className="text-sm font-semibold text-gray-800 mb-3">Greenhouse Information</h3>
-          <div className="space-y-3">
-            <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-              <p className="text-xs text-gray-500 font-medium mb-1">Location:</p>
-              <p className="text-sm font-bold text-gray-800">
-                {selectedGreenhouse ? `${selectedGreenhouse.location.city}, ${selectedGreenhouse.location.region}` : 'No greenhouse selected'}
-              </p>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-              <p className="text-xs text-gray-500 font-medium mb-1">Farm ID:</p>
-              <p className="text-sm font-bold text-gray-800">
-                {selectedGreenhouse ? selectedGreenhouse.id : 'N/A'}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Logout Button - At Bottom */}
-        <div className="p-4 border-t border-gray-200">
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200 hover:bg-red-100 transition-colors"
-          >
-            <span className="text-sm font-medium text-gray-700">🚪 Logout</span>
-            <span className="text-red-600">→</span>
-          </button>
-        </div>
-      </motion.div>
-
-      {/* Sidebar Trigger Area */}
-      <div
-        className="fixed left-0 top-0 w-1 h-full z-40 cursor-pointer"
-        onMouseEnter={() => setSidebarOpen(true)}
-      ></div>
-
-      {/* Overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/20 z-40"
-          onClick={() => setSidebarOpen(false)}
-        ></div>
-      )}
-
+    <Layout sidebarContent={greenhouseContent}>
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-green-50 p-4">
 
         {/* Top Section - Greenhouse Selector with Farm Details and Weather */}

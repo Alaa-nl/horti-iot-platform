@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { AuthController } from '../controllers/authController';
 import { validateRequest, loginSchema, registerSchema } from '../middleware/validation';
 import { authenticateToken } from '../middleware/auth';
+import { loginRateLimit, generalApiRateLimit, sanitizeRequestBody } from '../middleware/security';
 
 const router = Router();
 const authController = new AuthController();
@@ -11,18 +12,67 @@ const authController = new AuthController();
  * @desc    Authenticate user and return JWT token
  * @access  Public
  */
-router.post('/login', validateRequest(loginSchema), async (req, res) => {
-  await authController.login(req, res);
-});
+router.post('/login',
+  sanitizeRequestBody,
+  loginRateLimit,
+  validateRequest(loginSchema),
+  async (req, res) => {
+    await authController.login(req, res);
+  }
+);
 
 /**
  * @route   POST /api/auth/register
  * @desc    Register a new user
  * @access  Public
  */
-router.post('/register', validateRequest(registerSchema), async (req, res) => {
-  await authController.register(req, res);
-});
+router.post('/register',
+  sanitizeRequestBody,
+  generalApiRateLimit,
+  validateRequest(registerSchema),
+  async (req, res) => {
+    await authController.register(req, res);
+  }
+);
+
+/**
+ * @route   POST /api/auth/refresh
+ * @desc    Refresh access token using refresh token
+ * @access  Public
+ */
+router.post('/refresh',
+  sanitizeRequestBody,
+  generalApiRateLimit,
+  async (req, res) => {
+    await authController.refreshToken(req, res);
+  }
+);
+
+/**
+ * @route   POST /api/auth/forgot-password
+ * @desc    Request password reset
+ * @access  Public
+ */
+router.post('/forgot-password',
+  sanitizeRequestBody,
+  generalApiRateLimit,
+  async (req, res) => {
+    await authController.forgotPassword(req, res);
+  }
+);
+
+/**
+ * @route   POST /api/auth/reset-password
+ * @desc    Reset password with token
+ * @access  Public
+ */
+router.post('/reset-password',
+  sanitizeRequestBody,
+  generalApiRateLimit,
+  async (req, res) => {
+    await authController.resetPassword(req, res);
+  }
+);
 
 /**
  * @route   GET /api/auth/me

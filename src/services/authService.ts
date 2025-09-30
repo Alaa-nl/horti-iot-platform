@@ -4,8 +4,13 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'researcher' | 'grower';
+  role: 'admin' | 'researcher' | 'grower' | 'farmer';
   is_active: boolean;
+  profile_photo?: string;
+  bio?: string;
+  phone_number?: string;
+  department?: string;
+  location?: string;
   created_at: string;
   last_login?: string;
 }
@@ -19,7 +24,7 @@ export interface RegisterData {
   email: string;
   password: string;
   name: string;
-  role: 'researcher' | 'grower';
+  role: 'admin' | 'researcher' | 'grower' | 'farmer';
 }
 
 export interface AuthResponse {
@@ -143,6 +148,11 @@ class AuthService {
     return user?.role === role;
   }
 
+  // Check if user is admin
+  public isAdmin(): boolean {
+    return this.hasRole('admin');
+  }
+
   // Check if user is researcher
   public isResearcher(): boolean {
     return this.hasRole('researcher');
@@ -151,6 +161,11 @@ class AuthService {
   // Check if user is grower
   public isGrower(): boolean {
     return this.hasRole('grower');
+  }
+
+  // Check if user is farmer
+  public isFarmer(): boolean {
+    return this.hasRole('farmer');
   }
 
   // Clear local storage

@@ -5,11 +5,13 @@ import Login from './pages/Login';
 import ResearcherDashboard from './pages/ResearcherDashboard';
 import GrowerDashboard from './pages/GrowerDashboard';
 import StatisticsPage from './pages/StatisticsPage';
+import AdminDashboard from './pages/AdminDashboard';
+import ProfilePage from './pages/ProfilePage';
 
 // Protected Route Component
-const ProtectedRoute: React.FC<{ 
+const ProtectedRoute: React.FC<{
   children: React.ReactElement;
-  allowedRole?: 'researcher' | 'grower';
+  allowedRole?: 'admin' | 'researcher' | 'grower' | 'farmer';
 }> = ({ children, allowedRole }) => {
   const { user, isLoading } = useAuth();
 
@@ -68,11 +70,29 @@ const AppRoutes: React.FC = () => {
           <GrowerDashboard />
         </ProtectedRoute>
       } />
-      
+
+      <Route path="/farmer" element={
+        <ProtectedRoute allowedRole="farmer">
+          <GrowerDashboard />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/admin" element={
+        <ProtectedRoute allowedRole="admin">
+          <AdminDashboard />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/profile" element={
+        <ProtectedRoute>
+          <ProfilePage />
+        </ProtectedRoute>
+      } />
+
       <Route path="/" element={
         user ? <Navigate to={`/${user.role}`} replace /> : <Navigate to="/login" replace />
       } />
-      
+
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

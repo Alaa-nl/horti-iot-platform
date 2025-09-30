@@ -8,9 +8,15 @@ import dotenv from 'dotenv';
 // Import routes
 import authRoutes from './routes/auth';
 import greenhouseRoutes from './routes/greenhouse';
+import adminRoutes from './routes/admin.routes';
+import profileRoutes from './routes/profile.routes';
 
 // Import database
 import database from './utils/database';
+
+// Import security middleware
+import { securityHeaders } from './middleware/security';
+import tokenService from './services/tokenService';
 
 // Load environment variables
 dotenv.config();
@@ -29,31 +35,74 @@ class App {
   private initializeMiddleware(): void {
     // Security middleware
     this.app.use(helmet({
-      crossOriginResourcePolicy: { policy: "cross-origin" }
+      crossOriginResourcePolicy: { policy: "cross-origin" },
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", "data:", "https:"],
+        }
+      },
+      hsts: {
+        maxAge: 31536000,
+        includeSubDomains: true,
+        preload: true
+      }
     }));
+
+    // Additional security headers
+    this.app.use(securityHeaders);
 
     // CORS configuration
     this.app.use(cors({
-      origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+      origin: (origin, callback) => {
+        const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000').split(',');
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
+      },
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+      maxAge: 86400 // 24 hours
     }));
 
     // Compression middleware
     this.app.use(compression());
 
-    // Logging middleware
+    // Logging middleware with custom format
     if (process.env.NODE_ENV !== 'test') {
-      this.app.use(morgan('combined'));
+      const logFormat = process.env.NODE_ENV === 'production' ? 'combined' : 'dev';
+      this.app.use(morgan(logFormat, {
+        skip: (req, res) => res.statusCode < 400 && process.env.NODE_ENV === 'production'
+      }));
     }
 
-    // Body parsing middleware
-    this.app.use(express.json({ limit: '10mb' }));
-    this.app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+    // Body parsing middleware with size limits
+    this.app.use(express.json({
+      limit: '1mb',
+      verify: (req: any, res, buf, encoding) => {
+        req.rawBody = buf.toString((encoding || 'utf8') as BufferEncoding);
+      }
+    }));
+    this.app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+
+    // Static file serving for uploads with security
+    this.app.use('/uploads', express.static('uploads', {
+      dotfiles: 'deny',
+      setHeaders: (res) => {
+        res.set('X-Content-Type-Options', 'nosniff');
+      }
+    }));
 
     // Trust proxy for rate limiting and security
     this.app.set('trust proxy', 1);
+
+    // Disable X-Powered-By header
+    this.app.disable('x-powered-by');
   }
 
   private initializeRoutes(): void {
@@ -70,6 +119,8 @@ class App {
     // API routes
     this.app.use('/api/auth', authRoutes);
     this.app.use('/api/greenhouses', greenhouseRoutes);
+    this.app.use('/api/admin', adminRoutes);
+    this.app.use('/api/profile', profileRoutes);
 
     // 404 handler for API routes
     this.app.use('/api/*', (req: Request, res: Response) => {
@@ -90,7 +141,9 @@ class App {
         endpoints: {
           health: '/health',
           auth: '/api/auth',
-          greenhouses: '/api/greenhouses'
+          greenhouses: '/api/greenhouses',
+          admin: '/api/admin',
+          profile: '/api/profile'
         }
       });
     });
@@ -147,6 +200,16 @@ class App {
       const isConnected = await database.testConnection();
       if (isConnected) {
         console.log('✅ Database connection established successfully');
+
+        // Schedule cleanup of expired tokens
+        setInterval(async () => {
+          try {
+            await tokenService.cleanupExpiredTokens();
+            console.log('🧹 Cleaned up expired tokens');
+          } catch (error) {
+            console.error('Failed to cleanup expired tokens:', error);
+          }
+        }, 3600000); // Run every hour
       } else {
         console.error('❌ Failed to establish database connection');
         process.exit(1);
@@ -163,6 +226,13 @@ class App {
       console.log(`🚀 HORTI-IOT API Server running on port ${port}`);
       console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`🌐 CORS Origin: ${process.env.CORS_ORIGIN || 'http://localhost:3000'}`);
+      console.log(`🔒 Security: Enhanced RBAC with JWT + Refresh Tokens`);
+      console.log(`🛡️  Rate Limiting: Enabled`);
+      console.log(`📝 Audit Logging: Enabled`);
+
+      if (process.env.NODE_ENV !== 'production' && !process.env.JWT_SECRET) {
+        console.warn('⚠️  WARNING: Using auto-generated JWT secret. Set JWT_SECRET in production!');
+      }
     });
   }
 }

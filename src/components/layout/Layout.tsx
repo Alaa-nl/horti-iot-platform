@@ -1,22 +1,21 @@
 import React from 'react';
 import Header from './Header';
-import Sidebar from './Sidebar';
+import HoverSidebar from './HoverSidebar';
 
 interface LayoutProps {
   children: React.ReactNode;
+  sidebarContent?: React.ReactNode;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children }) => {
+const Layout: React.FC<LayoutProps> = ({ children, sidebarContent }) => {
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="flex">
-        <Sidebar />
-        <div className="flex-1 flex flex-col">
-          <Header />
-          <main className="flex-1 p-6">
-            {children}
-          </main>
-        </div>
+      <HoverSidebar additionalContent={sidebarContent} />
+      <div className="flex flex-col">
+        <Header />
+        <main className="flex-1">
+          {children}
+        </main>
       </div>
     </div>
   );

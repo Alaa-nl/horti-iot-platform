@@ -116,9 +116,62 @@ class ApiService {
     );
   }
 
+  // PATCH request
+  public async patch<T>(
+    endpoint: string,
+    data?: any,
+    includeAuth: boolean = true
+  ): Promise<ApiResponse<T>> {
+    return this.request<T>(
+      endpoint,
+      {
+        method: 'PATCH',
+        body: data ? JSON.stringify(data) : undefined,
+      },
+      includeAuth
+    );
+  }
+
   // DELETE request
   public async delete<T>(endpoint: string, includeAuth: boolean = true): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { method: 'DELETE' }, includeAuth);
+  }
+
+  // POST FormData request (for file uploads)
+  public async postFormData<T>(
+    endpoint: string,
+    formData: FormData,
+    includeAuth: boolean = true
+  ): Promise<ApiResponse<T>> {
+    const url = `${this.baseURL}${endpoint}`;
+
+    const headers: HeadersInit = {};
+    if (includeAuth) {
+      const token = this.getAuthToken();
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+    }
+
+    const config: RequestInit = {
+      method: 'POST',
+      headers,
+      body: formData,
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || `HTTP error! status: ${response.status}`);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('FormData API request failed:', error);
+      throw error;
+    }
   }
 
   // Check if user is authenticated
