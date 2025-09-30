@@ -154,4 +154,4 @@ Environment-specific configs for development/production
     - Username: horti_user
     - Password: horti_password
 
-  That's your database web interface on http://localhost:8080!
+  That's your database web interface on http://localhost:8080

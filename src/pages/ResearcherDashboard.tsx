@@ -423,7 +423,7 @@ const ResearcherDashboard: React.FC = () => {
             </div>
 
             {/* Right: Weather Card */}
-            <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 rounded-3xl shadow-xl p-8 text-white relative overflow-hidden hover:shadow-2xl transition-all duration-300 backdrop-blur-sm">
+            <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 rounded-3xl shadow-xl p-4 text-white relative overflow-hidden hover:shadow-2xl transition-all duration-300 backdrop-blur-sm h-[500px] flex flex-col">
               {weatherLoading && (
                 <div className="absolute inset-0 bg-blue-900/50 backdrop-blur-sm rounded-2xl flex items-center justify-center z-10">
                   <div className="text-white text-center">
@@ -438,67 +438,69 @@ const ResearcherDashboard: React.FC = () => {
                 </div>
               )}
 
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-xl font-bold mb-1">Today's Weather</h3>
-                  <p className="text-white/80 text-sm">{weatherData.today.condition}</p>
-                  <p className="text-white/70 text-xs mt-1">
-                    {selectedGreenhouse?.location.city || 'Loading...'}
-                  </p>
-                  {knmiStation && (
-                    <p className="text-white/70 text-xs">Station: {knmiStation}</p>
-                  )}
-                </div>
-                <div className="text-right">
-                  <div className="text-4xl font-light">{weatherData.today.temp}°C</div>
-                  {weatherData.today.feelsLike && (
-                    <p className="text-xs text-white/70 mt-1">Feels like {weatherData.today.feelsLike}°C</p>
-                  )}
-                  <div className="flex items-center justify-end mt-2">
-                    <span className="text-4xl">{getWeatherIcon(weatherData.today.condition)}</span>
+              <div className="flex-shrink-0">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="text-xl font-bold mb-1">Today's Weather</h3>
+                    <p className="text-white/80 text-base">{weatherData.today.condition}</p>
+                    <p className="text-white/70 text-sm mt-1">
+                      {selectedGreenhouse?.location.city || 'Loading...'}
+                    </p>
+                    {knmiStation && (
+                      <p className="text-white/70 text-xs mt-1">Station: {knmiStation}</p>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <div className="text-5xl font-light">{weatherData.today.temp}°C</div>
+                    {weatherData.today.feelsLike && (
+                      <p className="text-sm text-white/70 mt-1">Feels like {weatherData.today.feelsLike}°C</p>
+                    )}
+                    <div className="flex items-center justify-end mt-2">
+                      <span className="text-5xl">{getWeatherIcon(weatherData.today.condition)}</span>
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Weather Stats */}
-              <div className="grid grid-cols-3 gap-3 mb-4">
-                <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 text-center hover:bg-white/30 transition-colors duration-200 border border-white/10">
-                  <p className="text-xs text-white/70 mb-1">💧 Humidity</p>
-                  <p className="text-lg font-bold">{weatherData.today.humidity}%</p>
+              <div className="grid grid-cols-3 gap-3 mb-4 flex-shrink-0">
+                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 text-center hover:bg-white/30 transition-colors duration-200 border border-white/10">
+                  <p className="text-sm text-white/70 mb-1">💧 Humidity</p>
+                  <p className="text-xl font-bold">{weatherData.today.humidity}%</p>
                 </div>
-                <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 text-center hover:bg-white/30 transition-colors duration-200 border border-white/10">
-                  <p className="text-xs text-white/70 mb-1">💨 Wind</p>
-                  <p className="text-lg font-bold">{weatherData.today.windSpeed} m/s</p>
+                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 text-center hover:bg-white/30 transition-colors duration-200 border border-white/10">
+                  <p className="text-sm text-white/70 mb-1">💨 Wind</p>
+                  <p className="text-xl font-bold">{weatherData.today.windSpeed} m/s</p>
                 </div>
-                <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 text-center hover:bg-white/30 transition-colors duration-200 border border-white/10">
-                  <p className="text-xs text-white/70 mb-1">{weatherData.today.pressure ? '🌡️ Pressure' : '🌧️ Rain'}</p>
-                  <p className="text-lg font-bold">
+                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 text-center hover:bg-white/30 transition-colors duration-200 border border-white/10">
+                  <p className="text-sm text-white/70 mb-1">{weatherData.today.pressure ? '🌡️ Pressure' : '🌧️ Rain'}</p>
+                  <p className="text-xl font-bold">
                     {weatherData.today.pressure ? `${weatherData.today.pressure} hPa` : `${weatherData.today.rainProbability}%`}
                   </p>
                 </div>
               </div>
 
               {/* Forecast */}
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-4 gap-3 flex-grow">
                 {weatherData.forecast.length > 0 ? (
                   weatherData.forecast.map((day, index) => (
-                    <div key={index} className="text-center p-3 bg-white/15 backdrop-blur-sm rounded-xl border border-white/10 hover:bg-white/20 transition-colors">
-                      <p className="text-xs text-white/70 mb-1">{day.day}</p>
-                      <div className="text-2xl mb-1">{getWeatherIcon(day.condition)}</div>
-                      <p className="font-bold text-sm">{day.temp}°C</p>
+                    <div key={index} className="text-center p-3 bg-white/15 backdrop-blur-sm rounded-xl border border-white/10 hover:bg-white/20 transition-colors flex flex-col justify-center">
+                      <p className="text-sm text-white/70 mb-2">{day.day}</p>
+                      <div className="text-3xl mb-2">{getWeatherIcon(day.condition)}</div>
+                      <p className="font-bold text-base">{day.temp}°C</p>
                     </div>
                   ))
                 ) : (
-                  <div className="col-span-4 text-center text-white/70 text-sm">
+                  <div className="col-span-4 text-center text-white/70 text-sm flex items-center justify-center">
                     {weatherLoading ? 'Loading forecast...' : 'No forecast available'}
                   </div>
                 )}
               </div>
 
               {weatherData.today.sunrise && weatherData.today.sunset && (
-                <div className="mt-4 pt-4 border-t border-white/20 flex justify-center gap-6 text-sm text-white/80">
-                  <span className="bg-white/10 px-3 py-1 rounded-full">☀️ {weatherData.today.sunrise}</span>
-                  <span className="bg-white/10 px-3 py-1 rounded-full">🌙 {weatherData.today.sunset}</span>
+                <div className="mt-4 pt-4 border-t border-white/20 flex justify-center gap-6 text-sm text-white/80 flex-shrink-0">
+                  <span className="bg-white/10 px-3 py-1.5 rounded-full">☀️ {weatherData.today.sunrise}</span>
+                  <span className="bg-white/10 px-3 py-1.5 rounded-full">🌙 {weatherData.today.sunset}</span>
                 </div>
               )}
             </div>
