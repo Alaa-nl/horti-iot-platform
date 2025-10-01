@@ -69,7 +69,13 @@ class ApiService {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || `HTTP error! status: ${response.status}`);
+        // Include validation errors if present
+        const errorMessage = data.errors
+          ? `${data.message}: ${data.errors.map((e: any) => e.message).join(', ')}`
+          : data.message || `HTTP error! status: ${response.status}`;
+        const error = new Error(errorMessage);
+        (error as any).details = data.errors; // Attach errors for detailed handling
+        throw error;
       }
 
       return data;

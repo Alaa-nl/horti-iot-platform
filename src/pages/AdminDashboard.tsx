@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import adminService, { CreateUserData, UserListResponse } from '../services/adminService';
 import Card from '../components/common/Card';
 import Layout from '../components/layout/Layout';
@@ -308,6 +308,7 @@ const AdminDashboard: React.FC = () => {
                       value={newUser.password}
                       onChange={(e) => setNewUser({...newUser, password: e.target.value})}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10"
+                      placeholder="Min 8 chars, 1 upper, 1 lower, 1 number, 1 special"
                     />
                     <button
                       type="button"
@@ -327,6 +328,9 @@ const AdminDashboard: React.FC = () => {
                       )}
                     </button>
                   </div>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Must be at least 8 characters with uppercase, lowercase, number, and special character (@$!%*?&)
+                  </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>

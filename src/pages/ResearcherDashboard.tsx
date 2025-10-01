@@ -8,7 +8,7 @@ import { fetchKNMIWeatherByCoordinates } from '../services/knmiWeatherService';
 import { greenhouseService } from '../services/greenhouseService';
 import { Greenhouse } from '../types/greenhouse';
 import GreenhouseSelector from '../components/greenhouse/GreenhouseSelector';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import authService from '../services/authService';
 
 // Data interfaces

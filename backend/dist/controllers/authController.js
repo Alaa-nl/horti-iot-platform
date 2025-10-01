@@ -40,7 +40,7 @@ class AuthController {
             res.status(200).json({
                 success: true,
                 data: {
-                    access_token: newTokens.accessToken,
+                    token: newTokens.accessToken,
                     refresh_token: newTokens.refreshToken,
                     expires_in: newTokens.expiresIn
                 }
@@ -253,7 +253,7 @@ class AuthController {
                 message: 'Login successful',
                 data: {
                     user: userResponse,
-                    access_token: tokens.accessToken,
+                    token: tokens.accessToken,
                     refresh_token: tokens.refreshToken,
                     expires_in: tokens.expiresIn
                 }
@@ -306,7 +306,7 @@ class AuthController {
                 message: 'User created successfully',
                 data: {
                     user: newUser,
-                    access_token: tokens.accessToken,
+                    token: tokens.accessToken,
                     refresh_token: tokens.refreshToken,
                     expires_in: tokens.expiresIn
                 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import profileService, { UpdateProfileData } from '../services/profileService';
 import Card from '../components/common/Card';
 import { User } from '../services/authService';

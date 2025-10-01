@@ -1,24 +1,24 @@
 import React, { useState, useCallback } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import { motion } from 'framer-motion';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [role, setRole] = useState<'researcher' | 'grower'>('researcher');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const { login, user, error, clearError } = useAuth();
+  const { login, user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   // Clear error when form inputs change
   const handleInputChange = useCallback(() => {
     if (error) {
-      clearError();
+      setError(null);
     }
-  }, [error, clearError]);
+  }, [error]);
 
   // If user is already logged in, redirect them
   if (user) {
@@ -28,14 +28,15 @@ const Login: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password || isLoading) return;
-    
+
     setIsLoading(true);
+    setError(null);
     try {
-      await login({ email, password, role });
+      await login(email, password);
       // Navigation will happen automatically via the redirect above
-    } catch (err) {
+    } catch (err: any) {
       console.error('Login error:', err);
-      // Error is handled by AuthContext
+      setError(err.message || 'Login failed. Please try again.');
     } finally {
       setIsLoading(false);
     }

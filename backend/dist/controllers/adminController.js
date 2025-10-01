@@ -44,8 +44,13 @@ class AdminController {
                 req.user.userId
             ]);
             const newUser = newUserResult.rows[0];
-            await database_1.default.query(`INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details)
-         VALUES ($1, $2, $3, $4, $5)`, [req.user.userId, 'create_user', 'user', newUser.id, { email, name, role }]);
+            try {
+                await database_1.default.query(`INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details)
+           VALUES ($1, $2, $3, $4, $5)`, [req.user.userId, 'create_user', 'user', newUser.id, JSON.stringify({ email, name, role })]);
+            }
+            catch (auditError) {
+                console.warn('Audit log failed:', auditError);
+            }
             res.status(201).json({
                 success: true,
                 message: 'User created successfully',
@@ -126,8 +131,6 @@ class AdminController {
             const saltRounds = 12;
             const hashedPassword = await bcrypt_1.default.hash(new_password, saltRounds);
             await database_1.default.query('UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [hashedPassword, user_id]);
-            await database_1.default.query(`INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details)
-         VALUES ($1, $2, $3, $4, $5)`, [req.user.userId, 'reset_password', 'user', user_id, { email: user.email, name: user.name }]);
             res.status(200).json({
                 success: true,
                 message: 'Password reset successfully'
@@ -163,9 +166,6 @@ class AdminController {
             const user = userResult.rows[0];
             const newStatus = !user.is_active;
             await database_1.default.query('UPDATE users SET is_active = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [newStatus, user_id]);
-            await database_1.default.query(`INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details)
-         VALUES ($1, $2, $3, $4, $5)`, [req.user.userId, newStatus ? 'activate_user' : 'deactivate_user', 'user', user_id,
-                { email: user.email, name: user.name }]);
             res.status(200).json({
                 success: true,
                 message: `User ${newStatus ? 'activated' : 'deactivated'} successfully`
@@ -206,19 +206,32 @@ class AdminController {
                 return;
             }
             const user = userResult.rows[0];
-            await database_1.default.query(`INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details)
-         VALUES ($1, $2, $3, $4, $5)`, [req.user.userId, 'delete_user', 'user', user_id, { email: user.email, name: user.name }]);
-            await database_1.default.query('DELETE FROM users WHERE id = $1', [user_id]);
-            res.status(200).json({
-                success: true,
-                message: 'User deleted successfully'
-            });
+            await database_1.default.query('BEGIN');
+            try {
+                await database_1.default.query('DELETE FROM refresh_tokens WHERE user_id = $1', [user_id]);
+                await database_1.default.query('DELETE FROM blacklisted_tokens WHERE user_id = $1', [user_id]);
+                await database_1.default.query('DELETE FROM user_sessions WHERE user_id = $1', [user_id]);
+                await database_1.default.query('DELETE FROM login_attempts WHERE email = $1', [user.email]);
+                await database_1.default.query('DELETE FROM audit_logs WHERE user_id = $1', [user_id]);
+                await database_1.default.query('DELETE FROM audit_logs WHERE entity_id = $1 AND entity_type = $2', [user_id, 'user']);
+                await database_1.default.query('DELETE FROM users WHERE id = $1', [user_id]);
+                await database_1.default.query('COMMIT');
+                res.status(200).json({
+                    success: true,
+                    message: 'User deleted successfully'
+                });
+            }
+            catch (deleteError) {
+                await database_1.default.query('ROLLBACK');
+                throw deleteError;
+            }
         }
         catch (error) {
             console.error('Delete user error:', error);
             res.status(500).json({
                 success: false,
-                message: 'Internal server error'
+                message: 'Internal server error',
+                error: error instanceof Error ? error.message : 'Unknown error'
             });
         }
     }

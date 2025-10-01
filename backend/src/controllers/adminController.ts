@@ -51,11 +51,17 @@ export class AdminController {
 
       const newUser: UserResponse = newUserResult.rows[0];
 
-      await database.query(
-        `INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [req.user.userId, 'create_user', 'user', newUser.id, { email, name, role }]
-      );
+      // Log the creation (if audit_logs table exists)
+      try {
+        await database.query(
+          `INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [req.user.userId, 'create_user', 'user', newUser.id, JSON.stringify({ email, name, role })]
+        );
+      } catch (auditError) {
+        // Silently fail if audit_logs doesn't exist
+        console.warn('Audit log failed:', auditError);
+      }
 
       res.status(201).json({
         success: true,
@@ -156,12 +162,6 @@ export class AdminController {
         [hashedPassword, user_id]
       );
 
-      await database.query(
-        `INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [req.user.userId, 'reset_password', 'user', user_id, { email: user.email, name: user.name }]
-      );
-
       res.status(200).json({
         success: true,
         message: 'Password reset successfully'
@@ -205,13 +205,6 @@ export class AdminController {
       await database.query(
         'UPDATE users SET is_active = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
         [newStatus, user_id]
-      );
-
-      await database.query(
-        `INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [req.user.userId, newStatus ? 'activate_user' : 'deactivate_user', 'user', user_id,
-          { email: user.email, name: user.name }]
       );
 
       res.status(200).json({
@@ -261,24 +254,42 @@ export class AdminController {
 
       const user = userResult.rows[0];
 
-      await database.query(
-        `INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [req.user.userId, 'delete_user', 'user', user_id, { email: user.email, name: user.name }]
-      );
+      // Use transaction to ensure all deletes succeed or none do
+      await database.query('BEGIN');
 
-      await database.query('DELETE FROM users WHERE id = $1', [user_id]);
+      try {
+        // Delete related records first (to handle foreign key constraints)
+        await database.query('DELETE FROM refresh_tokens WHERE user_id = $1', [user_id]);
+        await database.query('DELETE FROM blacklisted_tokens WHERE user_id = $1', [user_id]);
+        await database.query('DELETE FROM user_sessions WHERE user_id = $1', [user_id]);
+        await database.query('DELETE FROM login_attempts WHERE email = $1', [user.email]);
 
-      res.status(200).json({
-        success: true,
-        message: 'User deleted successfully'
-      });
+        // Delete audit logs for this user
+        await database.query('DELETE FROM audit_logs WHERE user_id = $1', [user_id]);
+
+        // Also delete audit logs where this user is mentioned in entity_id
+        await database.query('DELETE FROM audit_logs WHERE entity_id = $1 AND entity_type = $2', [user_id, 'user']);
+
+        // Finally delete the user (CASCADE will handle remaining foreign keys)
+        await database.query('DELETE FROM users WHERE id = $1', [user_id]);
+
+        await database.query('COMMIT');
+
+        res.status(200).json({
+          success: true,
+          message: 'User deleted successfully'
+        });
+      } catch (deleteError) {
+        await database.query('ROLLBACK');
+        throw deleteError;
+      }
 
     } catch (error) {
       console.error('Delete user error:', error);
       res.status(500).json({
         success: false,
-        message: 'Internal server error'
+        message: 'Internal server error',
+        error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   }

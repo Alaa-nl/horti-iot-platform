@@ -82,12 +82,16 @@ exports.createUserByAdminSchema = joi_1.default.object({
         .min(8)
         .max(100)
         .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
-        .required(),
+        .required()
+        .messages({
+        'string.pattern.base': 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&)',
+        'string.min': 'Password must be at least 8 characters long'
+    }),
     name: joi_1.default.string().min(2).max(255).trim().required(),
     role: joi_1.default.string().valid('admin', 'researcher', 'grower', 'farmer').required(),
-    phone_number: joi_1.default.string().pattern(/^[+]?[\d\s()-]+$/).max(50).optional(),
-    department: joi_1.default.string().max(100).trim().optional(),
-    location: joi_1.default.string().max(255).trim().optional()
+    phone_number: joi_1.default.string().pattern(/^[+]?[\d\s()-]+$/).max(50).optional().allow(''),
+    department: joi_1.default.string().max(100).trim().optional().allow(''),
+    location: joi_1.default.string().max(255).trim().optional().allow('')
 });
 exports.resetPasswordSchema = joi_1.default.object({
     user_id: joi_1.default.string().uuid().required(),
