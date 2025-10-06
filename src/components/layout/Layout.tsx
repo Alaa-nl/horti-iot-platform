@@ -11,7 +11,7 @@ const Layout: React.FC<LayoutProps> = ({ children, sidebarContent }) => {
   return (
     <div className="min-h-screen bg-gray-50">
       <HoverSidebar additionalContent={sidebarContent} />
-      <div className="flex flex-col">
+      <div className="flex flex-col ml-80">
         <Header />
         <main className="flex-1">
           {children}

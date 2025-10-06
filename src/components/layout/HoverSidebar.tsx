@@ -9,7 +9,7 @@ interface HoverSidebarProps {
 }
 
 const HoverSidebar: React.FC<HoverSidebarProps> = ({ children, additionalContent }) => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -78,12 +78,9 @@ const HoverSidebar: React.FC<HoverSidebarProps> = ({ children, additionalContent
       <motion.div
         initial={false}
         animate={{
-          x: sidebarOpen ? 0 : '-100%'
+          x: 0
         }}
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="fixed left-0 top-0 h-full w-80 bg-white shadow-2xl z-50 overflow-y-auto"
-        onMouseEnter={() => setSidebarOpen(true)}
-        onMouseLeave={() => setSidebarOpen(false)}
+        className="fixed left-0 top-0 h-full w-80 bg-white shadow-2xl z-50 overflow-y-auto scrollbar-thin"
       >
         {/* User Profile */}
         <div className="p-4">
@@ -144,94 +141,10 @@ const HoverSidebar: React.FC<HoverSidebarProps> = ({ children, additionalContent
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <div className="p-4">
-          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Quick Actions</h3>
-          <div className="space-y-2">
-            <Link
-              to="/profile"
-              className="w-full flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200 hover:bg-green-100 transition-colors group"
-              onClick={() => setSidebarOpen(false)}
-            >
-              <span className="text-sm font-medium text-gray-700">✏️ Edit Profile</span>
-              <span className="text-green-600">→</span>
-            </Link>
-            {user?.role === 'admin' && (
-              <Link
-                to="/admin"
-                className="w-full flex items-center justify-between p-3 bg-purple-50 rounded-lg border border-purple-200 hover:bg-purple-100 transition-colors group"
-                onClick={() => setSidebarOpen(false)}
-              >
-                <span className="text-sm font-medium text-gray-700">👥 Manage Users</span>
-                <span className="text-purple-600">→</span>
-              </Link>
-            )}
-          </div>
-        </div>
-
-        {/* Additional Content (passed from parent) */}
-        {additionalContent && (
-          <div className="p-4">
-            {additionalContent}
-          </div>
-        )}
-
-        {/* User Info */}
-        {user && (
-          <div className="p-4">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Account Info</h3>
-            <div className="space-y-3">
-              {user.department && (
-                <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                  <p className="text-xs text-gray-500 font-medium mb-1">Department:</p>
-                  <p className="text-sm font-bold text-gray-800">{user.department}</p>
-                </div>
-              )}
-              {user.location && (
-                <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                  <p className="text-xs text-gray-500 font-medium mb-1">Location:</p>
-                  <p className="text-sm font-bold text-gray-800">{user.location}</p>
-                </div>
-              )}
-              <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                <p className="text-xs text-gray-500 font-medium mb-1">Member Since:</p>
-                <p className="text-sm font-bold text-gray-800">
-                  {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'Unknown'}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Custom Children Content */}
         {children}
-
-        {/* Logout Button - At Bottom */}
-        <div className="p-4 border-t border-gray-200 mt-auto">
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200 hover:bg-red-100 transition-colors group"
-          >
-            <span className="text-sm font-medium text-gray-700 group-hover:text-red-700">🚪 Logout</span>
-            <span className="text-red-600">→</span>
-          </button>
-        </div>
       </motion.div>
 
-      {/* Sidebar Trigger Area */}
-      <div
-        className="fixed left-0 top-0 w-1 h-full z-40 cursor-pointer bg-gradient-to-b from-blue-500/20 to-purple-500/20"
-        onMouseEnter={() => setSidebarOpen(true)}
-        title="Hover to open sidebar"
-      ></div>
-
-      {/* Overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/20 z-40 backdrop-blur-sm"
-          onClick={() => setSidebarOpen(false)}
-        ></div>
-      )}
     </>
   );
 };
