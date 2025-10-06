@@ -373,16 +373,17 @@ const ResearcherDashboard: React.FC = () => {
 
   return (
     <Layout sidebarContent={greenhouseContent}>
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-green-50 p-4">
+      <div className="min-h-screen bg-gradient-to-br from-horti-green-50/50 via-white to-horti-blue-50/30 p-6">
 
         {/* Top Section - Greenhouse Selector with Farm Details and Weather */}
         <div className="max-w-full mx-auto mb-8 px-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left: Greenhouse Selector merged with Farm Details */}
-            <div className="bg-white rounded-3xl shadow-xl border border-emerald-100 p-8 hover:shadow-2xl transition-all duration-300 hover:border-emerald-200">
-              <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                <span className="w-3 h-3 bg-emerald-500 rounded-full mr-3 animate-pulse"></span>
-                🏡 Greenhouse Control Panel
+            <div className="card-elevated p-8 lg:col-span-2">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                <span className="w-3 h-3 bg-horti-green-500 rounded-full mr-3 animate-pulse-soft shadow-glow-green"></span>
+                <span className="text-2xl mr-2">🏡</span>
+                Greenhouse Control Panel
               </h2>
 
               {/* Greenhouse Selector */}
@@ -397,33 +398,33 @@ const ResearcherDashboard: React.FC = () => {
 
               {/* Farm Details Grid */}
               {selectedGreenhouse && (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                  <div className="bg-emerald-50 rounded-2xl p-4 border border-emerald-200 hover:bg-emerald-100 transition-colors duration-200">
-                    <p className="text-xs text-gray-500 font-medium">Farm ID</p>
-                    <p className="text-sm font-bold text-gray-800 truncate">{farmDetails.farmId}</p>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="bg-gradient-to-br from-horti-green-50 to-horti-green-100/50 rounded-xl p-4 border border-horti-green-200/50 hover:shadow-soft transition-all duration-200">
+                    <p className="text-xs text-gray-600 font-medium mb-1">Farm ID</p>
+                    <p className="text-sm font-bold text-gray-900 truncate">{farmDetails.farmId}</p>
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                    <p className="text-xs text-gray-500 font-medium">Location</p>
-                    <p className="text-sm font-bold text-gray-800 truncate">{farmDetails.location}</p>
+                  <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-4 border border-gray-200 hover:shadow-soft transition-all duration-200">
+                    <p className="text-xs text-gray-600 font-medium mb-1">Location</p>
+                    <p className="text-sm font-bold text-gray-900 truncate">{farmDetails.location}</p>
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                    <p className="text-xs text-gray-500 font-medium">Land Area</p>
-                    <p className="text-sm font-bold text-gray-800">{farmDetails.landArea} m²</p>
+                  <div className="bg-gradient-to-br from-horti-blue-50 to-horti-blue-100/50 rounded-xl p-4 border border-horti-blue-200/50 hover:shadow-soft transition-all duration-200">
+                    <p className="text-xs text-gray-600 font-medium mb-1">Land Area</p>
+                    <p className="text-sm font-bold text-gray-900">{farmDetails.landArea} m²</p>
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                    <p className="text-xs text-gray-500 font-medium">Crops</p>
-                    <p className="text-sm font-bold text-gray-800">{farmDetails.cropsGrown} types</p>
+                  <div className="bg-gradient-to-br from-horti-sky-50 to-horti-sky-100/50 rounded-xl p-4 border border-horti-sky-200/50 hover:shadow-soft transition-all duration-200">
+                    <p className="text-xs text-gray-600 font-medium mb-1">Crops</p>
+                    <p className="text-sm font-bold text-gray-900">{farmDetails.cropsGrown} types</p>
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                    <p className="text-xs text-gray-500 font-medium">Previous Yield</p>
-                    <p className="text-sm font-bold text-gray-800">{farmDetails.previousYield} kg/m²</p>
+                  <div className="bg-gradient-to-br from-horti-earth-50 to-horti-earth-100/50 rounded-xl p-4 border border-horti-earth-200/50 hover:shadow-soft transition-all duration-200">
+                    <p className="text-xs text-gray-600 font-medium mb-1">Previous Yield</p>
+                    <p className="text-sm font-bold text-gray-900">{farmDetails.previousYield} kg/m²</p>
                   </div>
                 </div>
               )}
             </div>
 
             {/* Right: Weather Card */}
-            <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 rounded-3xl shadow-xl p-4 text-white relative overflow-hidden hover:shadow-2xl transition-all duration-300 backdrop-blur-sm h-[500px] flex flex-col">
+            <div className="bg-gradient-to-br from-horti-blue-600 via-horti-blue-700 to-horti-blue-800 rounded-3xl shadow-strong p-4 text-white relative overflow-hidden hover:shadow-[0_20px_60px_0_rgba(37,99,235,0.3)] hover:-translate-y-1 transition-all duration-300 flex flex-col border border-horti-blue-500/20 h-fit">
               {weatherLoading && (
                 <div className="absolute inset-0 bg-blue-900/50 backdrop-blur-sm rounded-2xl flex items-center justify-center z-10">
                   <div className="text-white text-center">
@@ -441,39 +442,39 @@ const ResearcherDashboard: React.FC = () => {
               <div className="flex-shrink-0">
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h3 className="text-xl font-bold mb-1">Today's Weather</h3>
+                    <h3 className="text-lg font-bold mb-1">Today's Weather</h3>
                     <p className="text-white/80 text-base">{weatherData.today.condition}</p>
-                    <p className="text-white/70 text-sm mt-1">
+                    <p className="text-white/70 text-base mt-1">
                       {selectedGreenhouse?.location.city || 'Loading...'}
                     </p>
                     {knmiStation && (
-                      <p className="text-white/70 text-xs mt-1">Station: {knmiStation}</p>
+                      <p className="text-white/70 text-sm mt-1">Station: {knmiStation}</p>
                     )}
                   </div>
                   <div className="text-right">
-                    <div className="text-5xl font-light">{weatherData.today.temp}°C</div>
+                    <div className="text-4xl font-light">{weatherData.today.temp}°C</div>
                     {weatherData.today.feelsLike && (
-                      <p className="text-sm text-white/70 mt-1">Feels like {weatherData.today.feelsLike}°C</p>
+                      <p className="text-base text-white/70 mt-1">Feels like {weatherData.today.feelsLike}°C</p>
                     )}
                     <div className="flex items-center justify-end mt-2">
-                      <span className="text-5xl">{getWeatherIcon(weatherData.today.condition)}</span>
+                      <span className="text-4xl">{getWeatherIcon(weatherData.today.condition)}</span>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Weather Stats */}
-              <div className="grid grid-cols-3 gap-3 mb-4 flex-shrink-0">
-                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 text-center hover:bg-white/30 transition-colors duration-200 border border-white/10">
-                  <p className="text-sm text-white/70 mb-1">💧 Humidity</p>
+              <div className="grid grid-cols-3 gap-2 mb-4 flex-shrink-0">
+                <div className="bg-white/15 backdrop-blur-md rounded-lg p-4 text-center hover:bg-white/25 hover:scale-105 transition-all duration-200 border border-white/20 shadow-soft">
+                  <p className="text-base text-white/80 mb-1">💧 Humidity</p>
                   <p className="text-xl font-bold">{weatherData.today.humidity}%</p>
                 </div>
-                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 text-center hover:bg-white/30 transition-colors duration-200 border border-white/10">
-                  <p className="text-sm text-white/70 mb-1">💨 Wind</p>
+                <div className="bg-white/15 backdrop-blur-md rounded-lg p-4 text-center hover:bg-white/25 hover:scale-105 transition-all duration-200 border border-white/20 shadow-soft">
+                  <p className="text-base text-white/80 mb-1">💨 Wind</p>
                   <p className="text-xl font-bold">{weatherData.today.windSpeed} m/s</p>
                 </div>
-                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 text-center hover:bg-white/30 transition-colors duration-200 border border-white/10">
-                  <p className="text-sm text-white/70 mb-1">{weatherData.today.pressure ? '🌡️ Pressure' : '🌧️ Rain'}</p>
+                <div className="bg-white/15 backdrop-blur-md rounded-lg p-4 text-center hover:bg-white/25 hover:scale-105 transition-all duration-200 border border-white/20 shadow-soft">
+                  <p className="text-base text-white/80 mb-1">{weatherData.today.pressure ? '🌡️ Pressure' : '🌧️ Rain'}</p>
                   <p className="text-xl font-bold">
                     {weatherData.today.pressure ? `${weatherData.today.pressure} hPa` : `${weatherData.today.rainProbability}%`}
                   </p>
@@ -481,24 +482,24 @@ const ResearcherDashboard: React.FC = () => {
               </div>
 
               {/* Forecast */}
-              <div className="grid grid-cols-4 gap-3 flex-grow">
+              <div className="grid grid-cols-4 gap-2 mb-4">
                 {weatherData.forecast.length > 0 ? (
                   weatherData.forecast.map((day, index) => (
-                    <div key={index} className="text-center p-3 bg-white/15 backdrop-blur-sm rounded-xl border border-white/10 hover:bg-white/20 transition-colors flex flex-col justify-center">
-                      <p className="text-sm text-white/70 mb-2">{day.day}</p>
-                      <div className="text-3xl mb-2">{getWeatherIcon(day.condition)}</div>
+                    <div key={index} className="text-center p-3 bg-white/15 backdrop-blur-md rounded-lg border border-white/20 hover:bg-white/25 hover:scale-105 transition-all duration-200 flex flex-col justify-center shadow-soft">
+                      <p className="text-base text-white/80 mb-1 font-medium">{day.day}</p>
+                      <div className="text-3xl mb-1">{getWeatherIcon(day.condition)}</div>
                       <p className="font-bold text-base">{day.temp}°C</p>
                     </div>
                   ))
                 ) : (
-                  <div className="col-span-4 text-center text-white/70 text-sm flex items-center justify-center">
+                  <div className="col-span-4 text-center text-white/70 text-base flex items-center justify-center">
                     {weatherLoading ? 'Loading forecast...' : 'No forecast available'}
                   </div>
                 )}
               </div>
 
               {weatherData.today.sunrise && weatherData.today.sunset && (
-                <div className="mt-4 pt-4 border-t border-white/20 flex justify-center gap-6 text-sm text-white/80 flex-shrink-0">
+                <div className="mt-4 pt-4 border-t border-white/20 flex justify-center gap-4 text-base text-white/80 flex-shrink-0">
                   <span className="bg-white/10 px-3 py-1.5 rounded-full">☀️ {weatherData.today.sunrise}</span>
                   <span className="bg-white/10 px-3 py-1.5 rounded-full">🌙 {weatherData.today.sunset}</span>
                 </div>
@@ -518,30 +519,30 @@ const ResearcherDashboard: React.FC = () => {
             {/* ML Predictions and Map Section - Full width */}
             <div className="col-span-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Head Thickness Prediction Panel */}
-              <div className="bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-gray-100 p-4 hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)] transition-all duration-300">
+              <div className="card-elevated p-6 hover:-translate-y-2">
                 <div className="mb-4">
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-lg font-semibold text-gray-900">Head Thickness</h3>
-                    <div className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-medium">
-                      AI Prediction
+                    <h3 className="text-lg font-bold text-gray-900">Head Thickness</h3>
+                    <div className="badge-success">
+                      🤖 AI Prediction
                     </div>
                   </div>
-                  <p className="text-sm text-gray-600">89% accuracy</p>
+                  <p className="text-sm text-gray-600 font-medium">89% accuracy</p>
                 </div>
 
                 {/* Current Value Display */}
-                <div className="bg-emerald-50 rounded-lg p-4 mb-4">
+                <div className="bg-gradient-to-br from-horti-green-50 to-horti-green-100/50 rounded-xl p-4 mb-4 border border-horti-green-200/50">
                   <div className="flex items-baseline justify-between">
                     <div>
-                      <p className="text-sm text-gray-600 mb-1">Current Measurement</p>
+                      <p className="text-sm text-gray-700 mb-1 font-medium">Current Measurement</p>
                       <div className="flex items-baseline">
-                        <span className="text-2xl font-bold text-emerald-700">{headThickness.current}</span>
-                        <span className="text-sm text-emerald-600 ml-1">{headThickness.unit}</span>
+                        <span className="text-3xl font-bold text-horti-green-700">{headThickness.current}</span>
+                        <span className="text-base text-horti-green-600 ml-2 font-semibold">{headThickness.unit}</span>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs text-gray-500">Last Updated</p>
-                      <p className="text-xs font-medium text-gray-700">{headThickness.lastUpdated}</p>
+                      <p className="text-xs text-gray-600 font-medium">Last Updated</p>
+                      <p className="text-xs font-semibold text-gray-800">{headThickness.lastUpdated}</p>
                     </div>
                   </div>
                 </div>
@@ -578,20 +579,20 @@ const ResearcherDashboard: React.FC = () => {
                 {/* Daily Predictions */}
                 <div className="space-y-2">
                   {headThickness.forecast.map((day, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                    <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-gray-50 to-white hover:from-horti-green-50/50 hover:to-white hover:shadow-soft transition-all duration-200 border border-gray-100">
                       <div className="flex items-center">
-                        <div className={`w-2 h-8 rounded-full mr-3 ${
-                          day.trend === 'up' ? 'bg-green-500' :
-                          day.trend === 'down' ? 'bg-red-500' : 'bg-yellow-500'
+                        <div className={`w-2 h-10 rounded-full mr-3 ${
+                          day.trend === 'up' ? 'bg-gradient-to-b from-horti-green-500 to-horti-green-600 shadow-glow-green' :
+                          day.trend === 'down' ? 'bg-gradient-to-b from-red-500 to-red-600' : 'bg-gradient-to-b from-yellow-500 to-yellow-600'
                         }`}></div>
                         <div>
-                          <p className="text-sm font-medium text-gray-800">{day.day}</p>
-                          <p className="text-xs text-gray-500">{day.date}</p>
+                          <p className="text-sm font-semibold text-gray-900">{day.day}</p>
+                          <p className="text-xs text-gray-600">{day.date}</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-lg font-bold text-gray-800">{day.predicted} {headThickness.unit}</p>
-                        <p className="text-xs text-gray-500">Confidence: {day.confidence}%</p>
+                        <p className="text-lg font-bold text-gray-900">{day.predicted} {headThickness.unit}</p>
+                        <p className="text-xs text-gray-600 font-medium">Confidence: {day.confidence}%</p>
                       </div>
                     </div>
                   ))}
@@ -599,38 +600,38 @@ const ResearcherDashboard: React.FC = () => {
               </div>
 
               {/* Sap Flow Prediction Panel */}
-              <div className="bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-gray-100 p-4 hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)] transition-all duration-300">
+              <div className="card-elevated p-6 hover:-translate-y-2">
                 <div className="mb-4">
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-lg font-semibold text-gray-900">Sap Flow</h3>
-                    <div className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium">
-                      Real-Time
+                    <h3 className="text-lg font-bold text-gray-900">Sap Flow</h3>
+                    <div className="badge-success animate-pulse-soft">
+                      ⚡ Real-Time
                     </div>
                   </div>
-                  <p className="text-sm text-gray-600">Updates every 5 minutes</p>
+                  <p className="text-sm text-gray-600 font-medium">Updates every 5 minutes</p>
                 </div>
 
                 {/* Current Value and Stats */}
-                <div className="bg-green-50 rounded-lg p-4 mb-4">
+                <div className="bg-gradient-to-br from-horti-green-50 to-horti-green-100/50 rounded-xl p-4 mb-4 border border-horti-green-200/50">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-sm text-gray-600 mb-1">Current Flow Rate</p>
+                      <p className="text-sm text-gray-700 mb-1 font-medium">Current Flow Rate</p>
                       <div className="flex items-baseline">
-                        <span className="text-2xl font-bold text-green-700">{sapFlow.current}</span>
-                        <span className="text-lg text-green-600 ml-2">{sapFlow.unit}</span>
+                        <span className="text-3xl font-bold text-horti-green-700">{sapFlow.current}</span>
+                        <span className="text-base text-horti-green-600 ml-2 font-semibold">{sapFlow.unit}</span>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm text-gray-600 mb-1">Model Accuracy</p>
+                      <p className="text-sm text-gray-700 mb-1 font-medium">Model Accuracy</p>
                       <div className="flex items-center justify-end">
-                        <span className="text-2xl font-bold text-green-700">{sapFlow.accuracy}%</span>
+                        <span className="text-3xl font-bold text-horti-green-700">{sapFlow.accuracy}%</span>
                       </div>
                     </div>
                   </div>
-                  <div className="mt-3 pt-3 border-t border-green-200">
+                  <div className="mt-3 pt-3 border-t border-horti-green-300/50">
                     <div className="flex justify-between text-xs">
-                      <span className="text-gray-600">Last Updated: {sapFlow.lastUpdated}</span>
-                      <span className="text-gray-600">Next Update: {Math.floor(sapFlow.nextUpdate / 60)}m {sapFlow.nextUpdate % 60}s</span>
+                      <span className="text-gray-700 font-medium">Last Updated: {sapFlow.lastUpdated}</span>
+                      <span className="text-gray-700 font-medium">Next Update: {Math.floor(sapFlow.nextUpdate / 60)}m {sapFlow.nextUpdate % 60}s</span>
                     </div>
                   </div>
                 </div>
@@ -680,29 +681,29 @@ const ResearcherDashboard: React.FC = () => {
                 </div>
 
                 {/* Legend and Stats */}
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-100">
                   <div className="flex items-center gap-4">
                     <div className="flex items-center">
-                      <div className="w-3 h-0.5 bg-green-500 mr-2"></div>
-                      <span className="text-xs text-gray-600">Predicted</span>
+                      <div className="w-3 h-0.5 bg-horti-green-500 mr-2"></div>
+                      <span className="text-xs text-gray-700 font-medium">Predicted</span>
                     </div>
                     <div className="flex items-center">
-                      <div className="w-3 h-0.5 bg-blue-500 mr-2" style={{ borderTop: '2px dashed' }}></div>
-                      <span className="text-xs text-gray-600">Actual</span>
+                      <div className="w-3 h-0.5 bg-horti-blue-500 mr-2" style={{ borderTop: '2px dashed' }}></div>
+                      <span className="text-xs text-gray-700 font-medium">Actual</span>
                     </div>
                   </div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-gray-600 font-medium">
                     Scroll for more →
                   </div>
                 </div>
               </div>
 
               {/* Greenhouse Location Map Panel */}
-              <div className="bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-gray-100 p-4 hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)] transition-all duration-300">
+              <div className="card-elevated p-6 hover:-translate-y-2">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Greenhouse Location</h3>
-                  <div className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-medium">
-                    Live Map
+                  <h3 className="text-lg font-bold text-gray-900">Greenhouse Location</h3>
+                  <div className="badge-info">
+                    🗺️ Live Map
                   </div>
                 </div>
                 <div className="h-96">
@@ -713,7 +714,7 @@ const ResearcherDashboard: React.FC = () => {
                         lng: selectedGreenhouse.location.coordinates.lon
                       }}
                       zoom={16}
-                      className="h-full rounded-lg"
+                      className="h-full rounded-xl overflow-hidden border border-gray-200 shadow-soft"
                       markers={[
                         {
                           id: selectedGreenhouse.id,
@@ -727,15 +728,15 @@ const ResearcherDashboard: React.FC = () => {
                       ]}
                     />
                   ) : (
-                    <div className="h-full bg-gray-50 rounded-lg flex items-center justify-center">
-                      <p className="text-gray-500 text-sm">Select a greenhouse to view map</p>
+                    <div className="h-full bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl flex items-center justify-center border border-gray-200">
+                      <p className="text-gray-600 text-sm font-medium">Select a greenhouse to view map</p>
                     </div>
                   )}
                 </div>
-                <div className="mt-3 pt-3 border-t border-gray-200">
+                <div className="mt-4 pt-4 border-t border-gray-200">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">📍 {selectedGreenhouse?.location.city || 'N/A'}</span>
-                    <span className="text-gray-600">🌱 {selectedGreenhouse?.crops.length || 0} crops</span>
+                    <span className="text-gray-700 font-medium">📍 {selectedGreenhouse?.location.city || 'N/A'}</span>
+                    <span className="text-gray-700 font-medium">🌱 {selectedGreenhouse?.crops.length || 0} crops</span>
                   </div>
                 </div>
               </div>

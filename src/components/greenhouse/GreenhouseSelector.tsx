@@ -19,14 +19,15 @@ const GreenhouseSelector: React.FC<GreenhouseSelectorProps> = ({
     <motion.div
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
       className="relative"
     >
-      <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-gray-700">Select Greenhouse</h3>
+      <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-soft border border-gray-200 p-5 hover:shadow-medium transition-all duration-300">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-bold text-gray-900">Select Greenhouse</h3>
           {loading && (
-            <div className="flex items-center text-xs text-blue-600">
-              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600 mr-2"></div>
+            <div className="flex items-center text-xs text-horti-green-600 font-medium">
+              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-horti-green-600 mr-2"></div>
               Loading data...
             </div>
           )}
@@ -40,7 +41,7 @@ const GreenhouseSelector: React.FC<GreenhouseSelectorProps> = ({
               if (greenhouse) onSelect(greenhouse);
             }}
             disabled={loading}
-            className="w-full px-4 py-3 pr-10 text-sm font-medium text-gray-800 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl appearance-none cursor-pointer hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full px-4 py-3 pr-10 text-sm font-semibold text-gray-900 bg-gradient-to-r from-horti-green-50 to-horti-blue-50 border-2 border-horti-green-300 rounded-xl appearance-none cursor-pointer hover:border-horti-green-500 hover:shadow-soft focus:outline-none focus:ring-2 focus:ring-horti-green-500/50 focus:border-horti-green-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <option value="" disabled>Choose a greenhouse...</option>
             {greenhouses.map(greenhouse => (
@@ -52,7 +53,7 @@ const GreenhouseSelector: React.FC<GreenhouseSelectorProps> = ({
 
           {/* Custom dropdown arrow */}
           <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-            <svg className="h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <svg className="h-5 w-5 text-horti-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 011.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
             </svg>
           </div>
@@ -63,34 +64,35 @@ const GreenhouseSelector: React.FC<GreenhouseSelectorProps> = ({
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="mt-3 pt-3 border-t border-gray-100"
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="mt-4 pt-4 border-t border-gray-200"
           >
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div>
-                <span className="text-gray-500">Location:</span>
-                <p className="font-semibold text-gray-700">{selectedGreenhouse.location.city}, {selectedGreenhouse.location.region}</p>
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="bg-gray-50 p-2 rounded-lg">
+                <span className="text-gray-600 font-medium">Location:</span>
+                <p className="font-bold text-gray-900 mt-0.5">{selectedGreenhouse.location.city}, {selectedGreenhouse.location.region}</p>
               </div>
-              <div>
-                <span className="text-gray-500">Size:</span>
-                <p className="font-semibold text-gray-700">{selectedGreenhouse.details.landArea} m²</p>
+              <div className="bg-gray-50 p-2 rounded-lg">
+                <span className="text-gray-600 font-medium">Size:</span>
+                <p className="font-bold text-gray-900 mt-0.5">{selectedGreenhouse.details.landArea} m²</p>
               </div>
-              <div>
-                <span className="text-gray-500">Type:</span>
-                <p className="font-semibold text-gray-700 capitalize">{selectedGreenhouse.details.type}</p>
+              <div className="bg-gray-50 p-2 rounded-lg">
+                <span className="text-gray-600 font-medium">Type:</span>
+                <p className="font-bold text-gray-900 mt-0.5 capitalize">{selectedGreenhouse.details.type}</p>
               </div>
-              <div>
-                <span className="text-gray-500">Manager:</span>
-                <p className="font-semibold text-gray-700">{selectedGreenhouse.contact?.manager || 'N/A'}</p>
+              <div className="bg-gray-50 p-2 rounded-lg">
+                <span className="text-gray-600 font-medium">Manager:</span>
+                <p className="font-bold text-gray-900 mt-0.5">{selectedGreenhouse.contact?.manager || 'N/A'}</p>
               </div>
             </div>
 
             {/* Status indicators */}
-            <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+            <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-200">
               <div className="flex items-center">
-                <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-                <span className="text-xs text-gray-600">Connected</span>
+                <div className="w-2 h-2 bg-horti-green-500 rounded-full mr-2 animate-pulse-soft shadow-glow-green"></div>
+                <span className="text-xs text-gray-700 font-semibold">Connected</span>
               </div>
-              <div className="flex items-center text-xs text-gray-500">
+              <div className="flex items-center text-xs text-gray-600 font-medium">
                 <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />

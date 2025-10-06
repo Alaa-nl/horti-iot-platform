@@ -155,3 +155,7 @@ Environment-specific configs for development/production
     - Password: horti_password
 
   That's your database web interface on http://localhost:8080
+
+  Password has been reset successfully. Now try connecting to pgAdmin again with:
+Username: horti_user
+Password: horti_password

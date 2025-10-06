@@ -12,9 +12,10 @@ const Card: React.FC<CardProps> = ({ children, className = '', hover = true }) =
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={hover ? { y: -2 } : undefined}
-      className={`bg-white rounded-xl shadow-sm border border-gray-200 p-6 transition-all duration-200 ${
-        hover ? 'hover:shadow-lg' : ''
+      transition={{ duration: 0.3, ease: "easeOut" }}
+      whileHover={hover ? { y: -4, transition: { duration: 0.2 } } : undefined}
+      className={`bg-white rounded-2xl shadow-soft border border-gray-100 p-6 transition-all duration-300 ${
+        hover ? 'hover:shadow-medium hover:border-gray-200' : ''
       } ${className}`}
     >
       {children}
