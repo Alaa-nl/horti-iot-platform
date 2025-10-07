@@ -26,7 +26,7 @@ const HoverSidebar: React.FC<HoverSidebarProps> = ({ children, additionalContent
     switch (role) {
       case 'admin': return 'Administrator';
       case 'researcher': return 'Researcher';
-      case 'grower': return 'Grower';
+      case 'grower': return 'Farmer'; // Grower is treated as Farmer
       case 'farmer': return 'Farmer';
       default: return 'User';
     }
@@ -36,8 +36,8 @@ const HoverSidebar: React.FC<HoverSidebarProps> = ({ children, additionalContent
     switch (role) {
       case 'admin': return 'bg-purple-500';
       case 'researcher': return 'bg-emerald-500';
-      case 'grower': return 'bg-green-500';
-      case 'farmer': return 'bg-yellow-500';
+      case 'grower': return 'bg-green-500'; // Grower uses same color as farmer
+      case 'farmer': return 'bg-green-500';
       default: return 'bg-gray-500';
     }
   };
@@ -49,22 +49,26 @@ const HoverSidebar: React.FC<HoverSidebarProps> = ({ children, additionalContent
 
     if (user?.role === 'admin') {
       return [
-        { path: '/admin', label: '⚙️ Admin Panel', icon: '⚙️' },
+        { path: '/admin', label: '⚙️ Admin Dashboard', icon: '⚙️' },
+        { path: '/researcher', label: '🔬 Researcher Dashboard', icon: '🔬' },
+        { path: '/grower', label: '🏡 Grower/Investor Dashboard', icon: '🏡' },
         ...baseItems
       ];
     }
 
     if (user?.role === 'researcher') {
       return [
-        { path: '/researcher', label: '🔬 Research Dashboard', icon: '🔬' },
-        { path: '/researcher/statistics', label: '📊 Statistics', icon: '📊' },
+        { path: '/researcher', label: '🔬 Researcher Dashboard', icon: '🔬' },
+        { path: '/grower', label: '🏡 Grower/Investor Dashboard', icon: '🏡' },
         ...baseItems
       ];
     }
 
+    // Grower and Farmer are the same role
     if (user?.role === 'grower' || user?.role === 'farmer') {
       return [
-        { path: `/${user.role}`, label: '🏡 Dashboard', icon: '🏡' },
+        { path: '/grower', label: '🏡 Grower/Investor Dashboard', icon: '🏡' },
+        { path: '/researcher', label: '🔬 Researcher Dashboard', icon: '🔬' },
         ...baseItems
       ];
     }
