@@ -1,6 +1,8 @@
 // API Service for HORTI-IOT Platform
 // Handles all communication with the backend API
 
+import { logger } from '../utils/logger';
+
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
 
 export interface ApiResponse<T = any> {
@@ -51,27 +53,34 @@ class ApiService {
     return headers;
   }
 
-  // Generic request method
+  // Generic request method with timeout
   private async request<T>(
     endpoint: string,
     options: RequestInit = {},
-    includeAuth: boolean = true
+    includeAuth: boolean = true,
+    timeoutMs: number = 30000 // 30 seconds default timeout
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseURL}${endpoint}`;
 
+    // Create AbortController for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
     const config: RequestInit = {
       headers: this.createHeaders(includeAuth),
+      signal: controller.signal,
       ...options,
     };
 
     try {
       const response = await fetch(url, config);
+      clearTimeout(timeoutId);
       const data = await response.json();
 
       if (!response.ok) {
         // Handle token expiration
         if (response.status === 401 || data.message?.includes('expired') || data.message?.includes('Token has expired')) {
-          console.error('Token expired, clearing auth and redirecting to login');
+          logger.warn('Token expired, clearing auth and redirecting to login');
           this.clearAuthToken();
           localStorage.removeItem('user_data');
 
@@ -94,7 +103,15 @@ class ApiService {
 
       return data;
     } catch (error) {
-      console.error('API request failed:', error);
+      clearTimeout(timeoutId);
+
+      // Handle timeout error
+      if (error instanceof Error && error.name === 'AbortError') {
+        logger.error('API request timeout:', endpoint);
+        throw new Error('Request timeout. Please try again.');
+      }
+
+      logger.error('API request failed:', error);
       throw error;
     }
   }
@@ -189,7 +206,7 @@ class ApiService {
 
       return data;
     } catch (error) {
-      console.error('FormData API request failed:', error);
+      logger.error('FormData API request failed:', error);
       throw error;
     }
   }
@@ -206,7 +223,7 @@ class ApiService {
       const response = await fetch(`${this.baseURL.replace('/api', '')}/health`);
       return response.ok;
     } catch (error) {
-      console.error('Health check failed:', error);
+      logger.error('Health check failed:', error);
       return false;
     }
   }

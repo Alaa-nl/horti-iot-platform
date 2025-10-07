@@ -1,4 +1,5 @@
 import apiService, { ApiResponse } from './apiService';
+import { logger } from '../utils/logger';
 
 export interface User {
   id: string;
@@ -57,7 +58,7 @@ class AuthService {
 
       throw new Error(response.message || 'Login failed');
     } catch (error) {
-      console.error('Login error:', error);
+      logger.error('Login error:', error);
       throw error;
     }
   }
@@ -79,7 +80,7 @@ class AuthService {
 
       throw new Error(response.message || 'Registration failed');
     } catch (error) {
-      console.error('Registration error:', error);
+      logger.error('Registration error:', error);
       throw error;
     }
   }
@@ -97,7 +98,7 @@ class AuthService {
 
       throw new Error(response.message || 'Failed to get user data');
     } catch (error) {
-      console.error('Get current user error:', error);
+      logger.error('Get current user error:', error);
       throw error;
     }
   }
@@ -108,7 +109,7 @@ class AuthService {
       const response = await apiService.get<{ user: User }>('/auth/verify');
       return response.success;
     } catch (error) {
-      console.error('Token verification error:', error);
+      logger.error('Token verification error:', error);
       return false;
     }
   }
@@ -119,7 +120,7 @@ class AuthService {
       // Call logout endpoint
       await apiService.post('/auth/logout');
     } catch (error) {
-      console.error('Logout error:', error);
+      logger.error('Logout error:', error);
     } finally {
       // Clear local storage regardless of API success
       this.clearLocalStorage();
@@ -132,7 +133,7 @@ class AuthService {
       const userData = localStorage.getItem('user_data');
       return userData ? JSON.parse(userData) : null;
     } catch (error) {
-      console.error('Error parsing stored user data:', error);
+      logger.error('Error parsing stored user data:', error);
       return null;
     }
   }
@@ -191,7 +192,7 @@ class AuthService {
       // Get fresh user data
       return await this.getCurrentUser();
     } catch (error) {
-      console.error('Auth initialization error:', error);
+      logger.error('Auth initialization error:', error);
       this.clearLocalStorage();
       return null;
     }
