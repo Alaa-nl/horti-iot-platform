@@ -72,6 +72,7 @@ const AdminDashboard: React.FC = () => {
   const loadUsers = async () => {
     try {
       setLoading(true);
+      setError(null); // Clear previous errors
       const response = await adminService.getUsers({
         role: filterRole || undefined,
         is_active: filterActive
@@ -81,7 +82,11 @@ const AdminDashboard: React.FC = () => {
         setUsers(response.data.users);
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to load users');
+      const errorMessage = err.message || 'Failed to load users';
+      // Don't show error if we're being redirected to login
+      if (!errorMessage.includes('session has expired')) {
+        setError(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
@@ -147,6 +152,7 @@ const AdminDashboard: React.FC = () => {
   const loadGreenhouses = async () => {
     try {
       setGreenhouseLoading(true);
+      setError(null); // Clear previous errors
       const response = await greenhouseAdminService.getAllGreenhouses({
         search: searchQuery || undefined,
         city: filterCity || undefined,
@@ -159,7 +165,11 @@ const AdminDashboard: React.FC = () => {
         setGreenhouses(response.data.greenhouses);
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to load greenhouses');
+      const errorMessage = err.message || 'Failed to load greenhouses';
+      // Don't show error if we're being redirected to login
+      if (!errorMessage.includes('session has expired')) {
+        setError(errorMessage);
+      }
     } finally {
       setGreenhouseLoading(false);
     }
@@ -281,61 +291,115 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <Layout>
-      <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-horti-green-600 to-horti-blue-600 bg-clip-text text-transparent">
-            Admin Dashboard
-          </h1>
-          <p className="mt-2 text-gray-600 font-medium">Manage users and greenhouses</p>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+          {/* Modern Header with Stats */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h1 className="text-4xl font-bold text-gray-900 mb-2 flex items-center gap-3">
+                  <span className="w-12 h-12 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <span className="text-2xl">⚙️</span>
+                  </span>
+                  Admin Dashboard
+                </h1>
+                <p className="text-lg text-gray-600">Comprehensive system management and control</p>
+              </div>
+              <div className="text-right">
+                <div className="text-sm text-gray-500 mb-1">System Status</div>
+                <div className="flex items-center gap-2 text-green-600 font-semibold">
+                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                  All Systems Operational
+                </div>
+              </div>
+            </div>
 
-        {/* Tabs */}
-        <div className="mb-6 border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8">
-            <button
-              onClick={() => setActiveTab('users')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === 'users'
-                  ? 'border-horti-green-500 text-horti-green-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              <span className="flex items-center gap-2">
-                <span>👥</span>
-                Users Management
-              </span>
-            </button>
-            <button
-              onClick={() => setActiveTab('greenhouses')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === 'greenhouses'
-                  ? 'border-horti-green-500 text-horti-green-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              <span className="flex items-center gap-2">
-                <span>🏡</span>
-                Greenhouses Management
-              </span>
-            </button>
-          </nav>
-        </div>
+            {/* Quick Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="bg-white rounded-2xl p-5 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 mb-1">Total Users</p>
+                    <p className="text-3xl font-bold text-gray-900">{users.length}</p>
+                  </div>
+                  <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                    <span className="text-2xl">👥</span>
+                  </div>
+                </div>
+              </div>
 
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-center justify-between"
-          >
-            <span>{error}</span>
-            <button
-              onClick={() => setError(null)}
-              className="ml-4 text-red-500 hover:text-red-700 font-bold text-xl"
+              <div className="bg-white rounded-2xl p-5 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 mb-1">Greenhouses</p>
+                    <p className="text-3xl font-bold text-gray-900">{greenhouses.length}</p>
+                  </div>
+                  <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                    <span className="text-2xl">🏡</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl p-5 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 mb-1">Active Users</p>
+                    <p className="text-3xl font-bold text-gray-900">{users.filter(u => u.is_active).length}</p>
+                  </div>
+                  <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
+                    <span className="text-2xl">✅</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Modern Tabs */}
+          <div className="mb-8 bg-white rounded-2xl shadow-lg p-2 border border-gray-100">
+            <nav className="flex gap-2">
+              <button
+                onClick={() => setActiveTab('users')}
+                className={`flex-1 py-4 px-6 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-3 ${
+                  activeTab === 'users'
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg scale-105'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                }`}
+              >
+                <span className="text-xl">👥</span>
+                <span>User Management</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('greenhouses')}
+                className={`flex-1 py-4 px-6 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-3 ${
+                  activeTab === 'greenhouses'
+                    ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg scale-105'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                }`}
+              >
+                <span className="text-xl">🏡</span>
+                <span>Greenhouse Management</span>
+              </button>
+            </nav>
+          </div>
+
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6 bg-gradient-to-r from-red-50 to-pink-50 border-l-4 border-red-500 text-red-800 px-6 py-4 rounded-2xl shadow-lg flex items-center justify-between"
             >
-              ×
-            </button>
-          </motion.div>
-        )}
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">⚠️</span>
+                <span className="font-medium">{error}</span>
+              </div>
+              <button
+                onClick={() => setError(null)}
+                className="ml-4 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-100 text-red-600 font-bold text-xl transition-colors"
+              >
+                ×
+              </button>
+            </motion.div>
+          )}
 
         {/* Users Tab */}
         {activeTab === 'users' && (
@@ -344,255 +408,313 @@ const AdminDashboard: React.FC = () => {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="mb-6 flex flex-wrap gap-4 items-center">
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="btn-primary flex items-center gap-2"
-              >
-                <span>➕</span>
-                Create New User
-              </button>
+            <div className="mb-6 bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+              <div className="flex flex-wrap gap-4 items-center">
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-200 flex items-center gap-3"
+                >
+                  <span className="text-lg">➕</span>
+                  <span>Create New User</span>
+                </button>
 
-              <select
-                value={filterRole}
-                onChange={(e) => setFilterRole(e.target.value)}
-                className="input-modern px-3 py-2 text-sm"
-              >
-                <option value="">All Roles</option>
-                <option value="admin">Admin</option>
-                <option value="researcher">Researcher</option>
-                <option value="farmer">Farmer</option>
-              </select>
+                <div className="flex-1 min-w-[200px]">
+                  <label className="text-xs font-semibold text-gray-600 mb-2 block">Filter by Role</label>
+                  <select
+                    value={filterRole}
+                    onChange={(e) => setFilterRole(e.target.value)}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl font-medium text-gray-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+                  >
+                    <option value="">All Roles</option>
+                    <option value="admin">Admin</option>
+                    <option value="researcher">Researcher</option>
+                    <option value="farmer">Farmer</option>
+                  </select>
+                </div>
 
-              <select
-                value={filterActive === undefined ? '' : String(filterActive)}
-                onChange={(e) => setFilterActive(e.target.value === '' ? undefined : e.target.value === 'true')}
-                className="input-modern px-3 py-2 text-sm"
-              >
-                <option value="">All Status</option>
-                <option value="true">Active</option>
-                <option value="false">Inactive</option>
-              </select>
+                <div className="flex-1 min-w-[200px]">
+                  <label className="text-xs font-semibold text-gray-600 mb-2 block">Filter by Status</label>
+                  <select
+                    value={filterActive === undefined ? '' : String(filterActive)}
+                    onChange={(e) => setFilterActive(e.target.value === '' ? undefined : e.target.value === 'true')}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl font-medium text-gray-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+                  >
+                    <option value="">All Status</option>
+                    <option value="true">Active</option>
+                    <option value="false">Inactive</option>
+                  </select>
+                </div>
 
-              <button
-                onClick={loadUsers}
-                className="btn-secondary flex items-center gap-2"
-              >
-                <span>🔄</span>
-                Refresh
-              </button>
+                <button
+                  onClick={loadUsers}
+                  className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl shadow-md hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center gap-3 mt-6"
+                >
+                  <span className="text-lg">🔄</span>
+                  <span>Refresh</span>
+                </button>
+              </div>
             </div>
 
-            <Card>
-          <div className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Users</h2>
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+              <div className="px-8 py-6 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
+                <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+                  <span className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-lg">
+                    <span className="text-xl">👥</span>
+                  </span>
+                  User Directory
+                </h2>
+                <p className="text-sm text-gray-600 mt-2">Manage and monitor all system users</p>
+              </div>
 
-            {loading ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="mt-4 text-gray-600">Loading users...</p>
+              <div className="p-6">
+                {loading ? (
+                  <div className="text-center py-12">
+                    <div className="animate-spin rounded-full h-16 w-16 border-4 border-indigo-200 border-t-indigo-600 mx-auto"></div>
+                    <p className="mt-6 text-gray-600 font-medium">Loading users...</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full">
+                      <thead>
+                        <tr className="border-b-2 border-gray-200">
+                          <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            User Info
+                          </th>
+                          <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            Email
+                          </th>
+                          <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            Role
+                          </th>
+                          <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            Status
+                          </th>
+                          <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            Department
+                          </th>
+                          <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {users.map((user) => (
+                          <tr key={user.id} className="hover:bg-gray-50 transition-colors">
+                            <td className="px-6 py-5">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shadow-lg ${
+                                  user.role === 'admin' ? 'bg-gradient-to-br from-purple-500 to-indigo-600' :
+                                  user.role === 'researcher' ? 'bg-gradient-to-br from-blue-500 to-cyan-600' :
+                                  'bg-gradient-to-br from-green-500 to-emerald-600'
+                                }`}>
+                                  {user.name.charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                  <div className="text-sm font-bold text-gray-900">{user.name}</div>
+                                  {user.phone_number && (
+                                    <div className="text-xs text-gray-500 flex items-center gap-1">
+                                      <span>📞</span>
+                                      {user.phone_number}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-5 text-sm text-gray-600">
+                              {user.email}
+                            </td>
+                            <td className="px-6 py-5">
+                              <span className={`inline-flex px-3 py-1.5 text-xs font-bold rounded-lg shadow-sm ${
+                                user.role === 'admin' ? 'bg-purple-100 text-purple-700' :
+                                user.role === 'researcher' ? 'bg-blue-100 text-blue-700' :
+                                'bg-green-100 text-green-700'
+                              }`}>
+                                {user.role === 'grower' ? 'farmer' : user.role}
+                              </span>
+                            </td>
+                            <td className="px-6 py-5">
+                              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg shadow-sm ${
+                                user.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                              }`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${user.is_active ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                                {user.is_active ? 'Active' : 'Inactive'}
+                              </span>
+                            </td>
+                            <td className="px-6 py-5 text-sm text-gray-600 font-medium">
+                              {user.department || '-'}
+                            </td>
+                            <td className="px-6 py-5">
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => handleToggleUserStatus(user.id)}
+                                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                                    user.is_active
+                                      ? 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200'
+                                      : 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-200'
+                                  }`}
+                                >
+                                  {user.is_active ? 'Deactivate' : 'Activate'}
+                                </button>
+                                <button
+                                  onClick={() => handleResetPassword(user.id)}
+                                  className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 transition-all"
+                                  title="Reset Password"
+                                >
+                                  🔑
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteUser(user.id)}
+                                  className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 transition-all"
+                                  title="Delete User"
+                                >
+                                  🗑️
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Name
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Email
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Role
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Department
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {users.map((user) => (
-                      <tr key={user.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                          {user.phone_number && (
-                            <div className="text-sm text-gray-500">{user.phone_number}</div>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {user.email}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full
-                            ${user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
-                              user.role === 'researcher' ? 'bg-blue-100 text-blue-800' :
-                              'bg-green-100 text-green-800'}`}>
-                            {user.role === 'grower' ? 'farmer' : user.role}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full
-                            ${user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                            {user.is_active ? 'Active' : 'Inactive'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {user.department || '-'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                          <button
-                            onClick={() => handleToggleUserStatus(user.id)}
-                            className={`${user.is_active ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'}`}
-                          >
-                            {user.is_active ? 'Deactivate' : 'Activate'}
-                          </button>
-                          <button
-                            onClick={() => handleResetPassword(user.id)}
-                            className="text-blue-600 hover:text-blue-900"
-                          >
-                            Reset Password
-                          </button>
-                          <button
-                            onClick={() => handleDeleteUser(user.id)}
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            Delete
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-            </Card>
+            </div>
 
             {/* Create User Modal */}
             {showCreateModal && (
-              <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
-                <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-strong">
-              <h3 className="text-lg font-semibold mb-4">Create New User</h3>
-              <form onSubmit={handleCreateUser} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                  <input
-                    type="text"
-                    required
-                    value={newUser.name}
-                    onChange={(e) => setNewUser({...newUser, name: e.target.value})}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                  <input
-                    type="email"
-                    required
-                    value={newUser.email}
-                    onChange={(e) => setNewUser({...newUser, email: e.target.value})}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      required
-                      value={newUser.password}
-                      onChange={(e) => setNewUser({...newUser, password: e.target.value})}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10"
-                      placeholder="Min 8 chars, 1 upper, 1 lower, 1 number, 1 special"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none transition-colors"
-                      tabIndex={-1}
-                    >
-                      {showPassword ? (
-                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                        </svg>
-                      ) : (
-                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                      )}
-                    </button>
+              <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-50">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl overflow-hidden"
+                >
+                  <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-8 py-6">
+                    <h3 className="text-2xl font-bold text-white flex items-center gap-3">
+                      <span className="text-3xl">👤</span>
+                      Create New User
+                    </h3>
+                    <p className="text-indigo-100 text-sm mt-1">Add a new user to the system</p>
                   </div>
-                  <p className="mt-1 text-xs text-gray-500">
-                    Must be at least 8 characters with uppercase, lowercase, number, and special character (@$!%*?&)
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                  <select
-                    required
-                    value={newUser.role}
-                    onChange={(e) => setNewUser({...newUser, role: e.target.value as any})}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                  >
-                    <option value="farmer">Farmer</option>
-                    <option value="researcher">Researcher</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-                  <input
-                    type="tel"
-                    value={newUser.phone_number}
-                    onChange={(e) => setNewUser({...newUser, phone_number: e.target.value})}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
-                  <input
-                    type="text"
-                    value={newUser.department}
-                    onChange={(e) => setNewUser({...newUser, department: e.target.value})}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                  <input
-                    type="text"
-                    value={newUser.location}
-                    onChange={(e) => setNewUser({...newUser, location: e.target.value})}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                  />
-                </div>
-                <div className="flex justify-end space-x-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setShowCreateModal(false)}
-                    className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
-                  >
-                    Cancel
-                  </button>
-                    <button
-                      type="submit"
-                      className="btn-primary"
-                    >
-                      Create User
-                    </button>
+                  <div className="p-8">
+                    <form onSubmit={handleCreateUser} className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <label className="block text-sm font-bold text-gray-900 mb-2">Full Name *</label>
+                          <input
+                            type="text"
+                            required
+                            value={newUser.name}
+                            onChange={(e) => setNewUser({...newUser, name: e.target.value})}
+                            className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 font-medium text-gray-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+                            placeholder="John Doe"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-bold text-gray-900 mb-2">Email Address *</label>
+                          <input
+                            type="email"
+                            required
+                            value={newUser.email}
+                            onChange={(e) => setNewUser({...newUser, email: e.target.value})}
+                            className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 font-medium text-gray-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+                            placeholder="john@example.com"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold text-gray-900 mb-2">Password *</label>
+                        <div className="relative">
+                          <input
+                            type={showPassword ? "text" : "password"}
+                            required
+                            value={newUser.password}
+                            onChange={(e) => setNewUser({...newUser, password: e.target.value})}
+                            className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 pr-12 font-medium text-gray-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+                            placeholder="Min 8 chars with special characters"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-all"
+                            tabIndex={-1}
+                          >
+                            {showPassword ? '👁️' : '🔒'}
+                          </button>
+                        </div>
+                        <p className="mt-2 text-xs text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">
+                          Must be at least 8 characters with uppercase, lowercase, number, and special character (@$!%*?&)
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <label className="block text-sm font-bold text-gray-900 mb-2">Role *</label>
+                          <select
+                            required
+                            value={newUser.role}
+                            onChange={(e) => setNewUser({...newUser, role: e.target.value as any})}
+                            className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 font-medium text-gray-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+                          >
+                            <option value="farmer">Farmer</option>
+                            <option value="researcher">Researcher</option>
+                            <option value="admin">Admin</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-bold text-gray-900 mb-2">Phone Number</label>
+                          <input
+                            type="tel"
+                            value={newUser.phone_number}
+                            onChange={(e) => setNewUser({...newUser, phone_number: e.target.value})}
+                            className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 font-medium text-gray-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+                            placeholder="+31 6 12345678"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <label className="block text-sm font-bold text-gray-900 mb-2">Department</label>
+                          <input
+                            type="text"
+                            value={newUser.department}
+                            onChange={(e) => setNewUser({...newUser, department: e.target.value})}
+                            className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 font-medium text-gray-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+                            placeholder="e.g., Research & Development"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-bold text-gray-900 mb-2">Location</label>
+                          <input
+                            type="text"
+                            value={newUser.location}
+                            onChange={(e) => setNewUser({...newUser, location: e.target.value})}
+                            className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 font-medium text-gray-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+                            placeholder="e.g., Amsterdam, Netherlands"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end gap-4 pt-6 border-t-2 border-gray-100">
+                        <button
+                          type="button"
+                          onClick={() => setShowCreateModal(false)}
+                          className="px-6 py-3 text-gray-700 font-semibold border-2 border-gray-300 rounded-xl hover:bg-gray-50 active:scale-95 transition-all"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl active:scale-95 transition-all"
+                        >
+                          ✨ Create User
+                        </button>
+                      </div>
+                    </form>
                   </div>
-                </form>
+                </motion.div>
               </div>
-            </div>
-          )}
+            )}
           </motion.div>
         )}
 
@@ -603,79 +725,95 @@ const AdminDashboard: React.FC = () => {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="mb-6 flex flex-wrap gap-4 items-center">
-              <button
-                onClick={() => {
-                  setEditingGreenhouse(null);
-                  setNewGreenhouse({
-                    name: '',
-                    location: '',
-                    dimensions: { length: 100, width: 50, height: 5 },
-                    area_m2: undefined,
-                    crop_type: undefined,
-                    variety: undefined,
-                    supplier: undefined,
-                    climate_system: undefined,
-                    lighting_system: undefined,
-                    growing_system: undefined,
-                    co2_target_ppm: undefined,
-                    temperature_range_c: undefined
-                  });
-                  setShowGreenhouseModal(true);
-                }}
-                className="btn-primary flex items-center gap-2"
-              >
-                <span>➕</span>
-                Create New Greenhouse
-              </button>
+            <div className="mb-6 bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+              <div className="flex flex-wrap gap-4 items-center">
+                <button
+                  onClick={() => {
+                    setEditingGreenhouse(null);
+                    setNewGreenhouse({
+                      name: '',
+                      location: '',
+                      dimensions: { length: 100, width: 50, height: 5 },
+                      area_m2: undefined,
+                      crop_type: undefined,
+                      variety: undefined,
+                      supplier: undefined,
+                      climate_system: undefined,
+                      lighting_system: undefined,
+                      growing_system: undefined,
+                      co2_target_ppm: undefined,
+                      temperature_range_c: undefined
+                    });
+                    setShowGreenhouseModal(true);
+                  }}
+                  className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-200 flex items-center gap-3"
+                >
+                  <span className="text-lg">➕</span>
+                  <span>Create New Greenhouse</span>
+                </button>
 
-              <input
-                type="text"
-                placeholder="Search greenhouses..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="input-modern px-3 py-2 text-sm flex-1 max-w-xs"
-              />
+                <div className="flex-1 min-w-[250px]">
+                  <input
+                    type="text"
+                    placeholder="🔍 Search greenhouses..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl font-medium text-gray-700 focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all"
+                  />
+                </div>
 
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
-                className="input-modern px-3 py-2 text-sm"
-              >
-                <option value="name">Sort by Name</option>
-                <option value="created_at">Sort by Date</option>
-                <option value="area_m2">Sort by Area</option>
-              </select>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  className="px-4 py-3 border-2 border-gray-200 rounded-xl font-medium text-gray-700 focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all"
+                >
+                  <option value="name">Sort by Name</option>
+                  <option value="created_at">Sort by Date</option>
+                  <option value="area_m2">Sort by Area</option>
+                </select>
 
-              <button
-                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                className="btn-ghost"
-              >
-                {sortOrder === 'asc' ? '↑' : '↓'}
-              </button>
+                <button
+                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                  className="px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl shadow-md hover:shadow-lg active:scale-95 transition-all duration-200"
+                >
+                  {sortOrder === 'asc' ? '⬆️ Asc' : '⬇️ Desc'}
+                </button>
 
-              <button
-                onClick={loadGreenhouses}
-                className="btn-secondary flex items-center gap-2"
-              >
-                <span>🔄</span>
-                Refresh
-              </button>
+                <button
+                  onClick={loadGreenhouses}
+                  className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl shadow-md hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center gap-3"
+                >
+                  <span className="text-lg">🔄</span>
+                  <span>Refresh</span>
+                </button>
+              </div>
             </div>
 
-            <Card>
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+              <div className="px-8 py-6 border-b border-gray-100 bg-gradient-to-r from-green-50 to-emerald-50">
+                <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+                  <span className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-lg">
+                    <span className="text-xl">🏡</span>
+                  </span>
+                  Greenhouse Facilities
+                </h2>
+                <p className="text-sm text-gray-600 mt-2">Monitor and manage all greenhouse operations</p>
+              </div>
+
               <div className="p-6">
-                <h2 className="text-xl font-semibold mb-4">Greenhouses</h2>
 
                 {greenhouseLoading ? (
-                  <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-horti-green-600 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Loading greenhouses...</p>
+                  <div className="text-center py-12">
+                    <div className="animate-spin rounded-full h-16 w-16 border-4 border-green-200 border-t-green-600 mx-auto"></div>
+                    <p className="mt-6 text-gray-600 font-medium">Loading greenhouses...</p>
                   </div>
                 ) : greenhouses.length === 0 ? (
-                  <div className="text-center py-12">
-                    <p className="text-gray-500 text-lg">No greenhouses found</p>
-                    <p className="text-gray-400 text-sm mt-2">Create your first greenhouse to get started</p>
+                  <div className="text-center py-16">
+                    <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <span className="text-4xl">🏡</span>
+                    </div>
+                    <p className="text-gray-700 text-xl font-semibold">No greenhouses found</p>
+                    <p className="text-gray-500 text-sm mt-2">Create your first greenhouse to get started</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -684,34 +822,48 @@ const AdminDashboard: React.FC = () => {
                         key={greenhouse.id}
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        whileHover={{ y: -4 }}
-                        className="card-elevated p-6"
+                        whileHover={{ y: -8 }}
+                        className="bg-gradient-to-br from-white to-green-50 rounded-2xl p-6 border-2 border-gray-100 hover:border-green-300 shadow-lg hover:shadow-2xl transition-all duration-300"
                       >
                         <div className="flex items-start justify-between mb-4">
-                          <div>
-                            <h3 className="text-lg font-bold text-gray-900">{greenhouse.name}</h3>
-                            <p className="text-sm text-gray-600">{greenhouse.location.city}, {greenhouse.location.region}</p>
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
+                              <span className="text-2xl">🏡</span>
+                            </div>
+                            <div>
+                              <h3 className="text-lg font-bold text-gray-900">{greenhouse.name}</h3>
+                              <p className="text-xs text-gray-600 flex items-center gap-1">
+                                <span>📍</span>
+                                {greenhouse.location.city}, {greenhouse.location.region}
+                              </p>
+                            </div>
                           </div>
-                          <span className="badge-success">Active</span>
                         </div>
 
-                        <div className="space-y-3 mb-4">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-gray-600">Area:</span>
-                            <span className="font-semibold text-gray-900">{greenhouse.details.landArea} m²</span>
+                        <div className="mb-4">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-green-100 text-green-700 shadow-sm">
+                            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                            Active & Operational
+                          </span>
+                        </div>
+
+                        <div className="space-y-3 mb-5 bg-white rounded-xl p-4 shadow-inner">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-gray-600 font-medium">Area:</span>
+                            <span className="text-sm font-bold text-gray-900 bg-gray-100 px-3 py-1 rounded-lg">{greenhouse.details.landArea} m²</span>
                           </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-gray-600">Crop:</span>
-                            <span className="font-semibold text-gray-900 capitalize">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-gray-600 font-medium">Crop Type:</span>
+                            <span className="text-sm font-bold text-green-700 capitalize bg-green-50 px-3 py-1 rounded-lg">
                               {(() => {
                                 const cropsData = Array.isArray(greenhouse.crops) ? greenhouse.crops[0] : greenhouse.crops;
                                 return cropsData?.type || 'N/A';
                               })()}
                             </span>
                           </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-gray-600">Variety:</span>
-                            <span className="font-semibold text-gray-900">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-gray-600 font-medium">Variety:</span>
+                            <span className="text-sm font-bold text-gray-900 bg-gray-100 px-3 py-1 rounded-lg">
                               {(() => {
                                 const cropsData = Array.isArray(greenhouse.crops) ? greenhouse.crops[0] : greenhouse.crops;
                                 return cropsData?.variety || 'N/A';
@@ -720,18 +872,18 @@ const AdminDashboard: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="pt-4 border-t border-gray-200 flex gap-2">
+                        <div className="flex gap-2 pt-4 border-t-2 border-gray-100">
                           <button
                             onClick={() => openEditModal(greenhouse)}
-                            className="flex-1 btn-secondary text-sm py-2"
+                            className="flex-1 px-4 py-2.5 text-sm font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:shadow-lg active:scale-95 transition-all"
                           >
-                            Edit
+                            ✏️ Edit
                           </button>
                           <button
                             onClick={() => handleDeleteGreenhouse(greenhouse.id)}
-                            className="px-4 py-2 text-sm text-red-600 border border-red-300 rounded-xl hover:bg-red-50 active:scale-95 transition-all"
+                            className="px-4 py-2.5 text-sm font-semibold text-red-700 bg-red-50 border-2 border-red-200 rounded-xl hover:bg-red-100 active:scale-95 transition-all"
                           >
-                            Delete
+                            🗑️
                           </button>
                         </div>
                       </motion.div>
@@ -739,7 +891,7 @@ const AdminDashboard: React.FC = () => {
                   </div>
                 )}
               </div>
-            </Card>
+            </div>
 
             {/* Create/Edit Greenhouse Modal */}
             {showGreenhouseModal && (
@@ -891,6 +1043,7 @@ const AdminDashboard: React.FC = () => {
             )}
           </motion.div>
         )}
+        </div>
       </div>
     </Layout>
   );

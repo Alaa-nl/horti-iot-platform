@@ -69,6 +69,20 @@ class ApiService {
       const data = await response.json();
 
       if (!response.ok) {
+        // Handle token expiration
+        if (response.status === 401 || data.message?.includes('expired') || data.message?.includes('Token has expired')) {
+          console.error('Token expired, clearing auth and redirecting to login');
+          this.clearAuthToken();
+          localStorage.removeItem('user_data');
+
+          // Redirect to login page
+          if (window.location.pathname !== '/login') {
+            window.location.href = '/login';
+          }
+
+          throw new Error('Your session has expired. Please login again.');
+        }
+
         // Include validation errors if present
         const errorMessage = data.errors
           ? `${data.message}: ${data.errors.map((e: any) => e.message).join(', ')}`
