@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GreenhouseController = void 0;
 const database_1 = __importDefault(require("../utils/database"));
+const geocoding_1 = require("../utils/geocoding");
 class GreenhouseController {
     async getAllGreenhouses(req, res) {
         try {
@@ -13,6 +14,10 @@ class GreenhouseController {
           id,
           name,
           location,
+          latitude,
+          longitude,
+          city,
+          region,
           dimensions,
           area_m2,
           crop_type,
@@ -58,6 +63,10 @@ class GreenhouseController {
           id,
           name,
           location,
+          latitude,
+          longitude,
+          city,
+          region,
           dimensions,
           area_m2,
           crop_type,
@@ -222,8 +231,8 @@ class GreenhouseController {
     }
     formatGreenhouseResponse(greenhouse) {
         const locationParts = greenhouse.location.split(', ');
-        const city = locationParts[locationParts.length - 2] || 'Unknown';
-        const region = locationParts[locationParts.length - 1] || 'Unknown';
+        const city = greenhouse.city || locationParts[locationParts.length - 2] || 'Unknown';
+        const region = greenhouse.region || locationParts[locationParts.length - 1] || 'Unknown';
         return {
             id: greenhouse.id,
             name: greenhouse.name,
@@ -232,8 +241,8 @@ class GreenhouseController {
                 city: city,
                 region: region,
                 coordinates: {
-                    lat: 52.0607,
-                    lon: 4.3517
+                    lat: parseFloat(greenhouse.latitude) || 52.0607,
+                    lon: parseFloat(greenhouse.longitude) || 4.3517
                 }
             },
             details: {
@@ -278,18 +287,38 @@ class GreenhouseController {
                 return;
             }
             const { name, location, dimensions, area_m2, crop_type, variety, rootstock, planting_date, supplier, substrate_info, climate_system, lighting_system, growing_system, co2_target_ppm, temperature_range_c, configuration } = req.body;
+            const geocodedLocation = await (0, geocoding_1.geocodeLocation)(location);
+            let latitude = 52.0607;
+            let longitude = 4.3517;
+            let city = 'Unknown';
+            let region = 'Netherlands';
+            if (geocodedLocation) {
+                latitude = geocodedLocation.lat;
+                longitude = geocodedLocation.lon;
+                city = geocodedLocation.city || 'Unknown';
+                region = geocodedLocation.region || geocodedLocation.country || 'Netherlands';
+            }
+            else {
+                const parsed = (0, geocoding_1.parseLocationString)(location);
+                city = parsed.city;
+                region = parsed.region;
+            }
             const createQuery = `
         INSERT INTO greenhouses (
-          name, location, dimensions, area_m2, crop_type, variety, rootstock,
+          name, location, latitude, longitude, city, region, dimensions, area_m2, crop_type, variety, rootstock,
           planting_date, supplier, substrate_info, climate_system, lighting_system,
           growing_system, co2_target_ppm, temperature_range_c, configuration
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
         RETURNING *
       `;
             const values = [
                 name,
                 location,
+                latitude,
+                longitude,
+                city,
+                region,
                 JSON.stringify(dimensions),
                 area_m2,
                 crop_type || 'tomato',
@@ -346,8 +375,32 @@ class GreenhouseController {
             const updates = [];
             const values = [];
             let valueIndex = 1;
+            if (req.body.location) {
+                const geocodedLocation = await (0, geocoding_1.geocodeLocation)(req.body.location);
+                if (geocodedLocation) {
+                    updates.push(`location = $${valueIndex++}`);
+                    values.push(req.body.location);
+                    updates.push(`latitude = $${valueIndex++}`);
+                    values.push(geocodedLocation.lat);
+                    updates.push(`longitude = $${valueIndex++}`);
+                    values.push(geocodedLocation.lon);
+                    updates.push(`city = $${valueIndex++}`);
+                    values.push(geocodedLocation.city || 'Unknown');
+                    updates.push(`region = $${valueIndex++}`);
+                    values.push(geocodedLocation.region || geocodedLocation.country || 'Netherlands');
+                }
+                else {
+                    const parsed = (0, geocoding_1.parseLocationString)(req.body.location);
+                    updates.push(`location = $${valueIndex++}`);
+                    values.push(req.body.location);
+                    updates.push(`city = $${valueIndex++}`);
+                    values.push(parsed.city);
+                    updates.push(`region = $${valueIndex++}`);
+                    values.push(parsed.region);
+                }
+            }
             const allowedFields = [
-                'name', 'location', 'dimensions', 'area_m2', 'crop_type', 'variety',
+                'name', 'dimensions', 'area_m2', 'crop_type', 'variety',
                 'rootstock', 'planting_date', 'supplier', 'substrate_info', 'climate_system',
                 'lighting_system', 'growing_system', 'co2_target_ppm', 'temperature_range_c', 'configuration'
             ];
