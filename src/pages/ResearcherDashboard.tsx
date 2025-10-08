@@ -250,7 +250,7 @@ const ResearcherDashboard: React.FC = () => {
     if (selectedGreenhouse) {
       setFarmDetails({
         farmName: selectedGreenhouse.name,
-        farmId: selectedGreenhouse.id,
+        farmId: selectedGreenhouse.farmCode || selectedGreenhouse.id, // Use simple farm code if available
         location: `${selectedGreenhouse.location.city}, ${selectedGreenhouse.location.region}`,
         landArea: selectedGreenhouse.details.landArea,
         cropsGrown: selectedGreenhouse.crops.length,
@@ -358,7 +358,7 @@ const ResearcherDashboard: React.FC = () => {
         <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
           <p className="text-xs text-gray-500 font-medium mb-1">Farm ID:</p>
           <p className="text-sm font-bold text-gray-800">
-            {selectedGreenhouse ? selectedGreenhouse.id : 'N/A'}
+            {selectedGreenhouse ? (selectedGreenhouse.farmCode || 'N/A') : 'N/A'}
           </p>
         </div>
         {selectedGreenhouse && (
@@ -401,7 +401,7 @@ const ResearcherDashboard: React.FC = () => {
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   <div className="bg-gradient-to-br from-horti-green-50 to-horti-green-100/50 rounded-xl p-4 border border-horti-green-200/50 hover:shadow-soft transition-all duration-200">
                     <p className="text-xs text-gray-600 font-medium mb-1">Farm ID</p>
-                    <p className="text-sm font-bold text-gray-900 truncate">{farmDetails.farmId}</p>
+                    <p className="text-sm font-bold text-gray-900 truncate">{selectedGreenhouse?.farmCode || farmDetails.farmId}</p>
                   </div>
                   <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-4 border border-gray-200 hover:shadow-soft transition-all duration-200">
                     <p className="text-xs text-gray-600 font-medium mb-1">Location</p>

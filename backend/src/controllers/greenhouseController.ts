@@ -10,6 +10,7 @@ export class GreenhouseController {
       const query = `
         SELECT
           id,
+          farm_code,
           name,
           location,
           latitude,
@@ -63,6 +64,7 @@ export class GreenhouseController {
       const query = `
         SELECT
           id,
+          farm_code,
           name,
           location,
           latitude,
@@ -258,6 +260,7 @@ export class GreenhouseController {
 
     return {
       id: greenhouse.id,
+      farmCode: greenhouse.farm_code || 'FARM-XXX', // Simple farm code
       name: greenhouse.name,
       location: {
         address: greenhouse.location,

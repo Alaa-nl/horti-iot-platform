@@ -1,6 +1,7 @@
 // Greenhouse type definitions
 export interface Greenhouse {
   id: string;
+  farmCode?: string; // Simple farm ID like FARM-001
   name: string;
   location: {
     city: string;
