@@ -6,10 +6,11 @@ import { Link, useNavigate } from 'react-router-dom';
 interface HoverSidebarProps {
   children?: React.ReactNode;
   additionalContent?: React.ReactNode;
+  isOpen?: boolean;
+  onToggle?: () => void;
 }
 
-const HoverSidebar: React.FC<HoverSidebarProps> = ({ children, additionalContent }) => {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+const HoverSidebar: React.FC<HoverSidebarProps> = ({ children, additionalContent, isOpen = true, onToggle }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -82,8 +83,9 @@ const HoverSidebar: React.FC<HoverSidebarProps> = ({ children, additionalContent
       <motion.div
         initial={false}
         animate={{
-          x: 0
+          x: isOpen ? 0 : -320
         }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
         className="fixed left-0 top-0 h-full w-80 bg-white shadow-2xl z-50 overflow-y-auto scrollbar-thin"
       >
         {/* User Profile */}
@@ -134,7 +136,6 @@ const HoverSidebar: React.FC<HoverSidebarProps> = ({ children, additionalContent
                 key={item.path}
                 to={item.path}
                 className="w-full flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-blue-50 hover:border-blue-200 transition-all duration-200 group"
-                onClick={() => setSidebarOpen(false)}
               >
                 <span className="text-sm font-medium text-gray-700 group-hover:text-blue-700">
                   {item.label}

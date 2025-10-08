@@ -2,7 +2,11 @@ import React from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { motion } from 'framer-motion';
 
-const Header: React.FC = () => {
+interface HeaderProps {
+  onToggleSidebar?: () => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
   const { user, logout } = useAuth();
 
   const getDashboardTitle = () => {
@@ -24,6 +28,27 @@ const Header: React.FC = () => {
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
+          {/* Hamburger Menu Button */}
+          <button
+            onClick={onToggleSidebar}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+            title="Toggle Sidebar"
+          >
+            <svg
+              className="w-6 h-6 text-gray-700"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 6h16M4 12h16M4 18h16"
+              />
+            </svg>
+          </button>
+
           <div className="h-10 w-10 bg-gradient-to-br from-horti-green-500 to-horti-green-600 rounded-xl flex items-center justify-center shadow-glow-green">
             <span className="text-xl">🌱</span>
           </div>
