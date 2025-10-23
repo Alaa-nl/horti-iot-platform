@@ -10,7 +10,6 @@ import authRoutes from './routes/auth';
 import greenhouseRoutes from './routes/greenhouse';
 import adminRoutes from './routes/admin.routes';
 import profileRoutes from './routes/profile.routes';
-import phytosenseRoutes from './routes/phytosense.routes';
 
 // Import database
 import database from './utils/database';
@@ -122,7 +121,6 @@ class App {
     this.app.use('/api/greenhouses', greenhouseRoutes);
     this.app.use('/api/admin', adminRoutes);
     this.app.use('/api/profile', profileRoutes);
-    this.app.use('/api/phytosense', phytosenseRoutes);
 
     // 404 handler for API routes
     this.app.use('/api/*', (req: Request, res: Response) => {

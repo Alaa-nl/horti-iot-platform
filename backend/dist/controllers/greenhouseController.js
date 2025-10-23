@@ -12,6 +12,7 @@ class GreenhouseController {
             const query = `
         SELECT
           id,
+          farm_code,
           name,
           location,
           latitude,
@@ -61,6 +62,7 @@ class GreenhouseController {
             const query = `
         SELECT
           id,
+          farm_code,
           name,
           location,
           latitude,
@@ -235,6 +237,7 @@ class GreenhouseController {
         const region = greenhouse.region || locationParts[locationParts.length - 1] || 'Unknown';
         return {
             id: greenhouse.id,
+            farmCode: greenhouse.farm_code || 'FARM-XXX',
             name: greenhouse.name,
             location: {
                 address: greenhouse.location,

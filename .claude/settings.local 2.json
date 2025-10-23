@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npm run build:*)",
+      "Read(//Users/alaadrobe/Desktop/Intrenship/Horti-IoT/**)",
+      "Read(//Users/alaadrobe/Desktop/Intrenship/resources screenshots/One driveAll_Codes and files /**)",
+      "Read(//Users/alaadrobe/Desktop/Intrenship/resources screenshots/GGG_Dat_Sets/data_example/**)",
+      "Bash(npm start)",
+      "Read(//Users/alaadrobe/Desktop/Intrenship/Database/**)",
+      "Read(//Users/alaadrobe/Desktop/Intrenship/resources screenshots/**)",
+      "Read(//Users/alaadrobe/Desktop/Intrenship/Researcher dashboard desired/**)",
+      "Bash(npm run dev:*)",
+      "WebSearch",
+      "Bash(npm run start:*)",
+      "Bash(PORT=3001 npm start)",
+      "Bash(cat:*)",
+      "Bash(PORT=3002 npm start)",
+      "Bash(npx tsc:*)",
+      "Bash(docker exec:*)",
+      "Bash(lsof:*)",
+      "Bash(kill:*)",
+      "Bash(curl:*)",
+      "Bash(psql:*)",
+      "Bash(node:*)",
+      "Bash(docker ps:*)",
+      "Bash(awk:*)",
+      "Read(//Users/alaadrobe/Desktop/**)",
+      "Bash(npm ls:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(PORT=3002 node server/phytosense-proxy.js)",
+      "Bash(python3:*)",
+      "Bash(find:*)",
+      "Bash(timeout 60 npm run build:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -13,6 +13,7 @@ const auth_1 = __importDefault(require("./routes/auth"));
 const greenhouse_1 = __importDefault(require("./routes/greenhouse"));
 const admin_routes_1 = __importDefault(require("./routes/admin.routes"));
 const profile_routes_1 = __importDefault(require("./routes/profile.routes"));
+const phytosense_routes_1 = __importDefault(require("./routes/phytosense.routes"));
 const database_1 = __importDefault(require("./utils/database"));
 const security_1 = require("./middleware/security");
 const tokenService_1 = __importDefault(require("./services/tokenService"));
@@ -94,6 +95,7 @@ class App {
         this.app.use('/api/greenhouses', greenhouse_1.default);
         this.app.use('/api/admin', admin_routes_1.default);
         this.app.use('/api/profile', profile_routes_1.default);
+        this.app.use('/api/phytosense', phytosense_routes_1.default);
         this.app.use('/api/*', (req, res) => {
             res.status(404).json({
                 success: false,

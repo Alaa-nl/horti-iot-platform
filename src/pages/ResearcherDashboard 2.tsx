@@ -10,7 +10,7 @@ import { Greenhouse } from '../types/greenhouse';
 import GreenhouseSelector from '../components/greenhouse/GreenhouseSelector';
 import { useAuth } from '../contexts/AuthContext';
 import authService from '../services/authService';
-import PhytoSenseOptimized from '../components/phytosense/PhytoSenseOptimized';
+import PhytoSensePanel from '../components/phytosense/PhytoSensePanel';
 
 // Data interfaces
 interface FarmDetails {
@@ -746,7 +746,7 @@ const ResearcherDashboard: React.FC = () => {
 
             {/* PhytoSense 2grow Data Panel - Full Width */}
             <div className="col-span-12 mt-6">
-              <PhytoSenseOptimized />
+              <PhytoSensePanel />
             </div>
 
           </motion.div>
