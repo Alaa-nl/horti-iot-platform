@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.logSecurityEvent = exports.preventSQLInjection = exports.securityHeaders = exports.hashToken = exports.generateSecureToken = exports.sanitizeRequestBody = exports.sanitizeInput = exports.generalApiRateLimit = exports.consumeLoginAttempt = exports.loginRateLimit = void 0;
+exports.logSecurityEvent = exports.preventSQLInjection = exports.securityHeaders = exports.hashToken = exports.generateSecureToken = exports.sanitizeRequestBody = exports.sanitizeInput = exports.phytoSenseRateLimit = exports.generalApiRateLimit = exports.consumeLoginAttempt = exports.loginRateLimit = void 0;
 const rate_limiter_flexible_1 = require("rate-limiter-flexible");
 const database_1 = __importDefault(require("../utils/database"));
 const crypto_1 = __importDefault(require("crypto"));
@@ -24,6 +24,12 @@ const generalRateLimiter = new rate_limiter_flexible_1.RateLimiterMemory({
     keyPrefix: 'general_api',
     points: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'),
     duration: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000') / 1000
+});
+const phytoSenseRateLimiter = new rate_limiter_flexible_1.RateLimiterMemory({
+    keyPrefix: 'phytosense_api',
+    points: parseInt(process.env.PHYTOSENSE_RATE_LIMIT_MAX_REQUESTS || '20'),
+    duration: parseInt(process.env.PHYTOSENSE_RATE_LIMIT_WINDOW_MS || '60000') / 1000,
+    blockDuration: 60
 });
 const loginRateLimit = async (req, res, next) => {
     try {
@@ -90,6 +96,34 @@ const generalApiRateLimit = async (req, res, next) => {
     }
 };
 exports.generalApiRateLimit = generalApiRateLimit;
+const phytoSenseRateLimit = async (req, res, next) => {
+    try {
+        const key = req.user?.userId || req.ip || req.socket.remoteAddress || 'unknown';
+        await phytoSenseRateLimiter.consume(key);
+        const rateLimiterState = await phytoSenseRateLimiter.get(key);
+        if (rateLimiterState) {
+            res.setHeader('X-RateLimit-Limit', '20');
+            res.setHeader('X-RateLimit-Remaining', String(Math.max(0, 20 - rateLimiterState.consumedPoints)));
+            res.setHeader('X-RateLimit-Reset', String(new Date(Date.now() + rateLimiterState.msBeforeNext).getTime()));
+        }
+        next();
+    }
+    catch (rateLimiterRes) {
+        const retryAfter = Math.round(rateLimiterRes.msBeforeNext / 1000) || 1;
+        res.setHeader('Retry-After', String(retryAfter));
+        res.setHeader('X-RateLimit-Limit', '20');
+        res.setHeader('X-RateLimit-Remaining', '0');
+        res.setHeader('X-RateLimit-Reset', String(new Date(Date.now() + rateLimiterRes.msBeforeNext).getTime()));
+        res.status(429).json({
+            success: false,
+            message: 'PhytoSense API rate limit exceeded. Please try again later.',
+            retryAfter,
+            limit: 20,
+            window: '1 minute'
+        });
+    }
+};
+exports.phytoSenseRateLimit = phytoSenseRateLimit;
 const sanitizeInput = (input) => {
     if (typeof input === 'string') {
         return input

@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 export declare const loginRateLimit: (req: Request, res: Response, next: NextFunction) => Promise<void>;
 export declare const consumeLoginAttempt: (req: Request, email: string, success: boolean) => Promise<void>;
 export declare const generalApiRateLimit: (req: Request, res: Response, next: NextFunction) => Promise<void>;
+export declare const phytoSenseRateLimit: (req: Request, res: Response, next: NextFunction) => Promise<void>;
 export declare const sanitizeInput: (input: any) => any;
 export declare const sanitizeRequestBody: (req: Request, res: Response, next: NextFunction) => void;
 export declare const generateSecureToken: () => string;

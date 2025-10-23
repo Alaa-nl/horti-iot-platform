@@ -123,9 +123,12 @@ const PhytoSenseOptimized: React.FC<PhytoSenseOptimizedProps> = ({ className = '
       const promises: Promise<any>[] = [];
       const types: ('diameter' | 'sapflow')[] = [];
 
+      // Get API URL from environment
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
+
       // Fetch diameter data if needed
       if (measurementType === 'both' || measurementType === 'diameter') {
-        const diameterUrl = `http://localhost:3001/api/phytosense/data/${selectedDevice.diameterTDID}?setup_id=${selectedDevice.setupId}&channel=0&after=${dates.after}&before=${dates.before}&aggregation=${aggMode}`;
+        const diameterUrl = `${API_URL}/phytosense/data/${selectedDevice.diameterTDID}?setup_id=${selectedDevice.setupId}&channel=0&after=${dates.after}&before=${dates.before}&aggregation=${aggMode}`;
         promises.push(
           fetch(diameterUrl, {
             headers: {
@@ -139,7 +142,7 @@ const PhytoSenseOptimized: React.FC<PhytoSenseOptimizedProps> = ({ className = '
 
       // Fetch sap flow data if needed
       if (measurementType === 'both' || measurementType === 'sapflow') {
-        const sapFlowUrl = `http://localhost:3001/api/phytosense/data/${selectedDevice.sapFlowTDID}?setup_id=${selectedDevice.setupId}&channel=0&after=${dates.after}&before=${dates.before}&aggregation=${aggMode}`;
+        const sapFlowUrl = `${API_URL}/phytosense/data/${selectedDevice.sapFlowTDID}?setup_id=${selectedDevice.setupId}&channel=0&after=${dates.after}&before=${dates.before}&aggregation=${aggMode}`;
         promises.push(
           fetch(sapFlowUrl, {
             headers: {

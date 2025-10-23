@@ -4,19 +4,12 @@
 import axios, { AxiosInstance } from 'axios';
 import { DOMParser } from 'xmldom';
 import { logger } from '../utils/logger';
+import { phytoSenseConfig, PhytoSenseConfig } from '../config/phytosense.config';
+import { cacheService } from './cache.service';
 
 // Types
 export type AggregationMode = 'raw' | 'hourly' | '6hour' | 'daily' | 'weekly';
 
-export interface PhytoSenseConfig {
-  baseUrl: string;
-  account: string;
-  appKey: string;
-  auth: {
-    username: string;
-    password: string;
-  };
-}
 
 export interface PhytoSenseDataPoint {
   dateTime: Date;
@@ -57,16 +50,8 @@ class PhytoSenseService {
   private devices: PhytoSenseDevice[];
 
   constructor() {
-    // Configuration - In production, these should come from environment variables
-    this.config = {
-      baseUrl: process.env.PHYTOSENSE_BASE_URL || 'https://www.phytosense.net/PhytoSense/v1',
-      account: process.env.PHYTOSENSE_ACCOUNT || 'Pebble',
-      appKey: process.env.PHYTOSENSE_APP_KEY || 'e8d9e660e023afc3bb3a03f9a59e8213',
-      auth: {
-        username: process.env.PHYTOSENSE_USERNAME || 'aaldrobe',
-        password: process.env.PHYTOSENSE_PASSWORD || 'u4E4Zb100a8v'
-      }
-    };
+    // Load validated configuration
+    this.config = phytoSenseConfig;
 
     // Create axios instance with default configuration
     this.axiosInstance = axios.create({
@@ -79,9 +64,9 @@ class PhytoSenseService {
         'Accept': 'application/xml, text/xml',
         'User-Agent': 'HORTI-IOT-Platform/1.0'
       },
-      timeout: 60000, // 60 seconds
-      maxContentLength: 100000000, // 100MB
-      maxBodyLength: 100000000
+      timeout: this.config.timeout,
+      maxContentLength: this.config.maxContentLength,
+      maxBodyLength: this.config.maxContentLength
     });
 
     // Device configurations
@@ -185,7 +170,7 @@ class PhytoSenseService {
   }
 
   /**
-   * Fetch data from PhytoSense API with retry logic
+   * Fetch data from PhytoSense API with retry logic and caching
    */
   public async fetchData(
     tdid: number,
@@ -202,6 +187,20 @@ class PhytoSenseService {
   ): Promise<PhytoSenseResponse> {
     const maxRetries = 2;
 
+    // Generate cache key
+    const cacheKey = cacheService.generatePhytoSenseKey(tdid, params, aggregation);
+
+    // Check cache first
+    const cachedData = cacheService.get<PhytoSenseResponse>(cacheKey);
+    if (cachedData) {
+      logger.info('Returning cached PhytoSense data', {
+        tdid,
+        aggregation,
+        dataPoints: cachedData.dataPoints
+      });
+      return cachedData;
+    }
+
     try {
       // Build URL
       const url = `/${this.config.account}/DeviceTransformation/${tdid}`;
@@ -212,7 +211,7 @@ class PhytoSenseService {
         ...params
       };
 
-      logger.info('Fetching PhytoSense data', {
+      logger.info('Fetching PhytoSense data from API', {
         tdid,
         params: requestParams,
         aggregation,
@@ -258,6 +257,18 @@ class PhytoSenseService {
         tdid,
         dataPoints: result.dataPoints,
         aggregation
+      });
+
+      // Cache the result with appropriate TTL
+      const startDate = new Date(params.after || params.from || new Date());
+      const endDate = new Date(params.before || params.till || new Date());
+      const ttl = cacheService.calculateTTL(startDate, endDate);
+
+      cacheService.set(cacheKey, result, ttl);
+      logger.debug('Cached PhytoSense data', {
+        tdid,
+        aggregation,
+        ttl
       });
 
       return result;

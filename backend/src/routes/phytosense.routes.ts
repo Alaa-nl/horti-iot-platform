@@ -3,7 +3,9 @@
 
 import { Router, Request, Response } from 'express';
 import { authenticateToken } from '../middleware/auth';
+import { phytoSenseRateLimit } from '../middleware/security';
 import { phytoSenseService, AggregationMode } from '../services/phytosense.service';
+import { cacheService } from '../services/cache.service';
 import { logger } from '../utils/logger';
 
 const router = Router();
@@ -23,7 +25,7 @@ const router = Router();
  *
  * @returns JSON response with aggregated data
  */
-router.get('/data/:dtid', authenticateToken, async (req: Request, res: Response) => {
+router.get('/data/:dtid', authenticateToken, phytoSenseRateLimit, async (req: Request, res: Response): Promise<any> => {
   try {
     const { dtid } = req.params;
     const { aggregation, ...queryParams } = req.query;
@@ -66,6 +68,7 @@ router.get('/data/:dtid', authenticateToken, async (req: Request, res: Response)
 
     // Return successful response
     res.json(result);
+    return;
 
   } catch (error: any) {
     logger.error('PhytoSense route error', {
@@ -80,12 +83,14 @@ router.get('/data/:dtid', authenticateToken, async (req: Request, res: Response)
         message: error.message,
         error: error.error
       });
+      return;
     } else {
       res.status(500).json({
         success: false,
         message: 'Internal server error',
         error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
+      return;
     }
   }
 });
@@ -96,9 +101,9 @@ router.get('/data/:dtid', authenticateToken, async (req: Request, res: Response)
  *
  * @returns Array of device configurations
  */
-router.get('/devices', authenticateToken, async (req: Request, res: Response) => {
+router.get('/devices', authenticateToken, async (req: Request, res: Response): Promise<any> => {
   try {
-    const devices = phytoSenseService.getDevices();
+    const devices = await phytoSenseService.getDevices();
 
     logger.info('PhytoSense devices requested', {
       user: (req as any).user?.email
@@ -162,7 +167,7 @@ router.get('/health', async (req: Request, res: Response) => {
  *
  * @returns Suggested aggregation mode
  */
-router.post('/aggregate-suggestion', authenticateToken, async (req: Request, res: Response) => {
+router.post('/aggregate-suggestion', authenticateToken, async (req: Request, res: Response): Promise<any> => {
   try {
     const { startDate, endDate } = req.body;
 
@@ -203,6 +208,62 @@ router.post('/aggregate-suggestion', authenticateToken, async (req: Request, res
     res.status(500).json({
       success: false,
       message: 'Failed to calculate aggregation suggestion',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+/**
+ * GET /api/phytosense/cache/stats
+ * Get cache statistics (admin only)
+ *
+ * @returns Cache statistics including size and entries
+ */
+router.get('/cache/stats', authenticateToken, async (req: Request, res: Response): Promise<any> => {
+  try {
+    // TODO: Add admin role check when implementing RBAC
+    const stats = cacheService.getStats();
+
+    res.json({
+      success: true,
+      stats
+    });
+  } catch (error: any) {
+    logger.error('Cache stats error', {
+      error: error.message
+    });
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve cache statistics',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+/**
+ * DELETE /api/phytosense/cache
+ * Clear cache (admin only)
+ *
+ * @returns Success message
+ */
+router.delete('/cache', authenticateToken, async (req: Request, res: Response): Promise<any> => {
+  try {
+    // TODO: Add admin role check when implementing RBAC
+    cacheService.clear();
+
+    res.json({
+      success: true,
+      message: 'Cache cleared successfully'
+    });
+  } catch (error: any) {
+    logger.error('Cache clear error', {
+      error: error.message
+    });
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to clear cache',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }

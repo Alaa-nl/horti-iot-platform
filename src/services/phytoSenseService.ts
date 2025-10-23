@@ -1,17 +1,11 @@
 // PhytoSense (2grow) API Service
-// Handles all communication with the 2grow PhytoSense API for plant monitoring data
+// Handles all communication with backend API for PhytoSense plant monitoring data
 
 import { logger } from '../utils/logger';
 
-// API Configuration
+// Backend API Configuration
 const API_CONFIG = {
-  baseUrl: 'https://www.phytosense.net/PhytoSense/v1',
-  account: 'Pebble',
-  appKey: 'e8d9e660e023afc3bb3a03f9a59e8213',
-  auth: {
-    username: 'aaldrobe',
-    password: 'u4E4Zb100a8v'
-  }
+  baseUrl: process.env.REACT_APP_API_URL || 'http://localhost:3000/api'
 };
 
 // Device configurations from the provided data
@@ -27,108 +21,28 @@ export interface DeviceConfig {
   cropType?: string;
 }
 
-export const DEVICE_CONFIGS: DeviceConfig[] = [
-  {
-    setupId: 1324,
-    name: 'Stem051 - NL 2022 MKB Raak',
-    fromDate: '2022-10-19T00:00:00',
-    toDate: '2023-06-01T09:42:23',
-    diameterTDID: 33385,
-    diameterChannelId: 0,
-    sapFlowTDID: 33387,
-    sapFlowChannelId: 0,
-    cropType: 'General'
-  },
-  {
-    setupId: 1324,
-    name: 'Stem127 - NL 2022 MKB Raak',
-    fromDate: '2022-10-19T00:00:00',
-    toDate: '2023-06-01T09:42:23',
-    diameterTDID: 33386,
-    diameterChannelId: 0,
-    sapFlowTDID: 33388,
-    sapFlowChannelId: 0,
-    cropType: 'General'
-  },
-  {
-    setupId: 1445,
-    name: 'Stem051 - NL 2023 Tomato',
-    fromDate: '2023-06-23T00:00:00',
-    toDate: '2023-08-25T13:30:00',
-    diameterTDID: 38210,
-    diameterChannelId: 0,
-    sapFlowTDID: 39916,
-    sapFlowChannelId: 0,
-    cropType: 'Tomato'
-  },
-  {
-    setupId: 1445,
-    name: 'Stem136 - NL 2023 Tomato',
-    fromDate: '2023-06-23T00:00:00',
-    toDate: '2023-08-25T13:30:00',
-    diameterTDID: 38211,
-    diameterChannelId: 0,
-    sapFlowTDID: 39915,
-    sapFlowChannelId: 0,
-    cropType: 'Tomato'
-  },
-  {
-    setupId: 1445,
-    name: 'Stem051 - NL 2023 Cucumber',
-    fromDate: '2023-08-25T13:30:00',
-    toDate: '2023-10-20T00:00:00',
-    diameterTDID: 38210,
-    diameterChannelId: 0,
-    sapFlowTDID: 39916,
-    sapFlowChannelId: 0,
-    cropType: 'Cucumber'
-  },
-  {
-    setupId: 1445,
-    name: 'Stem136 - NL 2023 Cucumber',
-    fromDate: '2023-08-25T13:30:00',
-    toDate: '2023-10-20T00:00:00',
-    diameterTDID: 38211,
-    diameterChannelId: 0,
-    sapFlowTDID: 39915,
-    sapFlowChannelId: 0,
-    cropType: 'Cucumber'
-  },
-  {
-    setupId: 1508,
-    name: 'Stem051 - NL 2023-2024 MKB Raak',
-    fromDate: '2023-11-01T00:00:00',
-    toDate: '2024-10-15T12:00:00',
-    diameterTDID: 39999,
-    diameterChannelId: 0,
-    sapFlowTDID: 39987,
-    sapFlowChannelId: 0,
-    cropType: 'General'
-  },
-  {
-    setupId: 1508,
-    name: 'Stem136 - NL 2023-2024 MKB Raak',
-    fromDate: '2023-11-01T00:00:00',
-    toDate: '2024-10-15T12:00:00',
-    diameterTDID: 40007,
-    diameterChannelId: 0,
-    sapFlowTDID: 39981,
-    sapFlowChannelId: 0,
-    cropType: 'General'
-  }
-];
+// Device configurations - now fetched from backend API instead of hardcoded
 
 // Data types
 export interface PhytoSenseDataPoint {
-  dateTime: string;
+  dateTime: Date;
   value: number;
 }
 
 export interface PhytoSenseResponse {
-  deviceTransformationId: number;
-  deviceTransformationChannelId: number;
-  getDateTime: string;
-  values: PhytoSenseDataPoint[];
+  success: boolean;
+  aggregation: string;
+  dataPoints: number;
+  data: PhytoSenseDataPoint[];
+  metadata?: {
+    setupId: number;
+    tdid: number;
+    channel: number;
+    dateRange: {
+      from: string;
+      till: string;
+    };
+  };
 }
 
 export interface DateRange {
@@ -139,26 +53,26 @@ export interface DateRange {
 }
 
 class PhytoSenseService {
-  private authHeader: string;
+  private devicesCache: DeviceConfig[] | null = null;
 
-  constructor() {
-    // Create basic auth header
-    const credentials = btoa(`${API_CONFIG.auth.username}:${API_CONFIG.auth.password}`);
-    this.authHeader = `Basic ${credentials}`;
+  /**
+   * Get JWT token from local storage
+   */
+  private getAuthToken(): string | null {
+    return localStorage.getItem('token');
   }
 
   /**
    * Build the API URL with query parameters
-   * Using local proxy to bypass CORS
    */
   private buildUrl(
     dtid: number,
     setupId: number,
     channelId: number,
-    dateRange?: DateRange
+    dateRange?: DateRange,
+    aggregation?: string
   ): string {
-    // Use local proxy server instead of direct API
-    const proxyUrl = 'http://localhost:3003/api/phytosense/data';
+    const apiUrl = `${API_CONFIG.baseUrl}/phytosense/data/${dtid}`;
 
     const params = new URLSearchParams({
       setup_id: setupId.toString(),
@@ -173,60 +87,12 @@ class PhytoSenseService {
       if (dateRange.till) params.append('till', dateRange.till);
     }
 
-    return `${proxyUrl}/${dtid}?${params.toString()}`;
-  }
-
-  /**
-   * Parse XML response to JavaScript object using browser-compatible DOMParser
-   */
-  private parseXMLResponse(xmlText: string): PhytoSenseResponse {
-    try {
-      // Use browser's built-in DOMParser for XML parsing
-      const parser = new DOMParser();
-      const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
-
-      // Check for parsing errors
-      const parserError = xmlDoc.querySelector('parsererror');
-      if (parserError) {
-        throw new Error('XML parsing error: ' + parserError.textContent);
-      }
-
-      // Extract root element attributes
-      const rootElement = xmlDoc.querySelector('DeviceTransformationChannelValues');
-      if (!rootElement) {
-        throw new Error('Invalid XML structure: missing root element');
-      }
-
-      const deviceTransformationId = parseInt(rootElement.getAttribute('DeviceTransformationId') || '0');
-      const deviceTransformationChannelId = parseInt(rootElement.getAttribute('DeviceTransformationChannelId') || '0');
-      const getDateTime = rootElement.getAttribute('GetDateTime') || '';
-
-      // Extract all value elements
-      const valueElements = xmlDoc.querySelectorAll('DeviceTransformationChannelValue');
-      const values: PhytoSenseDataPoint[] = [];
-
-      valueElements.forEach(element => {
-        const dateTime = element.getAttribute('DateTime');
-        const value = element.getAttribute('Value');
-
-        if (dateTime && value) {
-          values.push({
-            dateTime: dateTime,
-            value: parseFloat(value)
-          });
-        }
-      });
-
-      return {
-        deviceTransformationId,
-        deviceTransformationChannelId,
-        getDateTime,
-        values
-      };
-    } catch (error) {
-      logger.error('Error parsing XML response:', error);
-      throw new Error('Failed to parse PhytoSense API response');
+    // Add aggregation mode if provided
+    if (aggregation) {
+      params.append('aggregation', aggregation);
     }
+
+    return `${apiUrl}?${params.toString()}`;
   }
 
   /**
@@ -236,30 +102,42 @@ class PhytoSenseService {
     dtid: number,
     setupId: number,
     channelId: number,
-    dateRange?: DateRange
+    dateRange?: DateRange,
+    aggregation?: string
   ): Promise<PhytoSenseResponse> {
-    const url = this.buildUrl(dtid, setupId, channelId, dateRange);
+    const url = this.buildUrl(dtid, setupId, channelId, dateRange, aggregation);
+    const token = this.getAuthToken();
+
+    if (!token) {
+      throw new Error('Authentication required. Please log in.');
+    }
 
     try {
-      logger.info('Fetching PhytoSense data:', { url, dateRange });
+      logger.info('Fetching PhytoSense data from backend:', { url, dateRange, aggregation });
 
       const response = await fetch(url, {
         method: 'GET',
         headers: {
-          'Accept': 'application/xml, text/xml',
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
-        // No Authorization header needed - proxy handles authentication
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (response.status === 429) {
+        const data = await response.json();
+        throw new Error(data.message || 'Rate limit exceeded. Please try again later.');
       }
 
-      const xmlText = await response.text();
-      const data = this.parseXMLResponse(xmlText);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const data: PhytoSenseResponse = await response.json();
 
       logger.info('PhytoSense data fetched successfully:', {
-        dataPoints: data.values.length
+        dataPoints: data.dataPoints,
+        aggregation: data.aggregation
       });
 
       return data;
@@ -300,11 +178,44 @@ class PhytoSenseService {
   }
 
   /**
+   * Fetch devices from backend API
+   */
+  public async fetchDevices(): Promise<DeviceConfig[]> {
+    const token = this.getAuthToken();
+
+    if (!token) {
+      throw new Error('Authentication required. Please log in.');
+    }
+
+    try {
+      const response = await fetch(`${API_CONFIG.baseUrl}/phytosense/devices`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch devices: ${response.status}`);
+      }
+
+      const result = await response.json();
+      this.devicesCache = result.data;
+      return result.data;
+    } catch (error) {
+      logger.error('Error fetching devices:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get active devices (those with current or recent data)
    */
-  public getActiveDevices(): DeviceConfig[] {
+  public async getActiveDevices(): Promise<DeviceConfig[]> {
+    const devices = this.devicesCache || await this.fetchDevices();
     const now = new Date();
-    return DEVICE_CONFIGS.filter(device => {
+    return devices.filter(device => {
       if (!device.toDate) return true; // No end date means currently active
       const endDate = new Date(device.toDate);
       // Consider devices active if they ended within the last 30 days
@@ -316,8 +227,8 @@ class PhytoSenseService {
   /**
    * Get all available devices
    */
-  public getAllDevices(): DeviceConfig[] {
-    return DEVICE_CONFIGS;
+  public async getAllDevices(): Promise<DeviceConfig[]> {
+    return this.devicesCache || await this.fetchDevices();
   }
 
   /**

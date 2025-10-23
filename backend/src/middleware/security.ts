@@ -25,6 +25,14 @@ const generalRateLimiter = new RateLimiterMemory({
   duration: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000') / 1000
 });
 
+// PhytoSense API rate limiter - more restrictive due to external API costs
+const phytoSenseRateLimiter = new RateLimiterMemory({
+  keyPrefix: 'phytosense_api',
+  points: parseInt(process.env.PHYTOSENSE_RATE_LIMIT_MAX_REQUESTS || '20'), // 20 requests
+  duration: parseInt(process.env.PHYTOSENSE_RATE_LIMIT_WINDOW_MS || '60000') / 1000, // per minute
+  blockDuration: 60 // Block for 1 minute if exceeded
+});
+
 export const loginRateLimit = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const ipAddr = req.ip || req.socket.remoteAddress || '';
@@ -87,6 +95,44 @@ export const generalApiRateLimit = async (req: Request, res: Response, next: Nex
       success: false,
       message: 'Too many requests. Please slow down.',
       retryAfter: Math.round((rateLimiterRes as any).msBeforeNext / 1000) || 1
+    });
+  }
+};
+
+/**
+ * Rate limiting specifically for PhytoSense API endpoints
+ * More restrictive to protect external API quota and reduce costs
+ */
+export const phytoSenseRateLimit = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    // Use user ID if authenticated, otherwise IP address
+    const key = (req as any).user?.userId || req.ip || req.socket.remoteAddress || 'unknown';
+
+    await phytoSenseRateLimiter.consume(key);
+
+    // Add rate limit headers for transparency
+    const rateLimiterState = await phytoSenseRateLimiter.get(key);
+    if (rateLimiterState) {
+      res.setHeader('X-RateLimit-Limit', '20');
+      res.setHeader('X-RateLimit-Remaining', String(Math.max(0, 20 - rateLimiterState.consumedPoints)));
+      res.setHeader('X-RateLimit-Reset', String(new Date(Date.now() + rateLimiterState.msBeforeNext).getTime()));
+    }
+
+    next();
+  } catch (rateLimiterRes: any) {
+    const retryAfter = Math.round(rateLimiterRes.msBeforeNext / 1000) || 1;
+
+    res.setHeader('Retry-After', String(retryAfter));
+    res.setHeader('X-RateLimit-Limit', '20');
+    res.setHeader('X-RateLimit-Remaining', '0');
+    res.setHeader('X-RateLimit-Reset', String(new Date(Date.now() + rateLimiterRes.msBeforeNext).getTime()));
+
+    res.status(429).json({
+      success: false,
+      message: 'PhytoSense API rate limit exceeded. Please try again later.',
+      retryAfter,
+      limit: 20,
+      window: '1 minute'
     });
   }
 };

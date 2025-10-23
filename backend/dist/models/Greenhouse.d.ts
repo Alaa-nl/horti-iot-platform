@@ -21,6 +21,7 @@ export interface Greenhouse {
 }
 export interface GreenhouseResponse {
     id: string;
+    farmCode?: string;
     name: string;
     location: {
         address: string;
