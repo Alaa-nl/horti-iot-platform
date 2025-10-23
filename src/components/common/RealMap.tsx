@@ -1,16 +1,7 @@
-import React, { useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import React, { useEffect, useState, useRef } from 'react';
+import Map, { Marker, Popup, NavigationControl, FullscreenControl, ScaleControl } from 'react-map-gl/maplibre';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import { motion } from 'framer-motion';
-
-// Fix for default markers in React-Leaflet
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-});
 
 interface MapMarker {
   id: string;
@@ -30,78 +21,8 @@ interface RealMapProps {
   height?: string;
 }
 
-// Custom marker icons
-const createCustomIcon = (type: string, status: string) => {
-  const colors = {
-    active: '#10B981',
-    warning: '#F59E0B',
-    critical: '#EF4444',
-    offline: '#6B7280'
-  };
-
-  const icons = {
-    greenhouse: '🏠',
-    sensor: '📡',
-    irrigation: '💧',
-    alert: '⚠️'
-  };
-
-  const color = colors[status as keyof typeof colors] || '#10B981';
-  const emoji = icons[type as keyof typeof icons] || '📍';
-
-  return L.divIcon({
-    html: `
-      <div style="
-        background-color: ${color};
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        border: 2px solid white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 14px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        position: relative;
-      ">
-        ${emoji}
-        ${status === 'active' ? `
-          <div style="
-            position: absolute;
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
-            border-radius: 50%;
-            background-color: ${color};
-            opacity: 0.6;
-            animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
-          "></div>
-        ` : ''}
-      </div>
-      <style>
-        @keyframes ping {
-          0% { transform: scale(1); opacity: 1; }
-          75%, 100% { transform: scale(2); opacity: 0; }
-        }
-      </style>
-    `,
-    iconSize: [32, 32],
-    iconAnchor: [16, 16],
-    className: 'custom-marker'
-  });
-};
-
-// Component to update map view when center changes
-const ChangeView: React.FC<{ center: [number, number]; zoom: number }> = ({ center, zoom }) => {
-  const map = useMap();
-
-  useEffect(() => {
-    map.setView(center, zoom);
-  }, [center, zoom, map]);
-
-  return null;
-};
+// Map style - Street Map only
+const MAP_STYLE = 'https://tiles.openfreemap.org/styles/liberty';
 
 const RealMap: React.FC<RealMapProps> = ({
   center,
@@ -110,6 +31,27 @@ const RealMap: React.FC<RealMapProps> = ({
   className = '',
   height = '400px'
 }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [selectedMarker, setSelectedMarker] = useState<MapMarker | null>(null);
+  const [viewState, setViewState] = useState({
+    longitude: center.lng,
+    latitude: center.lat,
+    zoom: zoom,
+    pitch: 0,
+    bearing: 0
+  });
+
+  const mapRef = useRef<any>(null);
+
+  // Update view when center prop changes
+  useEffect(() => {
+    setViewState(prev => ({
+      ...prev,
+      longitude: center.lng,
+      latitude: center.lat
+    }));
+  }, [center.lng, center.lat]);
+
   // Default greenhouse marker at the center
   const defaultMarkers: MapMarker[] = [
     {
@@ -125,80 +67,219 @@ const RealMap: React.FC<RealMapProps> = ({
 
   const allMarkers = markers.length > 0 ? markers : defaultMarkers;
 
+  // Marker colors based on status
+  const getMarkerColor = (status: string) => {
+    const colors = {
+      active: '#10B981',
+      warning: '#F59E0B',
+      critical: '#EF4444',
+      offline: '#6B7280'
+    };
+    return colors[status as keyof typeof colors] || '#10B981';
+  };
+
+  // Marker emoji based on type
+  const getMarkerEmoji = (type: string) => {
+    const emojis = {
+      greenhouse: '🏠',
+      sensor: '📡',
+      irrigation: '💧',
+      alert: '⚠️'
+    };
+    return emojis[type as keyof typeof emojis] || '📍';
+  };
+
+  // Toggle expanded view
+  const toggleExpanded = () => {
+    setIsExpanded(!isExpanded);
+  };
+
+  // Fly to greenhouse location
+  const flyToGreenhouse = () => {
+    setViewState(prev => ({
+      ...prev,
+      longitude: center.lng,
+      latitude: center.lat,
+      zoom: 17,
+      pitch: 0,
+      bearing: 0
+    }));
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className={`relative bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden ${className}`}
-      style={{ height }}
+      className={`relative bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden ${className} ${
+        isExpanded ? 'fixed inset-4 z-[9999]' : ''
+      }`}
+      style={isExpanded ? { height: 'calc(100vh - 2rem)' } : { height }}
     >
-      {/* Map Header */}
-      <div className="absolute top-4 left-4 right-4 z-[1000] flex justify-between items-center pointer-events-none">
-        <div className="bg-white/95 backdrop-blur-sm rounded-2xl px-4 py-2 shadow-lg pointer-events-auto">
-          <h3 className="font-bold text-gray-800 text-sm">Real Map View</h3>
-          <p className="text-xs text-gray-600">
-            {center.lat.toFixed(4)}°N, {center.lng.toFixed(4)}°E
-          </p>
-        </div>
+      {/* Greenhouse Location Button - Top Left Below Controls */}
+      <div className="absolute top-[140px] left-[10px] z-[1000] pointer-events-auto">
+        <button
+          onClick={flyToGreenhouse}
+          className="bg-white rounded shadow-md hover:bg-gray-50 transition-colors w-[29px] h-[29px] flex items-center justify-center"
+          title="Go to Greenhouse Location"
+          style={{ border: 'none' }}
+        >
+          <span className="text-lg">🏠</span>
+        </button>
+      </div>
 
-        <div className="bg-white/95 backdrop-blur-sm rounded-2xl px-3 py-2 shadow-lg pointer-events-auto">
-          <div className="flex items-center text-xs text-gray-600">
-            <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-            <span>Live Map</span>
+      {/* Map Controls - Top Right */}
+      <div className="absolute top-4 right-4 z-[1000] flex items-center gap-2 pointer-events-none">
+        <div className="flex items-center gap-2 pointer-events-auto">
+          {/* Expand/Collapse Button */}
+          <button
+            onClick={toggleExpanded}
+            className="bg-white/95 backdrop-blur-sm rounded-2xl px-3 py-2 shadow-lg text-xs font-medium text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+            title={isExpanded ? 'Exit Fullscreen' : 'Expand Map'}
+          >
+            {isExpanded ? '⬇️ Minimize' : '⬆️ Expand'}
+          </button>
+
+          {/* Live Status */}
+          <div className="bg-white/95 backdrop-blur-sm rounded-2xl px-3 py-2 shadow-lg">
+            <div className="flex items-center text-xs text-gray-600">
+              <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+              <span>Live</span>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Map Container */}
-      <MapContainer
-        center={[center.lat, center.lng]}
-        zoom={zoom}
-        style={{ height: '100%', width: '100%' }}
-        className="z-0"
+      <Map
+        ref={mapRef}
+        {...viewState}
+        onMove={evt => setViewState(evt.viewState)}
+        mapStyle={MAP_STYLE}
+        style={{ width: '100%', height: '100%' }}
       >
-        <ChangeView center={[center.lat, center.lng]} zoom={zoom} />
+        {/* Navigation Controls (Zoom, Compass) */}
+        <NavigationControl position="top-left" showCompass={true} />
 
-        {/* OpenStreetMap tiles */}
-        <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        />
+        {/* Fullscreen Control */}
+        <FullscreenControl position="top-left" />
+
+        {/* Scale Control */}
+        <ScaleControl position="bottom-left" />
 
         {/* Markers */}
         {allMarkers.map((marker) => (
           <Marker
             key={marker.id}
-            position={[marker.lat, marker.lng]}
-            icon={createCustomIcon(marker.type, marker.status)}
+            longitude={marker.lng}
+            latitude={marker.lat}
+            anchor="bottom"
+            onClick={(e) => {
+              e.originalEvent.stopPropagation();
+              setSelectedMarker(marker);
+            }}
           >
-            <Popup className="custom-popup">
-              <div className="p-2">
-                <h4 className="font-semibold text-gray-800 mb-1">{marker.title}</h4>
-                <div className="flex items-center mb-2">
-                  <span className="text-xs text-gray-600 capitalize bg-gray-100 px-2 py-1 rounded mr-2">
-                    {marker.type}
-                  </span>
-                  <span className={`text-xs px-2 py-1 rounded capitalize ${
-                    marker.status === 'active' ? 'bg-green-100 text-green-800' :
-                    marker.status === 'warning' ? 'bg-yellow-100 text-yellow-800' :
-                    marker.status === 'critical' ? 'bg-red-100 text-red-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {marker.status}
-                  </span>
-                </div>
-                {marker.description && (
-                  <p className="text-xs text-gray-600 mb-2">{marker.description}</p>
-                )}
-                <div className="text-xs text-gray-500 border-t pt-2">
-                  📍 {marker.lat.toFixed(6)}°, {marker.lng.toFixed(6)}°
-                </div>
-              </div>
-            </Popup>
+            <div
+              style={{
+                backgroundColor: getMarkerColor(marker.status),
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                border: '3px solid white',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '18px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                cursor: 'pointer',
+                position: 'relative',
+                transition: 'transform 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'scale(1.2)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+            >
+              {getMarkerEmoji(marker.type)}
+              {marker.status === 'active' && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '-3px',
+                    left: '-3px',
+                    right: '-3px',
+                    bottom: '-3px',
+                    borderRadius: '50%',
+                    backgroundColor: getMarkerColor(marker.status),
+                    opacity: 0.6,
+                    animation: 'ping 2s cubic-bezier(0, 0, 0.2, 1) infinite',
+                  }}
+                />
+              )}
+            </div>
           </Marker>
         ))}
-      </MapContainer>
 
+        {/* Popup for selected marker */}
+        {selectedMarker && (
+          <Popup
+            longitude={selectedMarker.lng}
+            latitude={selectedMarker.lat}
+            anchor="top"
+            onClose={() => setSelectedMarker(null)}
+            closeButton={true}
+            closeOnClick={false}
+            className="custom-popup"
+          >
+            <div className="p-3 min-w-[200px]">
+              <h4 className="font-semibold text-gray-800 mb-2 text-sm">{selectedMarker.title}</h4>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xs text-gray-600 capitalize bg-gray-100 px-2 py-1 rounded">
+                  {selectedMarker.type}
+                </span>
+                <span className={`text-xs px-2 py-1 rounded capitalize ${
+                  selectedMarker.status === 'active' ? 'bg-green-100 text-green-800' :
+                  selectedMarker.status === 'warning' ? 'bg-yellow-100 text-yellow-800' :
+                  selectedMarker.status === 'critical' ? 'bg-red-100 text-red-800' :
+                  'bg-gray-100 text-gray-800'
+                }`}>
+                  {selectedMarker.status}
+                </span>
+              </div>
+              {selectedMarker.description && (
+                <p className="text-xs text-gray-600 mb-2 leading-relaxed">{selectedMarker.description}</p>
+              )}
+              <div className="text-xs text-gray-500 border-t pt-2 mt-2">
+                📍 {selectedMarker.lat.toFixed(6)}°, {selectedMarker.lng.toFixed(6)}°
+              </div>
+            </div>
+          </Popup>
+        )}
+      </Map>
+
+      {/* Ping animation styles */}
+      <style>{`
+        @keyframes ping {
+          0% { transform: scale(1); opacity: 1; }
+          75%, 100% { transform: scale(2); opacity: 0; }
+        }
+
+        .maplibregl-popup-content {
+          padding: 0 !important;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+          border-radius: 12px !important;
+        }
+
+        .maplibregl-popup-tip {
+          border-top-color: white !important;
+        }
+
+        .maplibregl-ctrl-group button {
+          width: 32px !important;
+          height: 32px !important;
+        }
+      `}</style>
     </motion.div>
   );
 };
