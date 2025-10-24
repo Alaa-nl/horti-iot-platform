@@ -67,37 +67,11 @@ const GreenhouseSelector: React.FC<GreenhouseSelectorProps> = ({
             transition={{ duration: 0.3, ease: "easeOut" }}
             className="mt-4 pt-4 border-t border-gray-200"
           >
-            <div className="grid grid-cols-2 gap-3 text-xs">
-              <div className="bg-gray-50 p-2 rounded-lg">
-                <span className="text-gray-600 font-medium">Location:</span>
-                <p className="font-bold text-gray-900 mt-0.5">{selectedGreenhouse.location.city}, {selectedGreenhouse.location.region}</p>
-              </div>
-              <div className="bg-gray-50 p-2 rounded-lg">
-                <span className="text-gray-600 font-medium">Size:</span>
-                <p className="font-bold text-gray-900 mt-0.5">{selectedGreenhouse.details.landArea} m²</p>
-              </div>
-              <div className="bg-gray-50 p-2 rounded-lg">
-                <span className="text-gray-600 font-medium">Type:</span>
-                <p className="font-bold text-gray-900 mt-0.5 capitalize">{selectedGreenhouse.details.type}</p>
-              </div>
-              <div className="bg-gray-50 p-2 rounded-lg">
-                <span className="text-gray-600 font-medium">Manager:</span>
-                <p className="font-bold text-gray-900 mt-0.5">{selectedGreenhouse.contact?.manager || 'N/A'}</p>
-              </div>
-            </div>
-
-            {/* Status indicators */}
-            <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-200">
-              <div className="flex items-center">
+            {/* Status indicator only */}
+            <div className="flex items-center justify-center">
+              <div className="flex items-center bg-horti-green-50 px-4 py-2 rounded-full border border-horti-green-200">
                 <div className="w-2 h-2 bg-horti-green-500 rounded-full mr-2 animate-pulse-soft shadow-glow-green"></div>
-                <span className="text-xs text-gray-700 font-semibold">Connected</span>
-              </div>
-              <div className="flex items-center text-xs text-gray-600 font-medium">
-                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                {Number(selectedGreenhouse.location.coordinates.lat).toFixed(2)}°, {Number(selectedGreenhouse.location.coordinates.lon).toFixed(2)}°
+                <span className="text-xs text-gray-700 font-semibold">Connected & Active</span>
               </div>
             </div>
           </motion.div>

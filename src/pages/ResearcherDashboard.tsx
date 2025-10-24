@@ -394,26 +394,30 @@ const ResearcherDashboard: React.FC = () => {
 
               {/* Farm Details Grid */}
               {selectedGreenhouse && (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <div className="bg-gradient-to-br from-horti-green-50 to-horti-green-100/50 rounded-xl p-4 border border-horti-green-200/50 hover:shadow-soft transition-all duration-200">
-                    <p className="text-xs text-gray-600 font-medium mb-1">Farm ID</p>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <div className="bg-gradient-to-br from-horti-green-50 to-horti-green-100/50 rounded-xl p-3 border border-horti-green-200/50 hover:shadow-soft transition-all duration-200">
+                    <p className="text-xs text-gray-600 font-medium mb-1">🆔 Farm ID</p>
                     <p className="text-sm font-bold text-gray-900 truncate">{selectedGreenhouse?.farmCode || farmDetails.farmId}</p>
                   </div>
-                  <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-4 border border-gray-200 hover:shadow-soft transition-all duration-200">
-                    <p className="text-xs text-gray-600 font-medium mb-1">Location</p>
-                    <p className="text-sm font-bold text-gray-900 truncate">{farmDetails.location}</p>
+                  <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-3 border border-gray-200 hover:shadow-soft transition-all duration-200">
+                    <p className="text-xs text-gray-600 font-medium mb-1">📍 Location</p>
+                    <p className="text-sm font-bold text-gray-900 truncate">{selectedGreenhouse.location.city}, {selectedGreenhouse.location.region}</p>
                   </div>
-                  <div className="bg-gradient-to-br from-horti-blue-50 to-horti-blue-100/50 rounded-xl p-4 border border-horti-blue-200/50 hover:shadow-soft transition-all duration-200">
-                    <p className="text-xs text-gray-600 font-medium mb-1">Land Area</p>
-                    <p className="text-sm font-bold text-gray-900">{farmDetails.landArea} m²</p>
+                  <div className="bg-gradient-to-br from-horti-blue-50 to-horti-blue-100/50 rounded-xl p-3 border border-horti-blue-200/50 hover:shadow-soft transition-all duration-200">
+                    <p className="text-xs text-gray-600 font-medium mb-1">📏 Land Area</p>
+                    <p className="text-sm font-bold text-gray-900">{selectedGreenhouse.details.landArea} m²</p>
                   </div>
-                  <div className="bg-gradient-to-br from-horti-sky-50 to-horti-sky-100/50 rounded-xl p-4 border border-horti-sky-200/50 hover:shadow-soft transition-all duration-200">
-                    <p className="text-xs text-gray-600 font-medium mb-1">Crops</p>
-                    <p className="text-sm font-bold text-gray-900">{farmDetails.cropsGrown} types</p>
+                  <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-xl p-3 border border-purple-200/50 hover:shadow-soft transition-all duration-200">
+                    <p className="text-xs text-gray-600 font-medium mb-1">🏢 Type</p>
+                    <p className="text-sm font-bold text-gray-900 capitalize">{selectedGreenhouse.details.type}</p>
                   </div>
-                  <div className="bg-gradient-to-br from-horti-earth-50 to-horti-earth-100/50 rounded-xl p-4 border border-horti-earth-200/50 hover:shadow-soft transition-all duration-200">
-                    <p className="text-xs text-gray-600 font-medium mb-1">Previous Yield</p>
-                    <p className="text-sm font-bold text-gray-900">{farmDetails.previousYield} kg/m²</p>
+                  <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 rounded-xl p-3 border border-amber-200/50 hover:shadow-soft transition-all duration-200">
+                    <p className="text-xs text-gray-600 font-medium mb-1">👤 Manager</p>
+                    <p className="text-sm font-bold text-gray-900 truncate">{selectedGreenhouse.contact?.manager || 'Unassigned'}</p>
+                  </div>
+                  <div className="bg-gradient-to-br from-indigo-50 to-indigo-100/50 rounded-xl p-3 border border-indigo-200/50 hover:shadow-soft transition-all duration-200">
+                    <p className="text-xs text-gray-600 font-medium mb-1">🗺️ Coordinates</p>
+                    <p className="text-xs font-bold text-gray-900">{Number(selectedGreenhouse.location.coordinates.lat).toFixed(2)}°, {Number(selectedGreenhouse.location.coordinates.lon).toFixed(2)}°</p>
                   </div>
                 </div>
               )}
