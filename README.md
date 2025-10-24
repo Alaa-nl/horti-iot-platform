@@ -224,3 +224,12 @@ For support and questions, please contact the development team or create an issu
 ---
 
 **Built with ❤️ for smart agriculture and sustainable farming**
+
+
+Login Credentials:
+  - Email: admin@horti-iot.com
+  - Password: admin123
+
+
+   - Email: researcher@horti-iot.com
+  - Password: password123

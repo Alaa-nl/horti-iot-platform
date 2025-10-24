@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: timescale/timescaledb:latest-pg15
+    container_name: horti-iot-db
+    environment:
+      POSTGRES_DB: horti_iot
+      POSTGRES_USER: horti_user
+      POSTGRES_PASSWORD: horti_password
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    networks:
+      - horti-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U horti_user -d horti_iot"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Optional: PgAdmin for database management
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: horti-iot-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@horti-iot.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "8080:80"
+    depends_on:
+      - postgres
+    networks:
+      - horti-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  horti-network:
+    driver: bridge

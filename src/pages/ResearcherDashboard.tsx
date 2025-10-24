@@ -1,571 +1,746 @@
 import React, { useState, useEffect } from 'react';
+import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { motion } from 'framer-motion';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import Layout from '../components/layout/Layout';
-import Card from '../components/common/Card';
-import ErrorBoundary from '../components/common/ErrorBoundary';
-import { ClimateData } from '../types';
+import RealMap from '../components/common/RealMap';
+// Use KNMI weather service for Netherlands-specific data
+import { fetchKNMIWeatherByCoordinates } from '../services/knmiWeatherService';
+import { greenhouseService } from '../services/greenhouseService';
+import { Greenhouse } from '../types/greenhouse';
+import GreenhouseSelector from '../components/greenhouse/GreenhouseSelector';
+import { useAuth } from '../contexts/AuthContext';
+import authService from '../services/authService';
+import PhytoSenseOptimized from '../components/phytosense/PhytoSenseOptimized';
 
-// Enhanced mock data matching HORTI-IOT research specifications (5-min intervals)
-interface EnhancedClimateData {
-  id: string;
-  timestamp: string;
-  // Core climate measurements (°C, g/m³, ppm, W/m²)
-  temperature: number;
-  absoluteHumidity: number; // g/m³
-  co2: number; // ppm
-  radiation: number; // W/m²
-  par: number; // µmol/m²/s - Photosynthetic Active Radiation
-  vpd: number; // kPa - Vapor Pressure Deficit
-  radiationOut: number; // W/m² - Outgoing radiation
-  // Plant-specific measurements
-  sapFlow: number; // g/h
-  stemDiameter: number; // mm
-  headThickness: number; // mm
-  lai: number; // m²/m² - Leaf Area Index
-  // Irrigation data
-  waterGiven: number; // l/m²
-  ec: number; // mS/cm - Electrical Conductivity
+// Data interfaces
+interface FarmDetails {
+  farmName: string;
+  farmId: string;
+  location: string;
+  landArea: number;
+  cropsGrown: number;
+  previousYield: number;
 }
 
-const mockEnhancedData: EnhancedClimateData[] = [
-  { 
-    id: '1', 
-    timestamp: '2024-01-01T00:00:00Z', 
-    temperature: 22.5, 
-    absoluteHumidity: 15.2, 
-    co2: 1000, 
-    radiation: 350, 
-    par: 280,
-    vpd: 0.8,
-    radiationOut: 120,
-    sapFlow: 45.2,
-    stemDiameter: 15.8,
-    headThickness: 9.5,
-    lai: 3.2,
-    waterGiven: 2.1,
-    ec: 2.8
-  },
-  { 
-    id: '2', 
-    timestamp: '2024-01-01T00:05:00Z', 
-    temperature: 22.8, 
-    absoluteHumidity: 15.5, 
-    co2: 980, 
-    radiation: 365, 
-    par: 290,
-    vpd: 0.75,
-    radiationOut: 125,
-    sapFlow: 46.1,
-    stemDiameter: 15.9,
-    headThickness: 9.6,
-    lai: 3.21,
-    waterGiven: 2.0,
-    ec: 2.7
-  },
-  { 
-    id: '3', 
-    timestamp: '2024-01-01T00:10:00Z', 
-    temperature: 23.1, 
-    absoluteHumidity: 15.8, 
-    co2: 950, 
-    radiation: 380, 
-    par: 305,
-    vpd: 0.72,
-    radiationOut: 130,
-    sapFlow: 47.3,
-    stemDiameter: 16.0,
-    headThickness: 9.7,
-    lai: 3.22,
-    waterGiven: 1.9,
-    ec: 2.6
-  },
-  { 
-    id: '4', 
-    timestamp: '2024-01-01T00:15:00Z', 
-    temperature: 23.4, 
-    absoluteHumidity: 16.1, 
-    co2: 930, 
-    radiation: 395, 
-    par: 315,
-    vpd: 0.70,
-    radiationOut: 135,
-    sapFlow: 48.5,
-    stemDiameter: 16.1,
-    headThickness: 9.8,
-    lai: 3.23,
-    waterGiven: 1.8,
-    ec: 2.5
-  },
-  { 
-    id: '5', 
-    timestamp: '2024-01-01T00:20:00Z', 
-    temperature: 23.6, 
-    absoluteHumidity: 16.3, 
-    co2: 920, 
-    radiation: 410, 
-    par: 325,
-    vpd: 0.68,
-    radiationOut: 140,
-    sapFlow: 49.2,
-    stemDiameter: 16.2,
-    headThickness: 9.9,
-    lai: 3.24,
-    waterGiven: 1.7,
-    ec: 2.4
-  },
-  { 
-    id: '6', 
-    timestamp: '2024-01-01T00:25:00Z', 
-    temperature: 23.2, 
-    absoluteHumidity: 16.0, 
-    co2: 940, 
-    radiation: 400, 
-    par: 320,
-    vpd: 0.71,
-    radiationOut: 138,
-    sapFlow: 48.8,
-    stemDiameter: 16.1,
-    headThickness: 9.8,
-    lai: 3.23,
-    waterGiven: 1.8,
-    ec: 2.5
-  }
-];
+interface WeatherData {
+  today: {
+    temp: number;
+    condition: string;
+    humidity: number;
+    windSpeed: number;
+    rainProbability: number;
+    feelsLike?: number;
+    pressure?: number;
+    sunrise?: string;
+    sunset?: string;
+  };
+  forecast: Array<{
+    day: string;
+    temp: number;
+    condition: string;
+  }>;
+}
 
-const mockSensorData = [
-  { name: 'Climate Sensors', value: 8, color: '#10B981', status: 'Active' },
-  { name: 'Sap Flow Sensors', value: 4, color: '#10B981', status: 'Active' },
-  { name: 'RGBD Cameras', value: 2, color: '#10B981', status: 'Active' },
-  { name: 'Irrigation Sensors', value: 3, color: '#F59E0B', status: 'Maintenance' },
-  { name: 'Light Sensors', value: 1, color: '#EF4444', status: 'Offline' },
-];
 
-// ML Predictions mock data
-const mockMLPredictions = {
-  yieldForecast: { value: 85.2, confidence: 92, unit: 'kg/m²' },
-  diseaseRisk: { value: 15, confidence: 88, status: 'Low' },
-  growthRate: { value: 12.5, confidence: 95, unit: '%' },
-  waterStress: { value: 8, confidence: 90, status: 'Minimal' },
-  optimalHarvestDate: { value: '2024-02-15', confidence: 85 }
-};
 
-// Greenhouse metadata
-const greenhouseMetadata = {
-  location: 'World Horti Center, Naaldwijk',
-  size: { length: 12.5, width: 6.4, height: 6.0, unit: 'm' },
-  crop: 'Xandor XR Tomato (Maxifort rootstock)',
-  plantingDate: '2022-09-12',
-  growingSystem: 'Cocopeat substrate',
-  climateSystem: 'Hoogendoorn/Priva',
-  lightingSystem: 'LED (18 mol/m²/day DLI)',
-  co2Target: 1000,
-  temperatureRange: { min: 18.5, max: 23.0, unit: '°C' }
-};
+interface HeadThicknessPrediction {
+  current: number;
+  unit: string;
+  forecast: Array<{
+    date: string;
+    day: string;
+    predicted: number;
+    confidence: number;
+    trend: 'up' | 'down' | 'stable';
+  }>;
+  lastUpdated: string;
+}
+
+interface SapFlowPrediction {
+  current: number;
+  unit: string;
+  predictions: Array<{
+    time: string;
+    predicted: number;
+    actual?: number;
+  }>;
+  nextUpdate: number; // seconds until next update
+  accuracy: number;
+  lastUpdated: string;
+}
+
 
 const ResearcherDashboard: React.FC = () => {
-  const [currentClimate, setCurrentClimate] = useState<EnhancedClimateData | null>(null);
-  const [realtimeData, setRealtimeData] = useState<EnhancedClimateData[]>(mockEnhancedData);
 
+  // Authentication state - get from AuthContext
+  const { user, logout } = useAuth();
+
+  // Greenhouse state
+  const [selectedGreenhouse, setSelectedGreenhouse] = useState<Greenhouse | null>(null);
+  const [greenhouses, setGreenhouses] = useState<Greenhouse[]>([]);
+  const [greenhouseLoading, setGreenhouseLoading] = useState(true);
+
+  // Dynamic farm details based on selected greenhouse
+  const [farmDetails, setFarmDetails] = useState<FarmDetails>({
+    farmName: 'Loading...',
+    farmId: '',
+    location: '',
+    landArea: 0,
+    cropsGrown: 0,
+    previousYield: 0
+  });
+
+  // Weather data
+  const [weatherData, setWeatherData] = useState<WeatherData>({
+    today: {
+      temp: 22,
+      condition: 'Loading...',
+      humidity: 0,
+      windSpeed: 0,
+      rainProbability: 0
+    },
+    forecast: []
+  });
+  const [weatherLoading, setWeatherLoading] = useState(true);
+  const [weatherError, setWeatherError] = useState<string | null>(null);
+
+  // Detector data state
+  const [detectorData, setDetectorData] = useState<any>({
+    moisture: 0,
+    waterConsumption: {
+      current: 0,
+      previous: 0
+    }
+  });
+
+  // Yield data state
+  const [yieldData, setYieldData] = useState<any[]>([]);
+
+  // ML Predictions State
+  const [headThickness, setHeadThickness] = useState<HeadThicknessPrediction>({
+    current: 12.5,
+    unit: 'cm',
+    forecast: [
+      { date: '2025-09-23', day: 'Tomorrow', predicted: 13.2, confidence: 92, trend: 'up' },
+      { date: '2025-09-24', day: 'Thu', predicted: 14.1, confidence: 87, trend: 'up' },
+      { date: '2025-09-25', day: 'Fri', predicted: 14.8, confidence: 82, trend: 'stable' }
+    ],
+    lastUpdated: new Date().toLocaleTimeString()
+  });
+
+  const [sapFlow, setSapFlow] = useState<SapFlowPrediction>({
+    current: 45.2,
+    unit: 'g/h',
+    predictions: [],
+    nextUpdate: 300,
+    accuracy: 94.5,
+    lastUpdated: new Date().toLocaleTimeString()
+  });
+
+
+  // Initialize sap flow predictions
   useEffect(() => {
-    // Simulate real-time updates
-    const interval = setInterval(() => {
-      const newData: EnhancedClimateData = {
-        id: Date.now().toString(),
-        timestamp: new Date().toISOString(),
-        temperature: 18.5 + Math.random() * 4.5, // 18.5-23°C range
-        absoluteHumidity: 14 + Math.random() * 4, // g/m³
-        co2: 900 + Math.random() * 200, // 900-1100 ppm
-        radiation: 300 + Math.random() * 200, // W/m²
-        par: 250 + Math.random() * 100, // µmol/m²/s
-        vpd: 0.6 + Math.random() * 0.4, // 0.6-1.0 kPa
-        radiationOut: 100 + Math.random() * 50,
-        sapFlow: 40 + Math.random() * 20, // g/h
-        stemDiameter: 15 + Math.random() * 2, // mm
-        headThickness: 9 + Math.random() * 2, // mm (target ~10mm)
-        lai: 3.0 + Math.random() * 0.5, // m²/m²
-        waterGiven: 1.5 + Math.random() * 1.0, // l/m²
-        ec: 2.0 + Math.random() * 1.0 // mS/cm
-      };
-      
-      setCurrentClimate(newData);
-      setRealtimeData(prev => [...prev.slice(-11), newData]);
+    // Generate initial 30-minute predictions
+    const now = new Date();
+    const predictions: Array<{time: string; predicted: number; actual?: number}> = [];
+    for (let i = 0; i < 30; i++) {
+      const time = new Date(now.getTime() + i * 60000);
+      const base = 45 + Math.sin(i / 5) * 10;
+      predictions.push({
+        time: time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        predicted: Math.round((base + Math.random() * 5) * 10) / 10,
+        actual: i < 10 ? Math.round((base + Math.random() * 3) * 10) / 10 : undefined
+      });
+    }
+    setSapFlow(prev => ({ ...prev, predictions }));
+
+    // Update sap flow every 5 seconds for demo (would be 5 minutes in production)
+    const sapFlowInterval = setInterval(() => {
+      setSapFlow(prev => {
+        const now = new Date();
+        const newPredictions = [...prev.predictions.slice(1)];
+        const lastValue = newPredictions[newPredictions.length - 1]?.predicted || 45;
+        newPredictions.push({
+          time: new Date(now.getTime() + 29 * 60000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          predicted: Math.round((lastValue + (Math.random() - 0.5) * 3) * 10) / 10
+        });
+
+        // Update actuals
+        const updatedPredictions = newPredictions.map((pred, idx) => {
+          if (idx < 10 && !pred.actual) {
+            return {
+              ...pred,
+              actual: Math.round((pred.predicted + (Math.random() - 0.5) * 2) * 10) / 10
+            };
+          }
+          return pred;
+        });
+
+        return {
+          ...prev,
+          current: updatedPredictions[0]?.actual || updatedPredictions[0]?.predicted || 45,
+          predictions: updatedPredictions,
+          lastUpdated: new Date().toLocaleTimeString(),
+          nextUpdate: 300
+        };
+      });
     }, 5000);
 
-    return () => clearInterval(interval);
+    // Update head thickness daily (simulated with faster interval for demo)
+    const headThicknessInterval = setInterval(() => {
+      setHeadThickness(prev => ({
+        ...prev,
+        current: Math.round((prev.current + (Math.random() - 0.3) * 0.5) * 10) / 10,
+        lastUpdated: new Date().toLocaleTimeString()
+      }));
+    }, 30000);
+
+    return () => {
+      clearInterval(sapFlowInterval);
+      clearInterval(headThicknessInterval);
+    };
   }, []);
 
-  const formatTime = (timestamp: string) => {
-    return new Date(timestamp).toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    });
+  // Initialize greenhouses on mount
+  useEffect(() => {
+    const initializeGreenhouses = async () => {
+      setGreenhouseLoading(true);
+      try {
+        const allGreenhouses = await greenhouseService.getAllGreenhouses();
+        setGreenhouses(allGreenhouses);
+
+        // Load saved greenhouse or default to first
+        const savedGreenhouse = await greenhouseService.loadSavedGreenhouse();
+        if (savedGreenhouse) {
+          setSelectedGreenhouse(savedGreenhouse);
+        }
+      } catch (error) {
+        console.error('Error loading greenhouses:', error);
+        // Log error if database operation fails
+        console.error('Database connection required for greenhouse operations');
+      } finally {
+        setGreenhouseLoading(false);
+      }
+    };
+
+    initializeGreenhouses();
+  }, []);
+
+  // Handle greenhouse selection
+  const handleGreenhouseSelect = async (greenhouse: Greenhouse) => {
+    setGreenhouseLoading(true);
+    setSelectedGreenhouse(greenhouse);
+    greenhouseService.saveGreenhouseSelection(greenhouse.id);
+
+    // Fetch fresh data for selected greenhouse
+    try {
+      const freshData = await greenhouseService.getGreenhouseById(greenhouse.id);
+      if (freshData) {
+        setSelectedGreenhouse(freshData);
+      }
+    } catch (error) {
+      console.error('Error fetching greenhouse data:', error);
+    } finally {
+      setGreenhouseLoading(false);
+    }
   };
 
-  const chartData = realtimeData.filter(item => item && item.timestamp).map(item => ({
-    time: formatTime(item.timestamp),
-    temperature: Number(item.temperature || 0).toFixed(1),
-    absoluteHumidity: Number(item.absoluteHumidity || 0).toFixed(1),
-    co2: Math.round(Number(item.co2 || 0)),
-    par: Math.round(Number(item.par || 0)),
-    vpd: Number(item.vpd || 0).toFixed(2),
-    sapFlow: Number(item.sapFlow || 0).toFixed(1),
-    stemDiameter: Number(item.stemDiameter || 0).toFixed(1),
-    headThickness: Number(item.headThickness || 0).toFixed(1),
-  }));
+  // Update farm details when greenhouse changes
+  useEffect(() => {
+    if (selectedGreenhouse) {
+      setFarmDetails({
+        farmName: selectedGreenhouse.name,
+        farmId: selectedGreenhouse.farmCode || selectedGreenhouse.id, // Use simple farm code if available
+        location: `${selectedGreenhouse.location.city}, ${selectedGreenhouse.location.region}`,
+        landArea: selectedGreenhouse.details.landArea,
+        cropsGrown: selectedGreenhouse.crops.length,
+        previousYield: selectedGreenhouse.performance.previousYield
+      });
+
+
+    }
+  }, [selectedGreenhouse]);
+
+  // Fetch weather data based on selected greenhouse
+  useEffect(() => {
+    if (!selectedGreenhouse) return;
+
+    const loadWeatherData = async () => {
+      setWeatherLoading(true);
+      setWeatherError(null);
+      try {
+        // Use greenhouse coordinates for weather
+        const knmiData = await fetchKNMIWeatherByCoordinates(
+          selectedGreenhouse.location.coordinates.lat,
+          selectedGreenhouse.location.coordinates.lon,
+          selectedGreenhouse.location.city
+        );
+
+        // Convert KNMI data to component format
+        setWeatherData({
+          today: {
+            temp: knmiData.today.temp,
+            condition: knmiData.today.condition,
+            humidity: knmiData.today.humidity,
+            windSpeed: knmiData.today.windSpeed,
+            rainProbability: knmiData.today.rainProbability,
+            feelsLike: knmiData.today.feelsLike,
+            pressure: knmiData.today.pressure,
+            sunrise: knmiData.today.sunrise,
+            sunset: knmiData.today.sunset
+          },
+          forecast: knmiData.forecast.map(day => ({
+            day: day.day,
+            temp: day.temp,
+            condition: day.condition.toLowerCase()
+          }))
+        });
+      } catch (error) {
+        setWeatherError('Failed to fetch weather data');
+        console.error('Weather fetch error:', error);
+      } finally {
+        setWeatherLoading(false);
+      }
+    };
+
+    loadWeatherData();
+    // Refresh weather data every 10 minutes
+    const weatherInterval = setInterval(loadWeatherData, 10 * 60 * 1000);
+
+    return () => clearInterval(weatherInterval);
+  }, [selectedGreenhouse]);
+
+
+
+  // Handle logout using AuthContext
+  const handleLogout = async () => {
+    if (window.confirm('Are you sure you want to logout?')) {
+      await logout();
+    }
+  };
+
+
+
+  const getWeatherIcon = (condition: string) => {
+    switch (condition.toLowerCase()) {
+      case 'sunny': return '☀️';
+      case 'cloudy': return '☁️';
+      case 'partly cloudy': return '⛅';
+      case 'rainy': return '🌧️';
+      case 'weather data unavailable': return '❌';
+      case 'unavailable': return '❓';
+      default: return '☀️';
+    }
+  };
+
+
+
+  const greenhouseContent = (
+    <div>
+      <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Greenhouse Information</h3>
+      <div className="space-y-3">
+        <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-200">
+          <p className="text-xs text-gray-500 font-medium mb-1">Selected Greenhouse:</p>
+          <p className="text-sm font-bold text-gray-800">
+            {selectedGreenhouse ? selectedGreenhouse.name : 'No greenhouse selected'}
+          </p>
+        </div>
+        <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+          <p className="text-xs text-gray-500 font-medium mb-1">Location:</p>
+          <p className="text-sm font-bold text-gray-800">
+            {selectedGreenhouse ? `${selectedGreenhouse.location.city}, ${selectedGreenhouse.location.region}` : 'No greenhouse selected'}
+          </p>
+        </div>
+        <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+          <p className="text-xs text-gray-500 font-medium mb-1">Farm ID:</p>
+          <p className="text-sm font-bold text-gray-800">
+            {selectedGreenhouse ? (selectedGreenhouse.farmCode || 'N/A') : 'N/A'}
+          </p>
+        </div>
+        {selectedGreenhouse && (
+          <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+            <p className="text-xs text-gray-500 font-medium mb-1">Land Area:</p>
+            <p className="text-sm font-bold text-gray-800">{farmDetails.landArea} m²</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 
   return (
-    <Layout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-900">Research Dashboard</h1>
-          <div className="flex items-center space-x-2">
-            <div className="h-2 w-2 bg-green-400 rounded-full animate-pulse"></div>
-            <span className="text-sm text-gray-600">Live Data</span>
+    <Layout sidebarContent={greenhouseContent}>
+      <div className="min-h-screen bg-gradient-to-br from-horti-green-50/50 via-white to-horti-blue-50/30 p-6">
+
+        {/* Top Section - Greenhouse Selector with Farm Details and Weather */}
+        <div className="max-w-full mx-auto mb-8 px-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Left: Greenhouse Selector merged with Farm Details */}
+            <div className="card-elevated p-8 lg:col-span-2">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                <span className="w-3 h-3 bg-horti-green-500 rounded-full mr-3 animate-pulse-soft shadow-glow-green"></span>
+                <span className="text-2xl mr-2">🏡</span>
+                Greenhouse Control Panel
+              </h2>
+
+              {/* Greenhouse Selector */}
+              <div className="mb-6">
+                <GreenhouseSelector
+                  greenhouses={greenhouses}
+                  selectedGreenhouse={selectedGreenhouse}
+                  onSelect={handleGreenhouseSelect}
+                  loading={greenhouseLoading}
+                />
+              </div>
+
+              {/* Farm Details Grid */}
+              {selectedGreenhouse && (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="bg-gradient-to-br from-horti-green-50 to-horti-green-100/50 rounded-xl p-4 border border-horti-green-200/50 hover:shadow-soft transition-all duration-200">
+                    <p className="text-xs text-gray-600 font-medium mb-1">Farm ID</p>
+                    <p className="text-sm font-bold text-gray-900 truncate">{selectedGreenhouse?.farmCode || farmDetails.farmId}</p>
+                  </div>
+                  <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-4 border border-gray-200 hover:shadow-soft transition-all duration-200">
+                    <p className="text-xs text-gray-600 font-medium mb-1">Location</p>
+                    <p className="text-sm font-bold text-gray-900 truncate">{farmDetails.location}</p>
+                  </div>
+                  <div className="bg-gradient-to-br from-horti-blue-50 to-horti-blue-100/50 rounded-xl p-4 border border-horti-blue-200/50 hover:shadow-soft transition-all duration-200">
+                    <p className="text-xs text-gray-600 font-medium mb-1">Land Area</p>
+                    <p className="text-sm font-bold text-gray-900">{farmDetails.landArea} m²</p>
+                  </div>
+                  <div className="bg-gradient-to-br from-horti-sky-50 to-horti-sky-100/50 rounded-xl p-4 border border-horti-sky-200/50 hover:shadow-soft transition-all duration-200">
+                    <p className="text-xs text-gray-600 font-medium mb-1">Crops</p>
+                    <p className="text-sm font-bold text-gray-900">{farmDetails.cropsGrown} types</p>
+                  </div>
+                  <div className="bg-gradient-to-br from-horti-earth-50 to-horti-earth-100/50 rounded-xl p-4 border border-horti-earth-200/50 hover:shadow-soft transition-all duration-200">
+                    <p className="text-xs text-gray-600 font-medium mb-1">Previous Yield</p>
+                    <p className="text-sm font-bold text-gray-900">{farmDetails.previousYield} kg/m²</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Right: Weather Card */}
+            <div className="bg-gradient-to-br from-horti-blue-600 via-horti-blue-700 to-horti-blue-800 rounded-3xl shadow-strong p-4 text-white relative overflow-hidden hover:shadow-[0_20px_60px_0_rgba(37,99,235,0.3)] hover:-translate-y-1 transition-all duration-300 flex flex-col border border-horti-blue-500/20 h-fit">
+              {weatherLoading && (
+                <div className="absolute inset-0 bg-blue-900/50 backdrop-blur-sm rounded-2xl flex items-center justify-center z-10">
+                  <div className="text-white text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-2"></div>
+                    <p className="text-sm">Loading weather...</p>
+                  </div>
+                </div>
+              )}
+              {weatherError && (
+                <div className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                  ⚠️ Using fallback data
+                </div>
+              )}
+
+              <div className="flex-shrink-0">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="text-lg font-bold mb-1">Today's Weather</h3>
+                    <p className="text-white/80 text-base">{weatherData.today.condition}</p>
+                    <p className="text-white/70 text-base mt-1">
+                      {selectedGreenhouse?.location.city || 'Loading...'}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-4xl font-light">{weatherData.today.temp}°C</div>
+                    {weatherData.today.feelsLike && (
+                      <p className="text-base text-white/70 mt-1">Feels like {weatherData.today.feelsLike}°C</p>
+                    )}
+                    <div className="flex items-center justify-end mt-2">
+                      <span className="text-4xl">{getWeatherIcon(weatherData.today.condition)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Weather Stats */}
+              <div className="grid grid-cols-3 gap-2 mb-4 flex-shrink-0">
+                <div className="bg-white/15 backdrop-blur-md rounded-lg p-4 text-center hover:bg-white/25 hover:scale-105 transition-all duration-200 border border-white/20 shadow-soft">
+                  <p className="text-base text-white/80 mb-1">💧 Humidity</p>
+                  <p className="text-xl font-bold">{weatherData.today.humidity}%</p>
+                </div>
+                <div className="bg-white/15 backdrop-blur-md rounded-lg p-4 text-center hover:bg-white/25 hover:scale-105 transition-all duration-200 border border-white/20 shadow-soft">
+                  <p className="text-base text-white/80 mb-1">💨 Wind</p>
+                  <p className="text-xl font-bold">{weatherData.today.windSpeed} m/s</p>
+                </div>
+                <div className="bg-white/15 backdrop-blur-md rounded-lg p-4 text-center hover:bg-white/25 hover:scale-105 transition-all duration-200 border border-white/20 shadow-soft">
+                  <p className="text-base text-white/80 mb-1">{weatherData.today.pressure ? '🌡️ Pressure' : '🌧️ Rain'}</p>
+                  <p className="text-xl font-bold">
+                    {weatherData.today.pressure ? `${weatherData.today.pressure} hPa` : `${weatherData.today.rainProbability}%`}
+                  </p>
+                </div>
+              </div>
+
+              {/* Forecast */}
+              <div className="grid grid-cols-4 gap-2 mb-4">
+                {weatherData.forecast.length > 0 ? (
+                  weatherData.forecast.map((day, index) => (
+                    <div key={index} className="text-center p-3 bg-white/15 backdrop-blur-md rounded-lg border border-white/20 hover:bg-white/25 hover:scale-105 transition-all duration-200 flex flex-col justify-center shadow-soft">
+                      <p className="text-base text-white/80 mb-1 font-medium">{day.day}</p>
+                      <div className="text-3xl mb-1">{getWeatherIcon(day.condition)}</div>
+                      <p className="font-bold text-base">{day.temp}°C</p>
+                    </div>
+                  ))
+                ) : (
+                  <div className="col-span-4 text-center text-white/70 text-base flex items-center justify-center">
+                    {weatherLoading ? 'Loading forecast...' : 'No forecast available'}
+                  </div>
+                )}
+              </div>
+
+              {weatherData.today.sunrise && weatherData.today.sunset && (
+                <div className="mt-4 pt-4 border-t border-white/20 flex justify-center gap-4 text-base text-white/80 flex-shrink-0">
+                  <span className="bg-white/10 px-3 py-1.5 rounded-full">☀️ {weatherData.today.sunrise}</span>
+                  <span className="bg-white/10 px-3 py-1.5 rounded-full">🌙 {weatherData.today.sunset}</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Real-time Environmental Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-          <Card>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Temperature</p>
-                <p className="text-2xl font-bold text-orange-600">
-                  {currentClimate ? `${currentClimate.temperature.toFixed(1)}°C` : '--'}
-                </p>
-                <p className="text-xs text-green-600 mt-1">📊 Optimal</p>
-              </div>
-              <div className="h-10 w-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                <span className="text-orange-600 text-lg">🌡️</span>
-              </div>
-            </div>
-          </Card>
-
-          <Card>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Absolute Humidity</p>
-                <p className="text-2xl font-bold text-blue-600">
-                  {currentClimate ? `${currentClimate.absoluteHumidity.toFixed(1)} g/m³` : '--'}
-                </p>
-                <p className="text-xs text-green-600 mt-1">💧 Good</p>
-              </div>
-              <div className="h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <span className="text-blue-600 text-lg">💧</span>
-              </div>
-            </div>
-          </Card>
-
-          <Card>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">CO₂</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {currentClimate ? `${currentClimate.co2.toFixed(0)} ppm` : '--'}
-                </p>
-                <p className="text-xs text-green-600 mt-1">🎯 Target: 1000</p>
-              </div>
-              <div className="h-10 w-10 bg-green-100 rounded-lg flex items-center justify-center">
-                <span className="text-green-600 text-lg">🌱</span>
-              </div>
-            </div>
-          </Card>
-
-          <Card>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">PAR Light</p>
-                <p className="text-2xl font-bold text-yellow-600">
-                  {currentClimate ? `${currentClimate.par.toFixed(0)}` : '--'}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">µmol/m²/s</p>
-              </div>
-              <div className="h-10 w-10 bg-yellow-100 rounded-lg flex items-center justify-center">
-                <span className="text-yellow-600 text-lg">☀️</span>
-              </div>
-            </div>
-          </Card>
-
-          <Card>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">VPD</p>
-                <p className="text-2xl font-bold text-purple-600">
-                  {currentClimate ? `${currentClimate.vpd.toFixed(2)} kPa` : '--'}
-                </p>
-                <p className="text-xs text-green-600 mt-1">📈 Optimal</p>
-              </div>
-              <div className="h-10 w-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                <span className="text-purple-600 text-lg">📊</span>
-              </div>
-            </div>
-          </Card>
-
-          <Card>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Sap Flow</p>
-                <p className="text-2xl font-bold text-indigo-600">
-                  {currentClimate ? `${currentClimate.sapFlow.toFixed(1)} g/h` : '--'}
-                </p>
-                <p className="text-xs text-green-600 mt-1">🔄 Active</p>
-              </div>
-              <div className="h-10 w-10 bg-indigo-100 rounded-lg flex items-center justify-center">
-                <span className="text-indigo-600 text-lg">💧</span>
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        {/* Plant Growth Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card>
-            <div className="text-center">
-              <p className="text-sm font-medium text-gray-600 mb-2">Head Thickness</p>
-              <p className="text-3xl font-bold text-red-600">
-                {currentClimate ? `${currentClimate.headThickness.toFixed(1)} mm` : '--'}
-              </p>
-              <p className="text-xs text-yellow-600 mt-1">
-                {currentClimate && currentClimate.headThickness < 10 ? '⚠️ Below optimal (10mm)' : '✅ Optimal range'}
-              </p>
-              <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
-                <div 
-                  className={`h-2 rounded-full ${
-                    currentClimate && currentClimate.headThickness >= 10 ? 'bg-green-500' : 'bg-yellow-500'
-                  }`} 
-                  style={{ width: `${Math.min((currentClimate?.headThickness || 0) / 12 * 100, 100)}%` }}
-                ></div>
-              </div>
-            </div>
-          </Card>
-
-          <Card>
-            <div className="text-center">
-              <p className="text-sm font-medium text-gray-600 mb-2">Stem Diameter</p>
-              <p className="text-3xl font-bold text-green-600">
-                {currentClimate ? `${currentClimate.stemDiameter.toFixed(1)} mm` : '--'}
-              </p>
-              <p className="text-xs text-green-600 mt-1">📏 Growing well</p>
-            </div>
-          </Card>
-
-          <Card>
-            <div className="text-center">
-              <p className="text-sm font-medium text-gray-600 mb-2">LAI</p>
-              <p className="text-3xl font-bold text-blue-600">
-                {currentClimate ? `${currentClimate.lai.toFixed(2)}` : '--'}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">m²leaf/m²surface</p>
-            </div>
-          </Card>
-
-          <Card>
-            <div className="text-center">
-              <p className="text-sm font-medium text-gray-600 mb-2">Water Given</p>
-              <p className="text-3xl font-bold text-cyan-600">
-                {currentClimate ? `${currentClimate.waterGiven.toFixed(1)} l/m²` : '--'}
-              </p>
-              <p className="text-xs text-blue-600 mt-1">EC: {currentClimate ? `${currentClimate.ec.toFixed(1)} mS/cm` : '--'}</p>
-            </div>
-          </Card>
-        </div>
-
-        {/* Charts Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Temperature & VPD Chart */}
-          <Card>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Climate & Plant Conditions</h3>
-            <div className="h-64">
-              <ErrorBoundary>
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="time" />
-                    <YAxis />
-                    <Tooltip />
-                    <Line 
-                      type="monotone" 
-                      dataKey="temperature" 
-                      stroke="#f97316" 
-                      strokeWidth={2}
-                      name="Temperature (°C)"
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="vpd" 
-                      stroke="#8b5cf6" 
-                      strokeWidth={2}
-                      name="VPD (kPa)"
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="sapFlow" 
-                      stroke="#06b6d4" 
-                      strokeWidth={2}
-                      name="Sap Flow (g/h)"
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </ErrorBoundary>
-            </div>
-          </Card>
-
-          {/* Growth & Morphology Chart */}
-          <Card>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Plant Growth Monitoring</h3>
-            <div className="h-64">
-              <ErrorBoundary>
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="time" />
-                    <YAxis />
-                    <Tooltip />
-                    <Line 
-                      type="monotone" 
-                      dataKey="headThickness" 
-                      stroke="#ef4444" 
-                      strokeWidth={3}
-                      name="Head Thickness (mm)"
-                      dot={{ fill: '#ef4444', strokeWidth: 2, r: 4 }}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="stemDiameter" 
-                      stroke="#22c55e" 
-                      strokeWidth={2}
-                      name="Stem Diameter (mm)"
-                      dot={{ fill: '#22c55e', strokeWidth: 2, r: 3 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </ErrorBoundary>
-            </div>
-          </Card>
-        </div>
-
-        {/* Bottom Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Sensor Network Status */}
-          <Card>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">HORTI-IOT Sensor Network</h3>
-            <div className="space-y-3">
-              {mockSensorData.map((sensor, index) => (
-                <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <div 
-                      className={`w-3 h-3 rounded-full ${
-                        sensor.status === 'Active' ? 'bg-green-500' : 
-                        sensor.status === 'Maintenance' ? 'bg-yellow-500' : 'bg-red-500'
-                      }`}
-                    ></div>
-                    <span className="text-sm font-medium text-gray-700">{sensor.name}</span>
+        {/* Modern Horizontal Layout - 12 Column Grid System */}
+        <div className="max-w-full mx-auto px-4">
+          {/* Main Content Grid */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="grid grid-cols-1 lg:grid-cols-12 gap-6"
+          >
+            {/* ML Predictions and Map Section - Full width */}
+            <div className="col-span-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Head Thickness Prediction Panel */}
+              <div className="card-elevated p-6 hover:-translate-y-2">
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-lg font-bold text-gray-900">Head Thickness</h3>
+                    <div className="badge-success">
+                      🤖 AI Prediction
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm text-gray-600">{sensor.value} units</span>
-                    <span className={`text-xs px-2 py-1 rounded-full ${
-                      sensor.status === 'Active' ? 'bg-green-100 text-green-700' : 
-                      sensor.status === 'Maintenance' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'
-                    }`}>
-                      {sensor.status}
-                    </span>
+                  <p className="text-sm text-gray-600 font-medium">89% accuracy</p>
+                </div>
+
+                {/* Current Value Display */}
+                <div className="bg-gradient-to-br from-horti-green-50 to-horti-green-100/50 rounded-xl p-4 mb-4 border border-horti-green-200/50">
+                  <div className="flex items-baseline justify-between">
+                    <div>
+                      <p className="text-sm text-gray-700 mb-1 font-medium">Current Measurement</p>
+                      <div className="flex items-baseline">
+                        <span className="text-3xl font-bold text-horti-green-700">{headThickness.current}</span>
+                        <span className="text-base text-horti-green-600 ml-2 font-semibold">{headThickness.unit}</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-gray-600 font-medium">Last Updated</p>
+                      <p className="text-xs font-semibold text-gray-800">{headThickness.lastUpdated}</p>
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
-            <div className="mt-4 text-center">
-              <p className="text-sm text-gray-600">
-                📡 Total: {mockSensorData.reduce((sum, s) => sum + s.value, 0)} sensors
-              </p>
-              <p className="text-xs text-green-600 mt-1">
-                ✅ {mockSensorData.filter(s => s.status === 'Active').length} systems operational
-              </p>
-            </div>
-          </Card>
 
-          {/* ML Predictions & Analytics */}
-          <Card>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">AI Predictions & Analysis</h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-sm text-gray-600">Yield Forecast</span>
-                  <p className="text-xs text-gray-500">Confidence: {mockMLPredictions.yieldForecast.confidence}%</p>
+                {/* 3-Day Forecast Chart */}
+                <div className="mb-4">
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">3-Day Forecast</h4>
+                  <ResponsiveContainer width="100%" height={140}>
+                    <AreaChart data={headThickness.forecast}>
+                      <defs>
+                        <linearGradient id="headThicknessGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#10B981" stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor="#10B981" stopOpacity={0.1}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                      <XAxis dataKey="day" tick={{ fontSize: 12 }} stroke="#6B7280" />
+                      <YAxis tick={{ fontSize: 12 }} stroke="#6B7280" domain={['dataMin - 1', 'dataMax + 1']} />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '8px' }}
+                        labelStyle={{ color: '#111827', fontWeight: 'bold' }}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="predicted"
+                        stroke="#10B981"
+                        strokeWidth={2}
+                        fill="url(#headThicknessGradient)"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
                 </div>
-                <span className="text-lg font-semibold text-green-600">
-                  {mockMLPredictions.yieldForecast.value} {mockMLPredictions.yieldForecast.unit}
-                </span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-green-600 h-2 rounded-full" style={{ width: `${mockMLPredictions.yieldForecast.confidence}%` }}></div>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-sm text-gray-600">Disease Risk</span>
-                  <p className="text-xs text-gray-500">Confidence: {mockMLPredictions.diseaseRisk.confidence}%</p>
+
+                {/* Daily Predictions */}
+                <div className="space-y-2">
+                  {headThickness.forecast.map((day, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-gray-50 to-white hover:from-horti-green-50/50 hover:to-white hover:shadow-soft transition-all duration-200 border border-gray-100">
+                      <div className="flex items-center">
+                        <div className={`w-2 h-10 rounded-full mr-3 ${
+                          day.trend === 'up' ? 'bg-gradient-to-b from-horti-green-500 to-horti-green-600 shadow-glow-green' :
+                          day.trend === 'down' ? 'bg-gradient-to-b from-red-500 to-red-600' : 'bg-gradient-to-b from-yellow-500 to-yellow-600'
+                        }`}></div>
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900">{day.day}</p>
+                          <p className="text-xs text-gray-600">{day.date}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-bold text-gray-900">{day.predicted} {headThickness.unit}</p>
+                        <p className="text-xs text-gray-600 font-medium">Confidence: {day.confidence}%</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <span className="text-lg font-semibold text-green-600">{mockMLPredictions.diseaseRisk.status}</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-green-600 h-2 rounded-full" style={{ width: '20%' }}></div>
               </div>
 
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-sm text-gray-600">Growth Rate</span>
-                  <p className="text-xs text-gray-500">Confidence: {mockMLPredictions.growthRate.confidence}%</p>
+              {/* Sap Flow Prediction Panel */}
+              <div className="card-elevated p-6 hover:-translate-y-2">
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-lg font-bold text-gray-900">Sap Flow</h3>
+                    <div className="badge-success animate-pulse-soft">
+                      ⚡ Real-Time
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-600 font-medium">Updates every 5 minutes</p>
                 </div>
-                <span className="text-lg font-semibold text-blue-600">+{mockMLPredictions.growthRate.value}%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-blue-600 h-2 rounded-full" style={{ width: '75%' }}></div>
+
+                {/* Current Value and Stats */}
+                <div className="bg-gradient-to-br from-horti-green-50 to-horti-green-100/50 rounded-xl p-4 mb-4 border border-horti-green-200/50">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-700 mb-1 font-medium">Current Flow Rate</p>
+                      <div className="flex items-baseline">
+                        <span className="text-3xl font-bold text-horti-green-700">{sapFlow.current}</span>
+                        <span className="text-base text-horti-green-600 ml-2 font-semibold">{sapFlow.unit}</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-gray-700 mb-1 font-medium">Model Accuracy</p>
+                      <div className="flex items-center justify-end">
+                        <span className="text-3xl font-bold text-horti-green-700">{sapFlow.accuracy}%</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-horti-green-300/50">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-700 font-medium">Last Updated: {sapFlow.lastUpdated}</span>
+                      <span className="text-gray-700 font-medium">Next Update: {Math.floor(sapFlow.nextUpdate / 60)}m {sapFlow.nextUpdate % 60}s</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 30-Minute Forecast Timeline */}
+                <div className="mb-4">
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">30-Minute Forecast</h4>
+                  <div className="overflow-x-auto">
+                    <ResponsiveContainer width="100%" height={140}>
+                      <LineChart data={sapFlow.predictions.slice(0, 30)}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                        <XAxis
+                          dataKey="time"
+                          tick={{ fontSize: 10 }}
+                          stroke="#6B7280"
+                          interval={4}
+                        />
+                        <YAxis
+                          tick={{ fontSize: 12 }}
+                          stroke="#6B7280"
+                          domain={['dataMin - 5', 'dataMax + 5']}
+                        />
+                        <Tooltip
+                          contentStyle={{ backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '8px' }}
+                          labelStyle={{ color: '#111827', fontWeight: 'bold' }}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="predicted"
+                          stroke="#10B981"
+                          strokeWidth={2}
+                          dot={false}
+                          name="Predicted"
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="actual"
+                          stroke="#3B82F6"
+                          strokeWidth={2}
+                          strokeDasharray="5 5"
+                          dot={false}
+                          name="Actual"
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* Legend and Stats */}
+                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-100">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center">
+                      <div className="w-3 h-0.5 bg-horti-green-500 mr-2"></div>
+                      <span className="text-xs text-gray-700 font-medium">Predicted</span>
+                    </div>
+                    <div className="flex items-center">
+                      <div className="w-3 h-0.5 bg-horti-blue-500 mr-2" style={{ borderTop: '2px dashed' }}></div>
+                      <span className="text-xs text-gray-700 font-medium">Actual</span>
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-600 font-medium">
+                    Scroll for more →
+                  </div>
+                </div>
               </div>
 
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-sm text-gray-600">Water Stress Level</span>
-                  <p className="text-xs text-gray-500">Confidence: {mockMLPredictions.waterStress.confidence}%</p>
+              {/* Greenhouse Location Map Panel */}
+              <div className="card-elevated p-6 hover:-translate-y-2">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-gray-900">Greenhouse Location</h3>
+                  <div className="badge-info">
+                    🗺️ Live Map
+                  </div>
                 </div>
-                <span className="text-lg font-semibold text-green-600">{mockMLPredictions.waterStress.status}</span>
+                <div className="h-96">
+                  {selectedGreenhouse ? (
+                    <RealMap
+                      center={{
+                        lat: selectedGreenhouse.location.coordinates.lat,
+                        lng: selectedGreenhouse.location.coordinates.lon
+                      }}
+                      zoom={16}
+                      className="h-full rounded-xl overflow-hidden border border-gray-200 shadow-soft"
+                      markers={[
+                        {
+                          id: selectedGreenhouse.id,
+                          lat: selectedGreenhouse.location.coordinates.lat,
+                          lng: selectedGreenhouse.location.coordinates.lon,
+                          title: selectedGreenhouse.name,
+                          type: 'greenhouse',
+                          status: 'active',
+                          description: `${selectedGreenhouse.details.landArea}m² ${selectedGreenhouse.details.type} greenhouse with ${selectedGreenhouse.crops.length} crop types.`
+                        }
+                      ]}
+                    />
+                  ) : (
+                    <div className="h-full bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl flex items-center justify-center border border-gray-200">
+                      <p className="text-gray-600 text-sm font-medium">Select a greenhouse to view map</p>
+                    </div>
+                  )}
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <div className="flex items-center text-sm">
+                    <span className="text-gray-700 font-medium">📍 {selectedGreenhouse?.location.city || 'N/A'}</span>
+                  </div>
+                </div>
               </div>
 
-              <div className="bg-blue-50 p-3 rounded-lg mt-4">
-                <p className="text-sm text-gray-700">🎯 Optimal Harvest Date:</p>
-                <p className="font-semibold text-blue-600">{mockMLPredictions.optimalHarvestDate.value}</p>
-                <p className="text-xs text-gray-500">Based on current growth patterns</p>
-              </div>
             </div>
-          </Card>
 
-          {/* Greenhouse Metadata & Quick Actions */}
-          <Card>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Greenhouse Configuration</h3>
-            <div className="space-y-3 mb-4">
-              <div className="bg-gray-50 p-3 rounded-lg">
-                <p className="text-sm font-medium text-gray-700">📍 Location</p>
-                <p className="text-xs text-gray-600">{greenhouseMetadata.location}</p>
-              </div>
-              <div className="bg-gray-50 p-3 rounded-lg">
-                <p className="text-sm font-medium text-gray-700">📏 Dimensions</p>
-                <p className="text-xs text-gray-600">
-                  {greenhouseMetadata.size.length} × {greenhouseMetadata.size.width} × {greenhouseMetadata.size.height} {greenhouseMetadata.size.unit}
-                </p>
-              </div>
-              <div className="bg-gray-50 p-3 rounded-lg">
-                <p className="text-sm font-medium text-gray-700">🌱 Crop</p>
-                <p className="text-xs text-gray-600">{greenhouseMetadata.crop}</p>
-              </div>
-              <div className="bg-gray-50 p-3 rounded-lg">
-                <p className="text-sm font-medium text-gray-700">🎯 CO₂ Target</p>
-                <p className="text-xs text-gray-600">{greenhouseMetadata.co2Target} ppm</p>
-              </div>
+            {/* PhytoSense 2grow Data Panel - Full Width */}
+            <div className="col-span-12 mt-6">
+              <PhytoSenseOptimized />
             </div>
-            
-        
-          </Card>
+
+          </motion.div>
         </div>
       </div>
     </Layout>

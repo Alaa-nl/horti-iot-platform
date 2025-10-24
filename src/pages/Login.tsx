@@ -1,23 +1,24 @@
 import React, { useState, useCallback } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import { motion } from 'framer-motion';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'researcher' | 'grower'>('researcher');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  
-  const { login, user, error, clearError } = useAuth();
+  const [error, setError] = useState<string | null>(null);
+
+  const { login, user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   // Clear error when form inputs change
   const handleInputChange = useCallback(() => {
     if (error) {
-      clearError();
+      setError(null);
     }
-  }, [error, clearError]);
+  }, [error]);
 
   // If user is already logged in, redirect them
   if (user) {
@@ -27,14 +28,15 @@ const Login: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password || isLoading) return;
-    
+
     setIsLoading(true);
+    setError(null);
     try {
-      await login({ email, password, role });
+      await login(email, password);
       // Navigation will happen automatically via the redirect above
-    } catch (err) {
+    } catch (err: any) {
       console.error('Login error:', err);
-      // Error is handled by AuthContext
+      setError(err.message || 'Login failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -95,50 +97,6 @@ const Login: React.FC = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Role Selection */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Select your role
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  type="button"
-                  onClick={() => {
-                    setRole('researcher');
-                    handleInputChange();
-                  }}
-                  className={`p-4 border-2 rounded-xl text-center transition-all duration-200 ${
-                    role === 'researcher'
-                      ? 'border-horti-green-500 bg-horti-green-50 text-horti-green-700'
-                      : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="text-sm font-semibold">Researcher</div>
-                  <div className="text-xs mt-1">Data & Analytics</div>
-                </motion.button>
-                
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  type="button"
-                  onClick={() => {
-                    setRole('grower');
-                    handleInputChange();
-                  }}
-                  className={`p-4 border-2 rounded-xl text-center transition-all duration-200 ${
-                    role === 'grower'
-                      ? 'border-horti-blue-500 bg-horti-blue-50 text-horti-blue-700'
-                      : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="text-sm font-semibold">Grower</div>
-                  <div className="text-xs mt-1">Business & ROI</div>
-                </motion.button>
-              </div>
-            </div>
-
             {/* Email Input */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
@@ -166,21 +124,40 @@ const Login: React.FC = () => {
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                 Password
               </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  handleInputChange();
-                }}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-horti-green-500 focus:border-transparent transition-all duration-200"
-                placeholder="Enter your password"
-                disabled={isLoading}
-              />
+              <div className="relative">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    handleInputChange();
+                  }}
+                  className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-horti-green-500 focus:border-transparent transition-all duration-200"
+                  placeholder="Enter your password"
+                  disabled={isLoading}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none transition-colors"
+                  tabIndex={-1}
+                >
+                  {showPassword ? (
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                    </svg>
+                  ) : (
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
             </div>
 
             {/* Error Message */}
@@ -211,18 +188,11 @@ const Login: React.FC = () => {
                   Signing in...
                 </div>
               ) : (
-                `Sign in as ${role === 'researcher' ? 'Researcher' : 'Grower'}`
+                'Sign in'
               )}
             </motion.button>
 
-            {/* Demo Credentials */}
-            <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
-              <h4 className="text-sm font-semibold text-gray-700 mb-2">Demo Credentials</h4>
-              <div className="text-xs text-gray-600 space-y-1">
-                <div>Researcher: researcher@demo.com / demo123</div>
-                <div>Grower: grower@demo.com / demo123</div>
-              </div>
-            </div>
+            
           </form>
         </motion.div>
       </div>

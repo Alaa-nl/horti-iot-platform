@@ -1,15 +1,18 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Login from './pages/Login';
 import ResearcherDashboard from './pages/ResearcherDashboard';
 import GrowerDashboard from './pages/GrowerDashboard';
+import StatisticsPage from './pages/StatisticsPage';
+import AdminDashboard from './pages/AdminDashboard';
+import ProfilePage from './pages/ProfilePage';
 
-// Protected Route Component
-const ProtectedRoute: React.FC<{ 
+// Protected Route Component with multiple allowed roles
+const ProtectedRoute: React.FC<{
   children: React.ReactElement;
-  allowedRole?: 'researcher' | 'grower';
-}> = ({ children, allowedRole }) => {
+  allowedRoles?: ('admin' | 'researcher' | 'grower' | 'farmer')[];
+}> = ({ children, allowedRoles }) => {
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
@@ -24,7 +27,7 @@ const ProtectedRoute: React.FC<{
     return <Navigate to="/login" replace />;
   }
 
-  if (allowedRole && user.role !== allowedRole) {
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
     // Redirect to appropriate dashboard based on role
     return <Navigate to={`/${user.role}`} replace />;
   }
@@ -49,23 +52,52 @@ const AppRoutes: React.FC = () => {
       <Route path="/login" element={
         user ? <Navigate to={`/${user.role}`} replace /> : <Login />
       } />
-      
+
+      {/* Researcher Dashboard - accessible by all roles (researcher, grower/farmer, admin) */}
       <Route path="/researcher" element={
-        <ProtectedRoute allowedRole="researcher">
+        <ProtectedRoute allowedRoles={['researcher', 'grower', 'farmer', 'admin']}>
           <ResearcherDashboard />
         </ProtectedRoute>
       } />
-      
+
+      <Route path="/researcher/statistics" element={
+        <ProtectedRoute allowedRoles={['researcher', 'grower', 'farmer', 'admin']}>
+          <StatisticsPage />
+        </ProtectedRoute>
+      } />
+
+      {/* Grower/Farmer Dashboard - accessible by all roles (grower/farmer, researcher, admin) */}
       <Route path="/grower" element={
-        <ProtectedRoute allowedRole="grower">
+        <ProtectedRoute allowedRoles={['grower', 'farmer', 'researcher', 'admin']}>
           <GrowerDashboard />
         </ProtectedRoute>
       } />
-      
+
+      {/* Alias route for farmer (same as grower) */}
+      <Route path="/farmer" element={
+        <ProtectedRoute allowedRoles={['farmer', 'grower', 'researcher', 'admin']}>
+          <GrowerDashboard />
+        </ProtectedRoute>
+      } />
+
+      {/* Admin Dashboard - accessible only by admin */}
+      <Route path="/admin" element={
+        <ProtectedRoute allowedRoles={['admin']}>
+          <AdminDashboard />
+        </ProtectedRoute>
+      } />
+
+      {/* Profile - accessible by all authenticated users */}
+      <Route path="/profile" element={
+        <ProtectedRoute>
+          <ProfilePage />
+        </ProtectedRoute>
+      } />
+
       <Route path="/" element={
         user ? <Navigate to={`/${user.role}`} replace /> : <Navigate to="/login" replace />
       } />
-      
+
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
