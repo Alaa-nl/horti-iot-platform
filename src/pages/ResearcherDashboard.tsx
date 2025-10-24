@@ -101,7 +101,6 @@ const ResearcherDashboard: React.FC = () => {
     },
     forecast: []
   });
-  const [knmiStation, setKnmiStation] = useState<string>('');
   const [weatherLoading, setWeatherLoading] = useState(true);
   const [weatherError, setWeatherError] = useState<string | null>(null);
 
@@ -296,10 +295,6 @@ const ResearcherDashboard: React.FC = () => {
             condition: day.condition.toLowerCase()
           }))
         });
-
-        if (knmiData.station) {
-          setKnmiStation(`${knmiData.station.name}`);
-        }
       } catch (error) {
         setWeatherError('Failed to fetch weather data');
         console.error('Weather fetch error:', error);
@@ -448,9 +443,6 @@ const ResearcherDashboard: React.FC = () => {
                     <p className="text-white/70 text-base mt-1">
                       {selectedGreenhouse?.location.city || 'Loading...'}
                     </p>
-                    {knmiStation && (
-                      <p className="text-white/70 text-sm mt-1">Station: {knmiStation}</p>
-                    )}
                   </div>
                   <div className="text-right">
                     <div className="text-4xl font-light">{weatherData.today.temp}°C</div>
@@ -735,9 +727,8 @@ const ResearcherDashboard: React.FC = () => {
                   )}
                 </div>
                 <div className="mt-4 pt-4 border-t border-gray-200">
-                  <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center text-sm">
                     <span className="text-gray-700 font-medium">📍 {selectedGreenhouse?.location.city || 'N/A'}</span>
-                    <span className="text-gray-700 font-medium">🌱 {selectedGreenhouse?.crops.length || 0} crops</span>
                   </div>
                 </div>
               </div>
