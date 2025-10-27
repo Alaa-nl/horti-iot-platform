@@ -63,7 +63,9 @@ class GreenhouseService {
       try {
         return await this.getGreenhouseById(savedId);
       } catch (error) {
-        console.error('Failed to load saved greenhouse:', error);
+        console.warn('Saved greenhouse no longer exists, clearing saved selection');
+        // Clear invalid saved ID
+        localStorage.removeItem('selectedGreenhouseId');
         // If saved greenhouse fails, try to get first available
         const greenhouses = await this.getAllGreenhouses();
         return greenhouses[0] || null;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { motion } from 'framer-motion';
 import Layout from '../components/layout/Layout';
@@ -56,17 +56,18 @@ interface HeadThicknessPrediction {
   lastUpdated: string;
 }
 
-interface SapFlowPrediction {
+interface SapFlowData {
   current: number;
   unit: string;
-  predictions: Array<{
+  data: Array<{
     time: string;
-    predicted: number;
-    actual?: number;
+    value: number;
   }>;
-  nextUpdate: number; // seconds until next update
-  accuracy: number;
   lastUpdated: string;
+  isLive: boolean;
+  dataType: 'sap-flow' | 'diameter';
+  timeRange: string;
+  deviceName?: string;
 }
 
 
@@ -128,65 +129,201 @@ const ResearcherDashboard: React.FC = () => {
     lastUpdated: new Date().toLocaleTimeString()
   });
 
-  const [sapFlow, setSapFlow] = useState<SapFlowPrediction>({
-    current: 45.2,
+  const [sapFlow, setSapFlow] = useState<SapFlowData>({
+    current: 0,
     unit: 'g/h',
-    predictions: [],
-    nextUpdate: 300,
-    accuracy: 94.5,
-    lastUpdated: new Date().toLocaleTimeString()
+    data: [],
+    lastUpdated: '',
+    isLive: false,
+    dataType: 'sap-flow',
+    timeRange: 'Last 24 hours'
   });
+  const [sapFlowLoading, setSapFlowLoading] = useState(false);
+  const [sapFlowError, setSapFlowError] = useState<string | null>(null);
 
 
-  // Initialize sap flow predictions
-  useEffect(() => {
-    // Generate initial 30-minute predictions
-    const now = new Date();
-    const predictions: Array<{time: string; predicted: number; actual?: number}> = [];
-    for (let i = 0; i < 30; i++) {
-      const time = new Date(now.getTime() + i * 60000);
-      const base = 45 + Math.sin(i / 5) * 10;
-      predictions.push({
-        time: time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        predicted: Math.round((base + Math.random() * 5) * 10) / 10,
-        actual: i < 10 ? Math.round((base + Math.random() * 3) * 10) / 10 : undefined
-      });
-    }
-    setSapFlow(prev => ({ ...prev, predictions }));
+  // Fetch sap flow data from PhytoSense API with fallback strategies
+  const fetchSapFlowData = useCallback(async () => {
+    setSapFlowLoading(true);
+    setSapFlowError(null);
 
-    // Update sap flow every 5 seconds for demo (would be 5 minutes in production)
-    const sapFlowInterval = setInterval(() => {
-      setSapFlow(prev => {
-        const now = new Date();
-        const newPredictions = [...prev.predictions.slice(1)];
-        const lastValue = newPredictions[newPredictions.length - 1]?.predicted || 45;
-        newPredictions.push({
-          time: new Date(now.getTime() + 29 * 60000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          predicted: Math.round((lastValue + (Math.random() - 0.5) * 3) * 10) / 10
-        });
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        setSapFlowError('Please log in to view data');
+        setSapFlowLoading(false);
+        return;
+      }
 
-        // Update actuals
-        const updatedPredictions = newPredictions.map((pred, idx) => {
-          if (idx < 10 && !pred.actual) {
-            return {
-              ...pred,
-              actual: Math.round((pred.predicted + (Math.random() - 0.5) * 2) * 10) / 10
-            };
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
+
+      // Device configurations (NL 2023-2024 MKB Raak)
+      const devices = [
+        {
+          name: 'Stem051',
+          setupId: 1508,
+          sapFlowTDID: 39987,
+          diameterTDID: 39999,
+          toDate: '2024-10-15T12:00:00'
+        },
+        {
+          name: 'Stem136',
+          setupId: 1508,
+          sapFlowTDID: 39981,
+          diameterTDID: 40007,
+          toDate: '2024-10-15T12:00:00'
+        }
+      ];
+
+      const now = new Date();
+      const deviceEndDate = new Date(devices[0].toDate);
+      const daysAgo = Math.floor((now.getTime() - deviceEndDate.getTime()) / (1000 * 60 * 60 * 24));
+      const isDeviceActive = daysAgo < 7;
+
+      // Helper function to fetch data from API
+      const fetchData = async (deviceName: string, setupId: number, tdId: number, hourRange: number, dataType: 'sap-flow' | 'diameter') => {
+        let before, after;
+        if (isDeviceActive) {
+          before = now.toISOString();
+          after = new Date(now.getTime() - hourRange * 60 * 60 * 1000).toISOString();
+        } else {
+          before = devices[0].toDate;
+          after = new Date(deviceEndDate.getTime() - hourRange * 60 * 60 * 1000).toISOString();
+        }
+
+        const url = `${API_URL}/phytosense/data/${tdId}?setup_id=${setupId}&channel=0&after=${after}&before=${before}&aggregation=hourly`;
+
+        console.log(`Fetching ${dataType} data from ${deviceName} (${hourRange}h window):`, url);
+
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
           }
-          return pred;
         });
 
+        const result = await response.json();
+        console.log(`${deviceName} ${dataType} API response:`, result);
+
+        if (result.success && result.data && result.data.length > 0) {
+          return {
+            data: result.data,
+            dataType,
+            deviceName,
+            timeRange: hourRange >= 168 ? `Last ${Math.floor(hourRange / 24)} days` : `Last ${hourRange} hours`
+          };
+        }
+        return null;
+      };
+
+      // Multi-device fallback strategy:
+      // 1. Try Stem051 sap flow - last 24 hours
+      // 2. Try Stem136 sap flow - last 24 hours
+      // 3. Try Stem051 sap flow - last 7 days
+      // 4. Try Stem136 sap flow - last 7 days
+      // 5. Try Stem051 diameter - last 24 hours
+      // 6. Try Stem136 diameter - last 24 hours
+
+      let fetchedData = null;
+
+      // Try sap flow from both devices (24 hours)
+      for (const device of devices) {
+        fetchedData = await fetchData(device.name, device.setupId, device.sapFlowTDID, 24, 'sap-flow');
+        if (fetchedData) break;
+      }
+
+      // Try sap flow from both devices (7 days)
+      if (!fetchedData) {
+        console.log('No sap flow data in last 24h from any device, trying 7 days...');
+        for (const device of devices) {
+          fetchedData = await fetchData(device.name, device.setupId, device.sapFlowTDID, 168, 'sap-flow');
+          if (fetchedData) break;
+        }
+      }
+
+      // Fall back to diameter from both devices (24 hours)
+      if (!fetchedData) {
+        console.log('No sap flow data found, trying diameter data (24h)...');
+        for (const device of devices) {
+          fetchedData = await fetchData(device.name, device.setupId, device.diameterTDID, 24, 'diameter');
+          if (fetchedData) break;
+        }
+      }
+
+      // Fall back to diameter from both devices (7 days)
+      if (!fetchedData) {
+        console.log('No diameter data in last 24h, trying 7 days...');
+        for (const device of devices) {
+          fetchedData = await fetchData(device.name, device.setupId, device.diameterTDID, 168, 'diameter');
+          if (fetchedData) break;
+        }
+      }
+
+      // If still no data found
+      if (!fetchedData) {
+        setSapFlowError('No plant monitoring data available from any device (Stem051 or Stem136). All sensors may be offline or data collection has ended.');
+        setSapFlowLoading(false);
+        return;
+      }
+
+      // Process the data
+      const chartData = fetchedData.data.map((point: any) => {
+        const date = new Date(point.dateTime);
         return {
-          ...prev,
-          current: updatedPredictions[0]?.actual || updatedPredictions[0]?.predicted || 45,
-          predictions: updatedPredictions,
-          lastUpdated: new Date().toLocaleTimeString(),
-          nextUpdate: 300
+          time: date.toLocaleString([], {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          }),
+          value: Math.round(point.value * 10) / 10
         };
       });
-    }, 5000);
 
-    // Update head thickness daily (simulated with faster interval for demo)
+      const currentValue = chartData[chartData.length - 1]?.value || 0;
+      const unit = fetchedData.dataType === 'sap-flow' ? 'g/h' : 'μm';
+
+      setSapFlow({
+        current: currentValue,
+        unit: unit,
+        data: chartData,
+        lastUpdated: new Date().toLocaleString([], {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }),
+        isLive: isDeviceActive,
+        dataType: fetchedData.dataType,
+        timeRange: fetchedData.timeRange,
+        deviceName: fetchedData.deviceName
+      });
+
+      console.log(`Successfully loaded ${fetchedData.dataType} data from ${fetchedData.deviceName} (${chartData.length} points) - ${fetchedData.timeRange}`);
+
+    } catch (err) {
+      console.error('Error fetching plant data:', err);
+      setSapFlowError(err instanceof Error ? err.message : 'Failed to fetch data');
+    } finally {
+      setSapFlowLoading(false);
+    }
+  }, []);
+
+  // Auto-refresh sap flow data every 60 seconds
+  useEffect(() => {
+    fetchSapFlowData();
+
+    const interval = setInterval(() => {
+      fetchSapFlowData();
+    }, 60000); // 60 seconds
+
+    return () => clearInterval(interval);
+  }, [fetchSapFlowData]);
+
+  // Update head thickness daily (simulated with faster interval for demo)
+  useEffect(() => {
     const headThicknessInterval = setInterval(() => {
       setHeadThickness(prev => ({
         ...prev,
@@ -195,10 +332,7 @@ const ResearcherDashboard: React.FC = () => {
       }));
     }, 30000);
 
-    return () => {
-      clearInterval(sapFlowInterval);
-      clearInterval(headThicknessInterval);
-    };
+    return () => clearInterval(headThicknessInterval);
   }, []);
 
   // Initialize greenhouses on mount
@@ -633,103 +767,92 @@ const ResearcherDashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Sap Flow Prediction Panel */}
+              {/* Plant Monitoring Panel */}
               <div className="card-elevated p-6 hover:-translate-y-2">
                 <div className="mb-4">
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-lg font-bold text-gray-900">Sap Flow</h3>
-                    <div className="badge-success animate-pulse-soft">
-                      ⚡ Real-Time
-                    </div>
+                    <h3 className="text-lg font-bold text-gray-900">
+                      {sapFlow.dataType === 'sap-flow' ? 'Sap Flow' : 'Stem Diameter'}
+                    </h3>
+                    {sapFlowLoading ? (
+                      <div className="badge-info">
+                        Loading...
+                      </div>
+                    ) : sapFlow.isLive ? (
+                      <div className="badge-success animate-pulse-soft">
+                        ⚡ Live
+                      </div>
+                    ) : (
+                      <div className="badge-warning">
+                        Recent Data
+                      </div>
+                    )}
                   </div>
-                  <p className="text-sm text-gray-600 font-medium">Updates every 5 minutes</p>
+                  <p className="text-sm text-gray-600 font-medium">
+                    {sapFlow.deviceName && `${sapFlow.deviceName} • `}{sapFlow.timeRange} {sapFlow.isLive ? '• Updates every 60s' : '• Most recent available'}
+                  </p>
                 </div>
 
-                {/* Current Value and Stats */}
-                <div className="bg-gradient-to-br from-horti-green-50 to-horti-green-100/50 rounded-xl p-4 mb-4 border border-horti-green-200/50">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-gray-700 mb-1 font-medium">Current Flow Rate</p>
+                {sapFlowError ? (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                    <p className="text-red-700">{sapFlowError}</p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Current Value */}
+                    <div className="bg-gradient-to-br from-horti-green-50 to-horti-green-100/50 rounded-xl p-4 mb-4 border border-horti-green-200/50">
+                      <p className="text-sm text-gray-700 mb-1 font-medium">
+                        {sapFlow.dataType === 'sap-flow' ? 'Current Flow Rate' : 'Current Diameter'}
+                      </p>
                       <div className="flex items-baseline">
                         <span className="text-3xl font-bold text-horti-green-700">{sapFlow.current}</span>
                         <span className="text-base text-horti-green-600 ml-2 font-semibold">{sapFlow.unit}</span>
                       </div>
+                      {sapFlow.lastUpdated && (
+                        <div className="mt-3 pt-3 border-t border-horti-green-300/50">
+                          <span className="text-xs text-gray-700 font-medium">Last Updated: {sapFlow.lastUpdated}</span>
+                        </div>
+                      )}
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm text-gray-700 mb-1 font-medium">Model Accuracy</p>
-                      <div className="flex items-center justify-end">
-                        <span className="text-3xl font-bold text-horti-green-700">{sapFlow.accuracy}%</span>
+
+                    {/* Historical Chart */}
+                    {sapFlow.data.length > 0 && (
+                      <div className="mb-4">
+                        <h4 className="text-sm font-medium text-gray-700 mb-3">{sapFlow.timeRange}</h4>
+                        <div className="overflow-x-auto">
+                          <ResponsiveContainer width="100%" height={200}>
+                            <LineChart data={sapFlow.data}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                              <XAxis
+                                dataKey="time"
+                                tick={{ fontSize: 10 }}
+                                stroke="#6B7280"
+                                interval="preserveStartEnd"
+                              />
+                              <YAxis
+                                tick={{ fontSize: 12 }}
+                                stroke="#6B7280"
+                                domain={['dataMin - 5', 'dataMax + 5']}
+                              />
+                              <Tooltip
+                                contentStyle={{ backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '8px' }}
+                                labelStyle={{ color: '#111827', fontWeight: 'bold' }}
+                              />
+                              <Line
+                                type="monotone"
+                                dataKey="value"
+                                stroke="#10B981"
+                                strokeWidth={2}
+                                dot={true}
+                                name={sapFlow.dataType === 'sap-flow' ? 'Sap Flow' : 'Diameter'}
+                              />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                  <div className="mt-3 pt-3 border-t border-horti-green-300/50">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-700 font-medium">Last Updated: {sapFlow.lastUpdated}</span>
-                      <span className="text-gray-700 font-medium">Next Update: {Math.floor(sapFlow.nextUpdate / 60)}m {sapFlow.nextUpdate % 60}s</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 30-Minute Forecast Timeline */}
-                <div className="mb-4">
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">30-Minute Forecast</h4>
-                  <div className="overflow-x-auto">
-                    <ResponsiveContainer width="100%" height={140}>
-                      <LineChart data={sapFlow.predictions.slice(0, 30)}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                        <XAxis
-                          dataKey="time"
-                          tick={{ fontSize: 10 }}
-                          stroke="#6B7280"
-                          interval={4}
-                        />
-                        <YAxis
-                          tick={{ fontSize: 12 }}
-                          stroke="#6B7280"
-                          domain={['dataMin - 5', 'dataMax + 5']}
-                        />
-                        <Tooltip
-                          contentStyle={{ backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '8px' }}
-                          labelStyle={{ color: '#111827', fontWeight: 'bold' }}
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="predicted"
-                          stroke="#10B981"
-                          strokeWidth={2}
-                          dot={false}
-                          name="Predicted"
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="actual"
-                          stroke="#3B82F6"
-                          strokeWidth={2}
-                          strokeDasharray="5 5"
-                          dot={false}
-                          name="Actual"
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-
-                {/* Legend and Stats */}
-                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-100">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center">
-                      <div className="w-3 h-0.5 bg-horti-green-500 mr-2"></div>
-                      <span className="text-xs text-gray-700 font-medium">Predicted</span>
-                    </div>
-                    <div className="flex items-center">
-                      <div className="w-3 h-0.5 bg-horti-blue-500 mr-2" style={{ borderTop: '2px dashed' }}></div>
-                      <span className="text-xs text-gray-700 font-medium">Actual</span>
-                    </div>
-                  </div>
-                  <div className="text-xs text-gray-600 font-medium">
-                    Scroll for more →
-                  </div>
-                </div>
+                    )}
+                  </>
+                )}
               </div>
 
               {/* Greenhouse Location Map Panel */}
