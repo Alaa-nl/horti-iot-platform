@@ -260,7 +260,7 @@ const PhytoSenseOptimized: React.FC<PhytoSenseOptimizedProps> = ({ className = '
     <div className={`bg-white rounded-lg shadow-lg p-6 ${className}`}>
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">PhytoSense Data (2grow) - Historical View</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">PhytoSense Data</h2>
         <p className="text-sm text-gray-600">
           Sap flow and stem diameter measurements with smart aggregation for performance
         </p>
@@ -278,13 +278,10 @@ const PhytoSenseOptimized: React.FC<PhytoSenseOptimizedProps> = ({ className = '
           >
             {DEVICES.map((device, index) => (
               <option key={device.id} value={index}>
-                {device.name} ({device.cropType})
+                {device.name}
               </option>
             ))}
           </select>
-          <p className="text-xs text-gray-500 mt-1">
-            Period: {format(new Date(selectedDevice.fromDate), 'MMM yyyy')} - {format(new Date(selectedDevice.toDate), 'MMM yyyy')}
-          </p>
         </div>
 
         {/* Measurement Type */}
@@ -492,9 +489,6 @@ const PhytoSenseOptimized: React.FC<PhytoSenseOptimizedProps> = ({ className = '
       {!loading && !error && chartData.length === 0 && (
         <div className="bg-gray-50 rounded-lg p-8 text-center">
           <p className="text-gray-600">Select options and click "Fetch Data" to view measurements</p>
-          <p className="text-sm text-gray-500 mt-2">
-            All historical data from 2022-2024 is available with smart aggregation
-          </p>
         </div>
       )}
     </div>
