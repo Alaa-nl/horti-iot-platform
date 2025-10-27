@@ -45,6 +45,14 @@ export interface Greenhouse {
     phone: string;
     email: string;
   };
+  // Additional greenhouse configuration fields
+  cropType?: string;
+  variety?: string;
+  supplier?: string;
+  climateSystem?: string;
+  lightingSystem?: string;
+  co2TargetPpm?: number;
+  temperatureRangeC?: string;
 }
 
 // All greenhouse data now comes from the PostgreSQL database

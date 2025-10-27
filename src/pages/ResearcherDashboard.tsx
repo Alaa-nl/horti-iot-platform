@@ -322,15 +322,36 @@ const ResearcherDashboard: React.FC = () => {
 
 
   const getWeatherIcon = (condition: string) => {
-    switch (condition.toLowerCase()) {
-      case 'sunny': return '☀️';
-      case 'cloudy': return '☁️';
-      case 'partly cloudy': return '⛅';
-      case 'rainy': return '🌧️';
-      case 'weather data unavailable': return '❌';
-      case 'unavailable': return '❓';
-      default: return '☀️';
-    }
+    const conditionLower = condition.toLowerCase();
+
+    // Clear conditions
+    if (conditionLower.includes('clear')) return '☀️';
+    if (conditionLower.includes('mainly clear')) return '🌤️';
+
+    // Cloudy conditions
+    if (conditionLower.includes('partly cloudy')) return '⛅';
+    if (conditionLower.includes('overcast')) return '☁️';
+
+    // Fog
+    if (conditionLower.includes('fog')) return '🌫️';
+
+    // Rain conditions
+    if (conditionLower.includes('drizzle')) return '🌦️';
+    if (conditionLower.includes('rain showers')) return '🌧️';
+    if (conditionLower.includes('rain')) return '🌧️';
+
+    // Snow conditions
+    if (conditionLower.includes('snow')) return '❄️';
+
+    // Thunderstorm
+    if (conditionLower.includes('thunderstorm')) return '⛈️';
+    if (conditionLower.includes('hail')) return '⛈️';
+
+    // Error states
+    if (conditionLower.includes('unavailable')) return '❌';
+    if (conditionLower.includes('unknown')) return '❓';
+
+    return '☀️';
   };
 
 
@@ -404,20 +425,36 @@ const ResearcherDashboard: React.FC = () => {
                     <p className="text-sm font-bold text-gray-900 truncate">{selectedGreenhouse.location.city}, {selectedGreenhouse.location.region}</p>
                   </div>
                   <div className="bg-gradient-to-br from-horti-blue-50 to-horti-blue-100/50 rounded-xl p-3 border border-horti-blue-200/50 hover:shadow-soft transition-all duration-200">
-                    <p className="text-xs text-gray-600 font-medium mb-1">📏 Land Area</p>
-                    <p className="text-sm font-bold text-gray-900">{selectedGreenhouse.details.landArea} m²</p>
+                    <p className="text-xs text-gray-600 font-medium mb-1">📏 Area (m²)</p>
+                    <p className="text-sm font-bold text-gray-900">{selectedGreenhouse.details.landArea}</p>
                   </div>
                   <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-xl p-3 border border-purple-200/50 hover:shadow-soft transition-all duration-200">
-                    <p className="text-xs text-gray-600 font-medium mb-1">🏢 Type</p>
-                    <p className="text-sm font-bold text-gray-900 capitalize">{selectedGreenhouse.details.type}</p>
+                    <p className="text-xs text-gray-600 font-medium mb-1">🌱 Crop Type</p>
+                    <p className="text-sm font-bold text-gray-900 capitalize">{selectedGreenhouse.cropType || 'N/A'}</p>
                   </div>
                   <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 rounded-xl p-3 border border-amber-200/50 hover:shadow-soft transition-all duration-200">
-                    <p className="text-xs text-gray-600 font-medium mb-1">👤 Manager</p>
-                    <p className="text-sm font-bold text-gray-900 truncate">{selectedGreenhouse.contact?.manager || 'Unassigned'}</p>
+                    <p className="text-xs text-gray-600 font-medium mb-1">🍅 Variety</p>
+                    <p className="text-sm font-bold text-gray-900 truncate">{selectedGreenhouse.variety || 'N/A'}</p>
                   </div>
                   <div className="bg-gradient-to-br from-indigo-50 to-indigo-100/50 rounded-xl p-3 border border-indigo-200/50 hover:shadow-soft transition-all duration-200">
-                    <p className="text-xs text-gray-600 font-medium mb-1">🗺️ Coordinates</p>
-                    <p className="text-xs font-bold text-gray-900">{Number(selectedGreenhouse.location.coordinates.lat).toFixed(2)}°, {Number(selectedGreenhouse.location.coordinates.lon).toFixed(2)}°</p>
+                    <p className="text-xs text-gray-600 font-medium mb-1">📦 Supplier</p>
+                    <p className="text-sm font-bold text-gray-900 truncate">{selectedGreenhouse.supplier || 'N/A'}</p>
+                  </div>
+                  <div className="bg-gradient-to-br from-cyan-50 to-cyan-100/50 rounded-xl p-3 border border-cyan-200/50 hover:shadow-soft transition-all duration-200">
+                    <p className="text-xs text-gray-600 font-medium mb-1">🌡️ Climate System</p>
+                    <p className="text-sm font-bold text-gray-900 truncate">{selectedGreenhouse.climateSystem || 'N/A'}</p>
+                  </div>
+                  <div className="bg-gradient-to-br from-yellow-50 to-yellow-100/50 rounded-xl p-3 border border-yellow-200/50 hover:shadow-soft transition-all duration-200">
+                    <p className="text-xs text-gray-600 font-medium mb-1">💡 Lighting System</p>
+                    <p className="text-sm font-bold text-gray-900 truncate">{selectedGreenhouse.lightingSystem || 'N/A'}</p>
+                  </div>
+                  <div className="bg-gradient-to-br from-green-50 to-green-100/50 rounded-xl p-3 border border-green-200/50 hover:shadow-soft transition-all duration-200">
+                    <p className="text-xs text-gray-600 font-medium mb-1">💨 CO2 Target (ppm)</p>
+                    <p className="text-sm font-bold text-gray-900">{selectedGreenhouse.co2TargetPpm || 'N/A'}</p>
+                  </div>
+                  <div className="bg-gradient-to-br from-red-50 to-red-100/50 rounded-xl p-3 border border-red-200/50 hover:shadow-soft transition-all duration-200">
+                    <p className="text-xs text-gray-600 font-medium mb-1">🌡️ Temperature Range (°C)</p>
+                    <p className="text-sm font-bold text-gray-900">{selectedGreenhouse.temperatureRangeC || 'N/A'}</p>
                   </div>
                 </div>
               )}

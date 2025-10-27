@@ -63,6 +63,14 @@ export interface GreenhouseResponse {
   performance: {
     previousYield: number;
   };
+  // Additional fields for researcher dashboard
+  cropType?: string;
+  variety?: string;
+  supplier?: string;
+  climateSystem?: string;
+  lightingSystem?: string;
+  co2TargetPpm?: number;
+  temperatureRangeC?: string;
 }
 
 export interface SensorReading {
