@@ -1,6 +1,18 @@
 # HORTI-IOT Platform - Presentation for 2grow
 ## 30-Minute Technical Overview
 
+### Quick Slide Overview (Updated Structure)
+1. **What We Built** - Key achievement & platform overview (2 min)
+2. **System Architecture** - How everything connects (3 min)
+3. **Technical Implementation** - Stack, auth, database (3 min)
+4. **Aggregation Solution** - 99.5% data reduction (4 min) ⭐
+5. **Three Plant Measurements** - Understanding the data types (2 min) 🆕
+6. **Backend Integration** - PhytoSense proxy details (3 min)
+7. **Researcher Dashboard UI** - Live demo features (8 min) ⭐
+8. **Technical Challenges** - Problems solved (3 min)
+9. **Demo Time** - Live walkthrough (5 min)
+10. **Summary & Next Steps** - Benefits for 2grow (2 min)
+
 ---
 
 ## Slide 1: What We Built (2 min)
@@ -238,7 +250,52 @@ Chart shows same daily pattern, loads instantly!
 
 ---
 
-## Slide 5: Integration Implementation (3 min)
+## Slide 5: Three Distinct Plant Measurements (2 min)
+
+### Understanding What We Measure
+
+**Important:** We track three completely different plant metrics, each with its own purpose and scale:
+
+**1. Sap Flow Rate (PhytoSense Sensor)**
+```
+What: Water moving through stem
+Units: g/h (grams per hour)
+Range: 20-200 g/h typical
+Purpose: Monitor plant water uptake
+Changes: Rapidly (hourly patterns)
+Peak: Midday (high transpiration)
+```
+
+**2. Stem Diameter (PhytoSense Sensor)**
+```
+What: Physical stem thickness changes
+Units: μm (micrometers - tiny!)
+Range: ±50 μm daily variation
+Purpose: Track growth & water status
+Changes: Slowly (daily patterns)
+Peak: Night (water refill)
+```
+
+**3. Head Thickness (ML Prediction)**
+```
+What: Crop head size (lettuce/cabbage)
+Units: cm (centimeters)
+Range: 10-20 cm when mature
+Purpose: Harvest readiness
+Changes: Very slowly (weekly)
+Note: Currently simulated, not sensor-based
+```
+
+**Scale Comparison:**
+- Head: 15 cm = 150,000,000 nm (harvest size)
+- Stem diameter changes: 50 μm = 50,000 nm (daily fluctuation)
+- Sap flow: Not a size - it's a rate!
+
+
+
+---
+
+## Slide 6: Integration Implementation (3 min)
 
 ### Backend Proxy Architecture
 
@@ -276,57 +333,54 @@ axiosInstance = axios.create({
 
 ---
 
-## Slide 6: Researcher Dashboard - The UI (8 min) ⭐
+## Slide 7: Researcher Dashboard - The UI (8 min) ⭐
 
-### What Researchers Actually See
-
-**Layout:**
-```
-┌─────────────────────────────────────────────────────┐
-│ Greenhouse Selector + Farm Details  │  Weather Card │
-├─────────────────────────────────────────────────────┤
-│  Head Thickness   │   Sap Flow    │  Location Map   │
-│   (ML Predict)    │   (Live)      │   (MapLibre)    │
-├─────────────────────────────────────────────────────┤
-│         PhytoSense Historical Viewer                 │
-│    (8 devices, 2022-2024, Excel export)             │
-└─────────────────────────────────────────────────────┘
 ```
 
-### Feature 1: Live Sap Flow Monitoring
+### Feature 1: Live Plant Monitoring - Separate Cards for Data Integrity
 
-**What it shows:**
-- Current value: "45.3 g/h" (large display)
-- 24-hour chart (line graph)
-- Device name: "Stem051"
-- Live badge (pulsing green indicator)
-- Auto-refresh 
+**Implementation: Two Dedicated Measurement Cards**
 
-**Smart Fallback System:**
+We display sap flow and stem diameter , ensuring scientific accuracy and preventing data misinterpretation.
 
-**The problem:** Sometimes sensors go offline, data collection ends, or API returns empty for recent dates.
+**Card 1: Sap Flow Monitor (Green Theme)**
+- **Measures**: Water transport rate through plant stem
+- **Units**: g/h (grams per hour)
+- **Tells researchers**: Plant hydration, stress levels, daily activity
+- **Current display**: "45.3 g/h" with 24-hour trend chart
+- **Auto-refresh**: Every 60 seconds
+- **Device options**: Stem051 or Stem136
 
-**Our solution:** Try multiple options before giving up. Here's what the dashboard does automatically:
+**Card 2: Stem Diameter Monitor (Blue Theme)**
+- **Measures**: Physical stem thickness variations
+- **Units**: μm (micrometers - tiny changes)
+- **Tells researchers**: Growth rate, water status, daily micro-fluctuations
+- **Current display**: "14.17 μm" with historical chart
+- **Auto-refresh**: Every 5 minutes (changes slowly)
+- **Device options**: Same devices, different sensors
 
-**Priority 1: Try to get sap flow from today**
-1. Try Stem051 sap flow (last 24h)
-2. If empty → Try Stem136 sap flow (last 24h)
+**Smart Data Integrity System:**
 
-**Priority 2: Try recent sap flow (widen time window)**
-3. If still empty → Try Stem051 sap flow (last 7 days)
-4. If still empty → Try Stem136 sap flow (last 7 days)
+**The challenge:** PhytoSense devices have multiple sensors that can fail independently.
 
-**Priority 3: Show alternative measurement (diameter)**
-5. If still empty → Try Stem051 diameter (last 24h)
-6. If still empty → Try Stem136 diameter (last 24h)
+**Our solution:** Intelligent fallback that NEVER mixes measurement types:
 
-**Why show diameter if sap flow unavailable?**
-- Better to show *related* plant data than nothing
-- Card clearly indicates: "Stem Diameter" instead of "Sap Flow"
-- Badge shows "Recent Data" instead of "Live"
-- Researchers still get plant health insights
+**For each card separately:**
+1. **Try primary device** (Stem051) - last 24 hours
+2. **Try backup device** (Stem136) - last 24 hours
+3. **Expand time window** - Try both devices for last 7 days
+4. **Show cached data** - Display last known good value with timestamp
+5. **Clear error state** - "Sensors offline" with retry button
 
-**Result**: 95%+ uptime - dashboard almost always shows *something* useful instead of "No data available" error
+
+
+**Real-world example from October 15, 2024:**
+- Sap flow sensor: No data available (sensor offline)
+- Diameter sensor: Still providing data from same device
+- Result: Diameter card shows data, Sap flow card shows "Offline"
+
+
+
 
 ### Feature 2: PhytoSense Historical Viewer
 
@@ -391,7 +445,7 @@ Researchers monitor multiple greenhouses, need to switch quickly.
 
 ---
 
-## Slide 7: Technical Challenges We Solved (3 min)
+## Slide 8: Technical Challenges We Solved (3 min)
 
 ### Challenge 1: Large Date Ranges Timeout
 
@@ -423,32 +477,11 @@ Researchers monitor multiple greenhouses, need to switch quickly.
 
 ---
 
-## Slide 8: Demo Time (5 min)
+## Slide 9: Demo Time (5 min)
 
-### Live Walkthrough
 
-**Part 1: Dashboard Overview (2 min)**
-- Select greenhouse
-- Show weather card updating
-- Point out live sap flow with 60s refresh
-- Scroll to ML predictions
 
-**Part 2: PhytoSense Viewer (2 min)**
-1. Select device: "Stem051 - NL 2023-2024"
-2. Date range: "Full Device Period" (Nov 2023 - Oct 2024)
-3. Show measurement: "Both"
-4. Click "Fetch Data"
-5. See aggregation: "WEEKLY" (349 days → ~50 points)
-6. Dual Y-axis chart loads instantly
-7. Click "Export to Excel" → Open file
-
-**Part 3: Code Glimpse (1 min)**
-- Show aggregation algorithm (if interested)
-- Show fallback logic (if time permits)
-
----
-
-## Slide 9: Summary & Next Steps (2 min)
+## Slide 10: Summary & Next Steps (2 min)
 
 ### What We Achieved
 
@@ -467,15 +500,15 @@ Researchers monitor multiple greenhouses, need to switch quickly.
 
 ### User Benefits
 
-**Researchers love:**
-- "Can finally view multi-year trends"
-- "Fallback system means I always see data"
-- "Excel export saves hours of work"
-- "Feels live with 60-second updates"
+
+- Can view multi-year trends
+- Fallback system means I always see data
+- Excel export saves hours of work
+- Feels live with 60-second updates
 
 ### Benefits for 2grow
 
-**Your Infrastructure Wins:**
+
 - **85% fewer API calls** to your servers
 - **Proven integration pattern** other clients can adopt
 - **Zero reported data access issues** since deployment
@@ -484,76 +517,10 @@ Researchers monitor multiple greenhouses, need to switch quickly.
 
 ### Thank You!
 
-**Open to discussing:**
-- Technical implementation details
-- Potential API enhancements (future meeting)
-- Feature requests from your team
-- Collaboration opportunities
 
-**Questions?**
 
----
 
-## Backup Slides (If Questions Come Up)
-
-### Backup: Performance Numbers
-
-**Cache Hit Rates:**
-- Historical data (>7 days): 95% hits
-- Recent data (1-7 days): 80% hits
-- Live data (<1 day): 40% hits
-
-**API Call Reduction:**
-- Without cache: 1,000 API calls/day
-- With cache: 150 API calls/day
-- 85% reduction
-
-**Data Volume:**
-- Raw measurements: 315,360 points (3 years)
-- After aggregation: 156-365 points (typical)
-- Reduction: 99.5-99.9%
-
-### Backup: Device List
-
-| Device | Period | Crop Type | TDID (Diameter) | TDID (Sap Flow) |
-|--------|--------|-----------|-----------------|-----------------|
-| Stem051 - NL 2022 | Oct 2022 - Jun 2023 | General | 33385 | 33387 |
-| Stem127 - NL 2022 | Oct 2022 - Jun 2023 | General | 33386 | 33388 |
-| Stem051 - Tomato | Jun 2023 - Aug 2023 | Tomato | 38210 | 39916 |
-| Stem136 - Tomato | Jun 2023 - Aug 2023 | Tomato | 38211 | 39915 |
-| Stem051 - Cucumber | Aug 2023 - Oct 2023 | Cucumber | 38210 | 39916 |
-| Stem136 - Cucumber | Aug 2023 - Oct 2023 | Cucumber | 38211 | 39915 |
-| Stem051 - NL 2023-24 | Nov 2023 - Oct 2024 | General | 39999 | 39987 |
-| Stem136 - NL 2023-24 | Nov 2023 - Oct 2024 | General | 40007 | 39981 |
-
-### Backup: Code Example
-
-**How aggregation works (simplified):**
-
-```typescript
-function aggregateToDaily(rawData) {
-  // rawData: 105,120 points (1 year, 5-min intervals)
-
-  const dailyBuckets = {};
-
-  // Group points by day
-  rawData.forEach(point => {
-    const day = point.dateTime.toDateString();
-    if (!dailyBuckets[day]) dailyBuckets[day] = [];
-    dailyBuckets[day].push(point.value);
-  });
-
-  // Calculate daily averages
-  return Object.entries(dailyBuckets).map(([day, values]) => ({
-    dateTime: new Date(day),
-    value: values.reduce((sum, v) => sum + v, 0) / values.length
-  }));
-
-  // Returns: 365 points (99.7% reduction)
-}
-```
-
-### Prepared Q&A - Common Questions
+ Q&A - I have prepared some questions and answered them already: 
 
 **Q: "Why not store everything in your database right away?"**
 
@@ -605,6 +572,8 @@ A: Multiple validation layers:
 - Outlier detection (configurable thresholds)
 - Checksum verification for cached data
 - Audit logs for all data transformations
+- **Never mix different measurement types** (sap flow vs diameter)
+- Clear labeling of data freshness and source
 
 **Q: "What's your disaster recovery plan?"**
 
@@ -615,7 +584,7 @@ A: Comprehensive approach:
 - Frontend: Offline mode with cached data (PWA ready)
 - Monitoring: Alerts on any service degradation
 
-**Q: "Can other 2grow clients use this integration?"**
+**Q: "Can other clients use this integration?"**
 
 A: Yes, we've built it to be reusable:
 - Configuration-driven device setup
@@ -636,6 +605,7 @@ A: Full compliance built in:
 
 ---
 
-**End of Presentation**
+**Other Questions?**
 
-*Keep it conversational, show the value you added, let the demo speak for itself*
+
+

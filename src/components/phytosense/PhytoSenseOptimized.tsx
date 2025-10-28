@@ -257,12 +257,17 @@ const PhytoSenseOptimized: React.FC<PhytoSenseOptimizedProps> = ({ className = '
   }, [chartData, selectedDevice, dataInfo]);
 
   return (
-    <div className={`bg-white rounded-lg shadow-lg p-6 ${className}`}>
+    <div className={`card-elevated p-6 hover:-translate-y-1 ${className}`}>
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">PhytoSense Data</h2>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-2xl font-bold text-gray-900">PhytoSense Historical Data</h2>
+          <div className="badge-info">
+            📊 Analysis Tool
+          </div>
+        </div>
         <p className="text-sm text-gray-600">
-          Sap flow and stem diameter measurements with smart aggregation for performance
+          View and export historical sap flow and stem diameter measurements from all devices (2022-2024)
         </p>
       </div>
 
@@ -353,7 +358,7 @@ const PhytoSenseOptimized: React.FC<PhytoSenseOptimizedProps> = ({ className = '
                 onClick={() => setAggregationMode(mode)}
                 className={`px-3 py-1 rounded text-sm ${
                   aggregationMode === mode
-                    ? 'bg-green-600 text-white'
+                    ? 'bg-horti-green-600 text-white'
                     : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100'
                 }`}
               >
@@ -372,14 +377,14 @@ const PhytoSenseOptimized: React.FC<PhytoSenseOptimizedProps> = ({ className = '
         <button
           onClick={fetchData}
           disabled={loading}
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors font-medium"
+          className="px-6 py-2 bg-horti-green-600 text-white rounded-lg hover:bg-horti-green-700 disabled:bg-gray-400 transition-colors font-medium"
         >
           {loading ? 'Loading...' : 'Fetch Data'}
         </button>
         <button
           onClick={exportQuick}
           disabled={chartData.length === 0}
-          className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition-colors font-medium"
+          className="px-6 py-2 bg-horti-blue-600 text-white rounded-lg hover:bg-horti-blue-700 disabled:bg-gray-400 transition-colors font-medium"
         >
           Export to Excel
         </button>
@@ -387,14 +392,14 @@ const PhytoSenseOptimized: React.FC<PhytoSenseOptimizedProps> = ({ className = '
 
       {/* Error Display */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-          <p className="text-red-700">{error}</p>
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+          <p className="text-amber-700">{error}</p>
         </div>
       )}
 
       {/* Data Info Panel */}
       {dataInfo && chartData.length > 0 && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+        <div className="bg-horti-green-50 border border-horti-green-200 rounded-lg p-4 mb-4">
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
             <div>
               <span className="text-gray-600">Period:</span>

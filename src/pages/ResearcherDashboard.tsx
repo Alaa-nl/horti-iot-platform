@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import React, { useState, useEffect } from 'react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { motion } from 'framer-motion';
 import Layout from '../components/layout/Layout';
 import RealMap from '../components/common/RealMap';
@@ -9,8 +9,9 @@ import { greenhouseService } from '../services/greenhouseService';
 import { Greenhouse } from '../types/greenhouse';
 import GreenhouseSelector from '../components/greenhouse/GreenhouseSelector';
 import { useAuth } from '../contexts/AuthContext';
-import authService from '../services/authService';
 import PhytoSenseOptimized from '../components/phytosense/PhytoSenseOptimized';
+import SapFlowCard from '../components/phytosense/SapFlowCard';
+import DiameterCard from '../components/phytosense/DiameterCard';
 
 // Data interfaces
 interface FarmDetails {
@@ -56,25 +57,13 @@ interface HeadThicknessPrediction {
   lastUpdated: string;
 }
 
-interface SapFlowData {
-  current: number;
-  unit: string;
-  data: Array<{
-    time: string;
-    value: number;
-  }>;
-  lastUpdated: string;
-  isLive: boolean;
-  dataType: 'sap-flow' | 'diameter';
-  timeRange: string;
-  deviceName?: string;
-}
+// Removed SapFlowData interface - now handled by separate card components
 
 
 const ResearcherDashboard: React.FC = () => {
 
   // Authentication state - get from AuthContext
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
 
   // Greenhouse state
   const [selectedGreenhouse, setSelectedGreenhouse] = useState<Greenhouse | null>(null);
@@ -105,17 +94,7 @@ const ResearcherDashboard: React.FC = () => {
   const [weatherLoading, setWeatherLoading] = useState(true);
   const [weatherError, setWeatherError] = useState<string | null>(null);
 
-  // Detector data state
-  const [detectorData, setDetectorData] = useState<any>({
-    moisture: 0,
-    waterConsumption: {
-      current: 0,
-      previous: 0
-    }
-  });
-
-  // Yield data state
-  const [yieldData, setYieldData] = useState<any[]>([]);
+  // Removed detector and yield data states - not currently used
 
   // ML Predictions State
   const [headThickness, setHeadThickness] = useState<HeadThicknessPrediction>({
@@ -129,198 +108,10 @@ const ResearcherDashboard: React.FC = () => {
     lastUpdated: new Date().toLocaleTimeString()
   });
 
-  const [sapFlow, setSapFlow] = useState<SapFlowData>({
-    current: 0,
-    unit: 'g/h',
-    data: [],
-    lastUpdated: '',
-    isLive: false,
-    dataType: 'sap-flow',
-    timeRange: 'Last 24 hours'
-  });
-  const [sapFlowLoading, setSapFlowLoading] = useState(false);
-  const [sapFlowError, setSapFlowError] = useState<string | null>(null);
+  // Removed sap flow state - now handled by separate SapFlowCard and DiameterCard components
 
 
-  // Fetch sap flow data from PhytoSense API with fallback strategies
-  const fetchSapFlowData = useCallback(async () => {
-    setSapFlowLoading(true);
-    setSapFlowError(null);
-
-    try {
-      const token = localStorage.getItem('auth_token');
-      if (!token) {
-        setSapFlowError('Please log in to view data');
-        setSapFlowLoading(false);
-        return;
-      }
-
-      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
-
-      // Device configurations (NL 2023-2024 MKB Raak)
-      const devices = [
-        {
-          name: 'Stem051',
-          setupId: 1508,
-          sapFlowTDID: 39987,
-          diameterTDID: 39999,
-          toDate: '2024-10-15T12:00:00'
-        },
-        {
-          name: 'Stem136',
-          setupId: 1508,
-          sapFlowTDID: 39981,
-          diameterTDID: 40007,
-          toDate: '2024-10-15T12:00:00'
-        }
-      ];
-
-      const now = new Date();
-      const deviceEndDate = new Date(devices[0].toDate);
-      const daysAgo = Math.floor((now.getTime() - deviceEndDate.getTime()) / (1000 * 60 * 60 * 24));
-      const isDeviceActive = daysAgo < 7;
-
-      // Helper function to fetch data from API
-      const fetchData = async (deviceName: string, setupId: number, tdId: number, hourRange: number, dataType: 'sap-flow' | 'diameter') => {
-        let before, after;
-        if (isDeviceActive) {
-          before = now.toISOString();
-          after = new Date(now.getTime() - hourRange * 60 * 60 * 1000).toISOString();
-        } else {
-          before = devices[0].toDate;
-          after = new Date(deviceEndDate.getTime() - hourRange * 60 * 60 * 1000).toISOString();
-        }
-
-        const url = `${API_URL}/phytosense/data/${tdId}?setup_id=${setupId}&channel=0&after=${after}&before=${before}&aggregation=hourly`;
-
-        console.log(`Fetching ${dataType} data from ${deviceName} (${hourRange}h window):`, url);
-
-        const response = await fetch(url, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        const result = await response.json();
-        console.log(`${deviceName} ${dataType} API response:`, result);
-
-        if (result.success && result.data && result.data.length > 0) {
-          return {
-            data: result.data,
-            dataType,
-            deviceName,
-            timeRange: hourRange >= 168 ? `Last ${Math.floor(hourRange / 24)} days` : `Last ${hourRange} hours`
-          };
-        }
-        return null;
-      };
-
-      // Multi-device fallback strategy:
-      // 1. Try Stem051 sap flow - last 24 hours
-      // 2. Try Stem136 sap flow - last 24 hours
-      // 3. Try Stem051 sap flow - last 7 days
-      // 4. Try Stem136 sap flow - last 7 days
-      // 5. Try Stem051 diameter - last 24 hours
-      // 6. Try Stem136 diameter - last 24 hours
-
-      let fetchedData = null;
-
-      // Try sap flow from both devices (24 hours)
-      for (const device of devices) {
-        fetchedData = await fetchData(device.name, device.setupId, device.sapFlowTDID, 24, 'sap-flow');
-        if (fetchedData) break;
-      }
-
-      // Try sap flow from both devices (7 days)
-      if (!fetchedData) {
-        console.log('No sap flow data in last 24h from any device, trying 7 days...');
-        for (const device of devices) {
-          fetchedData = await fetchData(device.name, device.setupId, device.sapFlowTDID, 168, 'sap-flow');
-          if (fetchedData) break;
-        }
-      }
-
-      // Fall back to diameter from both devices (24 hours)
-      if (!fetchedData) {
-        console.log('No sap flow data found, trying diameter data (24h)...');
-        for (const device of devices) {
-          fetchedData = await fetchData(device.name, device.setupId, device.diameterTDID, 24, 'diameter');
-          if (fetchedData) break;
-        }
-      }
-
-      // Fall back to diameter from both devices (7 days)
-      if (!fetchedData) {
-        console.log('No diameter data in last 24h, trying 7 days...');
-        for (const device of devices) {
-          fetchedData = await fetchData(device.name, device.setupId, device.diameterTDID, 168, 'diameter');
-          if (fetchedData) break;
-        }
-      }
-
-      // If still no data found
-      if (!fetchedData) {
-        setSapFlowError('No plant monitoring data available from any device (Stem051 or Stem136). All sensors may be offline or data collection has ended.');
-        setSapFlowLoading(false);
-        return;
-      }
-
-      // Process the data
-      const chartData = fetchedData.data.map((point: any) => {
-        const date = new Date(point.dateTime);
-        return {
-          time: date.toLocaleString([], {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-          }),
-          value: Math.round(point.value * 10) / 10
-        };
-      });
-
-      const currentValue = chartData[chartData.length - 1]?.value || 0;
-      const unit = fetchedData.dataType === 'sap-flow' ? 'g/h' : 'μm';
-
-      setSapFlow({
-        current: currentValue,
-        unit: unit,
-        data: chartData,
-        lastUpdated: new Date().toLocaleString([], {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        }),
-        isLive: isDeviceActive,
-        dataType: fetchedData.dataType,
-        timeRange: fetchedData.timeRange,
-        deviceName: fetchedData.deviceName
-      });
-
-      console.log(`Successfully loaded ${fetchedData.dataType} data from ${fetchedData.deviceName} (${chartData.length} points) - ${fetchedData.timeRange}`);
-
-    } catch (err) {
-      console.error('Error fetching plant data:', err);
-      setSapFlowError(err instanceof Error ? err.message : 'Failed to fetch data');
-    } finally {
-      setSapFlowLoading(false);
-    }
-  }, []);
-
-  // Auto-refresh sap flow data every 60 seconds
-  useEffect(() => {
-    fetchSapFlowData();
-
-    const interval = setInterval(() => {
-      fetchSapFlowData();
-    }, 60000); // 60 seconds
-
-    return () => clearInterval(interval);
-  }, [fetchSapFlowData]);
+  // Removed fetchSapFlowData - now handled by separate SapFlowCard and DiameterCard components
 
   // Update head thickness daily (simulated with faster interval for demo)
   useEffect(() => {
@@ -446,12 +237,7 @@ const ResearcherDashboard: React.FC = () => {
 
 
 
-  // Handle logout using AuthContext
-  const handleLogout = async () => {
-    if (window.confirm('Are you sure you want to logout?')) {
-      await logout();
-    }
-  };
+  // Logout is handled directly via AuthContext when needed
 
 
 
@@ -684,8 +470,8 @@ const ResearcherDashboard: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             className="grid grid-cols-1 lg:grid-cols-12 gap-6"
           >
-            {/* ML Predictions and Map Section - Full width */}
-            <div className="col-span-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* ML Predictions and Plant Monitoring Section - Full width */}
+            <div className="col-span-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {/* Head Thickness Prediction Panel */}
               <div className="card-elevated p-6 hover:-translate-y-2">
                 <div className="mb-4">
@@ -767,93 +553,11 @@ const ResearcherDashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Plant Monitoring Panel */}
-              <div className="card-elevated p-6 hover:-translate-y-2">
-                <div className="mb-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-lg font-bold text-gray-900">
-                      {sapFlow.dataType === 'sap-flow' ? 'Sap Flow' : 'Stem Diameter'}
-                    </h3>
-                    {sapFlowLoading ? (
-                      <div className="badge-info">
-                        Loading...
-                      </div>
-                    ) : sapFlow.isLive ? (
-                      <div className="badge-success animate-pulse-soft">
-                        ⚡ Live
-                      </div>
-                    ) : (
-                      <div className="badge-warning">
-                        Recent Data
-                      </div>
-                    )}
-                  </div>
-                  <p className="text-sm text-gray-600 font-medium">
-                    {sapFlow.deviceName && `${sapFlow.deviceName} • `}{sapFlow.timeRange} {sapFlow.isLive ? '• Updates every 60s' : '• Most recent available'}
-                  </p>
-                </div>
+              {/* Sap Flow Card */}
+              <SapFlowCard />
 
-                {sapFlowError ? (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-                    <p className="text-red-700">{sapFlowError}</p>
-                  </div>
-                ) : (
-                  <>
-                    {/* Current Value */}
-                    <div className="bg-gradient-to-br from-horti-green-50 to-horti-green-100/50 rounded-xl p-4 mb-4 border border-horti-green-200/50">
-                      <p className="text-sm text-gray-700 mb-1 font-medium">
-                        {sapFlow.dataType === 'sap-flow' ? 'Current Flow Rate' : 'Current Diameter'}
-                      </p>
-                      <div className="flex items-baseline">
-                        <span className="text-3xl font-bold text-horti-green-700">{sapFlow.current}</span>
-                        <span className="text-base text-horti-green-600 ml-2 font-semibold">{sapFlow.unit}</span>
-                      </div>
-                      {sapFlow.lastUpdated && (
-                        <div className="mt-3 pt-3 border-t border-horti-green-300/50">
-                          <span className="text-xs text-gray-700 font-medium">Last Updated: {sapFlow.lastUpdated}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Historical Chart */}
-                    {sapFlow.data.length > 0 && (
-                      <div className="mb-4">
-                        <h4 className="text-sm font-medium text-gray-700 mb-3">{sapFlow.timeRange}</h4>
-                        <div className="overflow-x-auto">
-                          <ResponsiveContainer width="100%" height={200}>
-                            <LineChart data={sapFlow.data}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                              <XAxis
-                                dataKey="time"
-                                tick={{ fontSize: 10 }}
-                                stroke="#6B7280"
-                                interval="preserveStartEnd"
-                              />
-                              <YAxis
-                                tick={{ fontSize: 12 }}
-                                stroke="#6B7280"
-                                domain={['dataMin - 5', 'dataMax + 5']}
-                              />
-                              <Tooltip
-                                contentStyle={{ backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '8px' }}
-                                labelStyle={{ color: '#111827', fontWeight: 'bold' }}
-                              />
-                              <Line
-                                type="monotone"
-                                dataKey="value"
-                                stroke="#10B981"
-                                strokeWidth={2}
-                                dot={true}
-                                name={sapFlow.dataType === 'sap-flow' ? 'Sap Flow' : 'Diameter'}
-                              />
-                            </LineChart>
-                          </ResponsiveContainer>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
+              {/* Diameter Card */}
+              <DiameterCard />
 
               {/* Greenhouse Location Map Panel */}
               <div className="card-elevated p-6 hover:-translate-y-2">
