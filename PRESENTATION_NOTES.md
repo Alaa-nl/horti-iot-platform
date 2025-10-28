@@ -666,31 +666,6 @@ A professional greenhouse monitoring platform with:
 - Responsive design
 - Performance optimization
 
----
-
-## Q&A Preparation
-
-### Expected Questions:
-
-**Q: Why not use WebSockets for real-time data?**
-A: Polling with setInterval is simpler to implement and debug. For 60-second updates, WebSockets would be overkill. Would consider for sub-second updates.
-
-**Q: How do you handle sensor failures?**
-A: Multi-level fallback strategy tries alternative sensors and time ranges. Clear error messages guide user to working data sources.
-
-**Q: Why separate dashboards for researchers vs growers?**
-A: Different roles need different information. Researchers care about sensor details, growers care about financials. Keeps interfaces focused.
-
-**Q: How does aggregation maintain data accuracy?**
-A: We use averages over intervals. For most research purposes (identifying trends, comparing periods), averages are sufficient and actually reduce noise.
-
-**Q: Can you add more greenhouses?**
-A: Yes! Database is designed for unlimited greenhouses. Just add row to `greenhouses` table and it appears in selector.
-
-**Q: Is the code production-ready?**
-A: Frontend is very close. Backend needs rate limiting, better error handling, and monitoring. Database schema is production-ready.
-
----
 
 ## Demonstration Flow (if time permits)
 
@@ -818,70 +793,11 @@ Total: 30 minutes
 
 ---
 
-END OF PRESENTATION NOTES
- Critical Analysis for 2grow Expert Audience
+ 
 
-  MAJOR ISSUE: Audience Mismatch
 
-  Your presentation is currently written for a general technical audience, but you're presenting to 2grow experts who
-  already know their own technology inside-out. This needs significant adjustment.
 
-  Problems with Current Approach:
 
-  1. Over-explaining their own technology (Lines 198-232)
-  ❌ "What it measures: Water flow through plant stems"
-  ❌ "Sap flow (g/h) - how fast water moves"
-  ❌ "Stem diameter (μm) - thickness of stem"
-  They invented this technology! They don't need you to explain what sap flow is.
-
-  2. Describing their API back to them (Lines 274-280)
-  ❌ "Source: PhytoSense 2GROW platform (https://cloud2grow.eu)"
-  ❌ "Authentication: API token required for all requests"
-  ❌ "Rate Limiting: Maximum 60 requests per minute"
-  They built this API! They know how it works.
-
-  3. Too much time on basics, not enough on YOUR contribution
-  - 15 minutes planned for researcher dashboard
-  - But much of it explains PhytoSense technology
-  - Should focus on YOUR implementation and value-add
-
-  ---
-  What 2grow Experts Actually Want to See:
-
-  1. HOW you used their API (not what it is)
-  - Show the integration architecture
-  - Demonstrate the proxy server implementation
-  - Explain WHY you made certain design choices
-  - Show code examples of your implementation
-
-  2. PROBLEMS you solved
-  - ✅ Aggregation strategy (this is good!)
-  - ✅ Performance optimization (keep this!)
-  - ✅ Error handling and fallbacks (excellent!)
-  - Missing: Any API limitations you encountered?
-
-  3. VALUE you added on top of their data
-  - The researcher dashboard design
-  - Multi-greenhouse comparison capability
-  - Integration with weather data
-  - Predictive analytics
-  - Export functionality
-  - How you made their data MORE useful
-
-  4. INSIGHTS from their data
-  - What patterns did you discover?
-  - How do researchers use the data?
-  - What features do researchers request?
-  - How does sap flow correlate with other metrics?
-
-  5. FEEDBACK on their API (respectfully)
-  - What worked well?
-  - What was challenging?
-  - Suggestions for improvement?
-  - Feature requests?
-
-  ---
-  Recommended Restructure for 2grow Audience:
 
   Slide 1: Project Overview (2 min)
   - ✅ Keep but reframe: "I built a platform around your sensors"
@@ -1017,38 +933,3 @@ END OF PRESENTATION NOTES
   - Performance metrics
   - Integration challenges
 
-  ---
-  Questions They Might Ask:
-
-  Be prepared for:
-  1. "Why did you choose this aggregation approach over X?"
-  2. "Have you encountered any API limitations?"
-  3. "What do researchers say about our data?"
-  4. "What features would make the API better for your use case?"
-  5. "How does our data compare to other sensor types?"
-  6. "What's the performance impact of the proxy layer?"
-  7. "Have you considered caching strategies?"
-
-⏺ ---
-  Summary: 3 Critical Changes Needed
-
-  1. REFRAME THE NARRATIVE
-  - From: "Let me explain PhytoSense technology to you"
-  - To: "Here's the platform I built around your sensors"
-
-  2. SHIFT THE FOCUS
-  - From: 60% explaining their tech, 40% your work
-  - To: 20% context, 80% YOUR implementation and value-add
-
-  3. DEMONSTRATE, DON'T EXPLAIN
-  - Less: "Sap flow measures water movement"
-  - More: "Here's how researchers interact with your data in our dashboard"
-
-  ---
-  Would you like me to:
-  1. Rewrite specific sections for the 2grow audience?
-  2. Create a new presentation outline optimized for experts?
-  3. Help prepare for specific technical questions they might ask?
-
-  The good news: Your technical implementation (aggregation, error handling, proxy server) is excellent. You just need to
-  reframe the presentation to showcase YOUR work rather than explaining their technology back to them.
