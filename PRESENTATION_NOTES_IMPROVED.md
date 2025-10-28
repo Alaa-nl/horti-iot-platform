@@ -519,6 +519,7 @@ Researchers monitor multiple greenhouses, need to switch quickly.
 
 
 
+Slide 11: 
 
  Q&A - I have prepared some questions and answered them already: 
 
@@ -604,6 +605,8 @@ A: Full compliance built in:
 - Passwords hashed with bcrypt (never stored plain)
 
 ---
+
+Slide 12: 
 
 **Other Questions?**
 
