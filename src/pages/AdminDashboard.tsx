@@ -277,11 +277,11 @@ const AdminDashboard: React.FC = () => {
   if (user?.role !== 'admin') {
     return (
       <Layout>
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="min-h-screen bg-secondary flex items-center justify-center">
           <Card>
             <div className="text-center p-8">
               <h2 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h2>
-              <p className="text-gray-600">You need admin privileges to access this page.</p>
+              <p className="text-muted-foreground">You need admin privileges to access this page.</p>
             </div>
           </Card>
         </div>
@@ -291,19 +291,19 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-background">
         <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
           {/* Modern Header with Stats */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h1 className="text-4xl font-bold text-gray-900 mb-2 flex items-center gap-3">
+                <h1 className="text-4xl font-bold text-foreground mb-2 flex items-center gap-3">
                   <span className="w-12 h-12 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
                     <span className="text-2xl">⚙️</span>
                   </span>
                   Admin Dashboard
                 </h1>
-                <p className="text-lg text-gray-600">Comprehensive system management and control</p>
+                <p className="text-lg text-muted-foreground">Comprehensive system management and control</p>
               </div>
               <div className="text-right">
                 <div className="text-sm text-gray-500 mb-1">System Status</div>
@@ -316,11 +316,11 @@ const AdminDashboard: React.FC = () => {
 
             {/* Quick Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <div className="bg-white rounded-2xl p-5 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-200">
+              <div className="bg-card rounded-2xl p-5 shadow-lg border border hover:shadow-xl transition-all duration-200">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600 mb-1">Total Users</p>
-                    <p className="text-3xl font-bold text-gray-900">{users.length}</p>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Total Users</p>
+                    <p className="text-3xl font-bold text-foreground">{users.length}</p>
                   </div>
                   <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
                     <span className="text-2xl">👥</span>
@@ -328,11 +328,11 @@ const AdminDashboard: React.FC = () => {
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl p-5 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-200">
+              <div className="bg-card rounded-2xl p-5 shadow-lg border border hover:shadow-xl transition-all duration-200">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600 mb-1">Greenhouses</p>
-                    <p className="text-3xl font-bold text-gray-900">{greenhouses.length}</p>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Greenhouses</p>
+                    <p className="text-3xl font-bold text-foreground">{greenhouses.length}</p>
                   </div>
                   <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
                     <span className="text-2xl">🏡</span>
@@ -340,11 +340,11 @@ const AdminDashboard: React.FC = () => {
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl p-5 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-200">
+              <div className="bg-card rounded-2xl p-5 shadow-lg border border hover:shadow-xl transition-all duration-200">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600 mb-1">Active Users</p>
-                    <p className="text-3xl font-bold text-gray-900">{users.filter(u => u.is_active).length}</p>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Active Users</p>
+                    <p className="text-3xl font-bold text-foreground">{users.filter(u => u.is_active).length}</p>
                   </div>
                   <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
                     <span className="text-2xl">✅</span>
@@ -355,14 +355,14 @@ const AdminDashboard: React.FC = () => {
           </div>
 
           {/* Modern Tabs */}
-          <div className="mb-8 bg-white rounded-2xl shadow-lg p-2 border border-gray-100">
+          <div className="mb-8 bg-card rounded-2xl shadow-lg p-2 border border">
             <nav className="flex gap-2">
               <button
                 onClick={() => setActiveTab('users')}
                 className={`flex-1 py-4 px-6 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-3 ${
                   activeTab === 'users'
                     ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg scale-105'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
                 }`}
               >
                 <span className="text-xl">👥</span>
@@ -373,7 +373,7 @@ const AdminDashboard: React.FC = () => {
                 className={`flex-1 py-4 px-6 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-3 ${
                   activeTab === 'greenhouses'
                     ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg scale-105'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
                 }`}
               >
                 <span className="text-xl">🏡</span>
@@ -408,7 +408,7 @@ const AdminDashboard: React.FC = () => {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="mb-6 bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+            <div className="mb-6 bg-card rounded-2xl p-6 shadow-lg border border">
               <div className="flex flex-wrap gap-4 items-center">
                 <button
                   onClick={() => setShowCreateModal(true)}
@@ -419,11 +419,11 @@ const AdminDashboard: React.FC = () => {
                 </button>
 
                 <div className="flex-1 min-w-[200px]">
-                  <label className="text-xs font-semibold text-gray-600 mb-2 block">Filter by Role</label>
+                  <label className="text-xs font-semibold text-muted-foreground mb-2 block">Filter by Role</label>
                   <select
                     value={filterRole}
                     onChange={(e) => setFilterRole(e.target.value)}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl font-medium text-gray-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+                    className="w-full px-4 py-3 border-2 border rounded-xl font-medium text-muted-foreground focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
                   >
                     <option value="">All Roles</option>
                     <option value="admin">Admin</option>
@@ -433,11 +433,11 @@ const AdminDashboard: React.FC = () => {
                 </div>
 
                 <div className="flex-1 min-w-[200px]">
-                  <label className="text-xs font-semibold text-gray-600 mb-2 block">Filter by Status</label>
+                  <label className="text-xs font-semibold text-muted-foreground mb-2 block">Filter by Status</label>
                   <select
                     value={filterActive === undefined ? '' : String(filterActive)}
                     onChange={(e) => setFilterActive(e.target.value === '' ? undefined : e.target.value === 'true')}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl font-medium text-gray-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+                    className="w-full px-4 py-3 border-2 border rounded-xl font-medium text-muted-foreground focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
                   >
                     <option value="">All Status</option>
                     <option value="true">Active</option>
@@ -447,7 +447,7 @@ const AdminDashboard: React.FC = () => {
 
                 <button
                   onClick={loadUsers}
-                  className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl shadow-md hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center gap-3 mt-6"
+                  className="px-6 py-3 bg-secondary hover:bg-gray-200 text-muted-foreground font-semibold rounded-xl shadow-md hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center gap-3 mt-6"
                 >
                   <span className="text-lg">🔄</span>
                   <span>Refresh</span>
@@ -455,51 +455,51 @@ const AdminDashboard: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-              <div className="px-8 py-6 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
-                <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+            <div className="bg-card rounded-2xl shadow-lg border border overflow-hidden">
+              <div className="px-8 py-6 border-b border bg-gradient-to-r from-gray-50 to-white">
+                <h2 className="text-2xl font-bold text-foreground flex items-center gap-3">
                   <span className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-lg">
                     <span className="text-xl">👥</span>
                   </span>
                   User Directory
                 </h2>
-                <p className="text-sm text-gray-600 mt-2">Manage and monitor all system users</p>
+                <p className="text-sm text-muted-foreground mt-2">Manage and monitor all system users</p>
               </div>
 
               <div className="p-6">
                 {loading ? (
                   <div className="text-center py-12">
                     <div className="animate-spin rounded-full h-16 w-16 border-4 border-indigo-200 border-t-indigo-600 mx-auto"></div>
-                    <p className="mt-6 text-gray-600 font-medium">Loading users...</p>
+                    <p className="mt-6 text-muted-foreground font-medium">Loading users...</p>
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="min-w-full">
                       <thead>
-                        <tr className="border-b-2 border-gray-200">
-                          <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                        <tr className="border-b-2 border">
+                          <th className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">
                             User Info
                           </th>
-                          <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                          <th className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">
                             Email
                           </th>
-                          <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                          <th className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">
                             Role
                           </th>
-                          <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                          <th className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">
                             Status
                           </th>
-                          <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                          <th className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">
                             Department
                           </th>
-                          <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                          <th className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">
                             Actions
                           </th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100">
                         {users.map((user) => (
-                          <tr key={user.id} className="hover:bg-gray-50 transition-colors">
+                          <tr key={user.id} className="hover:bg-secondary transition-colors">
                             <td className="px-6 py-5">
                               <div className="flex items-center gap-3">
                                 <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shadow-lg ${
@@ -510,7 +510,7 @@ const AdminDashboard: React.FC = () => {
                                   {user.name.charAt(0).toUpperCase()}
                                 </div>
                                 <div>
-                                  <div className="text-sm font-bold text-gray-900">{user.name}</div>
+                                  <div className="text-sm font-bold text-foreground">{user.name}</div>
                                   {user.phone_number && (
                                     <div className="text-xs text-gray-500 flex items-center gap-1">
                                       <span>📞</span>
@@ -520,7 +520,7 @@ const AdminDashboard: React.FC = () => {
                                 </div>
                               </div>
                             </td>
-                            <td className="px-6 py-5 text-sm text-gray-600">
+                            <td className="px-6 py-5 text-sm text-muted-foreground">
                               {user.email}
                             </td>
                             <td className="px-6 py-5">
@@ -540,7 +540,7 @@ const AdminDashboard: React.FC = () => {
                                 {user.is_active ? 'Active' : 'Inactive'}
                               </span>
                             </td>
-                            <td className="px-6 py-5 text-sm text-gray-600 font-medium">
+                            <td className="px-6 py-5 text-sm text-muted-foreground font-medium">
                               {user.department || '-'}
                             </td>
                             <td className="px-6 py-5">
@@ -586,7 +586,7 @@ const AdminDashboard: React.FC = () => {
                 <motion.div
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl overflow-hidden"
+                  className="bg-card rounded-3xl max-w-2xl w-full shadow-2xl overflow-hidden"
                 >
                   <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-8 py-6">
                     <h3 className="text-2xl font-bold text-white flex items-center gap-3">
@@ -599,61 +599,61 @@ const AdminDashboard: React.FC = () => {
                     <form onSubmit={handleCreateUser} className="space-y-6">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                          <label className="block text-sm font-bold text-gray-900 mb-2">Full Name *</label>
+                          <label className="block text-sm font-bold text-foreground mb-2">Full Name *</label>
                           <input
                             type="text"
                             required
                             value={newUser.name}
                             onChange={(e) => setNewUser({...newUser, name: e.target.value})}
-                            className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 font-medium text-gray-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+                            className="w-full border-2 border rounded-xl px-4 py-3 font-medium text-muted-foreground focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
                             placeholder="John Doe"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-bold text-gray-900 mb-2">Email Address *</label>
+                          <label className="block text-sm font-bold text-foreground mb-2">Email Address *</label>
                           <input
                             type="email"
                             required
                             value={newUser.email}
                             onChange={(e) => setNewUser({...newUser, email: e.target.value})}
-                            className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 font-medium text-gray-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+                            className="w-full border-2 border rounded-xl px-4 py-3 font-medium text-muted-foreground focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
                             placeholder="john@example.com"
                           />
                         </div>
                       </div>
                       <div>
-                        <label className="block text-sm font-bold text-gray-900 mb-2">Password *</label>
+                        <label className="block text-sm font-bold text-foreground mb-2">Password *</label>
                         <div className="relative">
                           <input
                             type={showPassword ? "text" : "password"}
                             required
                             value={newUser.password}
                             onChange={(e) => setNewUser({...newUser, password: e.target.value})}
-                            className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 pr-12 font-medium text-gray-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+                            className="w-full border-2 border rounded-xl px-4 py-3 pr-12 font-medium text-muted-foreground focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
                             placeholder="Min 8 chars with special characters"
                           />
                           <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-all"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-gray-500 hover:text-muted-foreground hover:bg-secondary rounded-lg transition-all"
                             tabIndex={-1}
                           >
                             {showPassword ? '👁️' : '🔒'}
                           </button>
                         </div>
-                        <p className="mt-2 text-xs text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">
+                        <p className="mt-2 text-xs text-muted-foreground bg-secondary px-3 py-2 rounded-lg">
                           Must be at least 8 characters with uppercase, lowercase, number, and special character (@$!%*?&)
                         </p>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                          <label className="block text-sm font-bold text-gray-900 mb-2">Role *</label>
+                          <label className="block text-sm font-bold text-foreground mb-2">Role *</label>
                           <select
                             required
                             value={newUser.role}
                             onChange={(e) => setNewUser({...newUser, role: e.target.value as any})}
-                            className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 font-medium text-gray-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+                            className="w-full border-2 border rounded-xl px-4 py-3 font-medium text-muted-foreground focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
                           >
                             <option value="farmer">Farmer</option>
                             <option value="researcher">Researcher</option>
@@ -661,12 +661,12 @@ const AdminDashboard: React.FC = () => {
                           </select>
                         </div>
                         <div>
-                          <label className="block text-sm font-bold text-gray-900 mb-2">Phone Number</label>
+                          <label className="block text-sm font-bold text-foreground mb-2">Phone Number</label>
                           <input
                             type="tel"
                             value={newUser.phone_number}
                             onChange={(e) => setNewUser({...newUser, phone_number: e.target.value})}
-                            className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 font-medium text-gray-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+                            className="w-full border-2 border rounded-xl px-4 py-3 font-medium text-muted-foreground focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
                             placeholder="+31 6 12345678"
                           />
                         </div>
@@ -674,32 +674,32 @@ const AdminDashboard: React.FC = () => {
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                          <label className="block text-sm font-bold text-gray-900 mb-2">Department</label>
+                          <label className="block text-sm font-bold text-foreground mb-2">Department</label>
                           <input
                             type="text"
                             value={newUser.department}
                             onChange={(e) => setNewUser({...newUser, department: e.target.value})}
-                            className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 font-medium text-gray-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+                            className="w-full border-2 border rounded-xl px-4 py-3 font-medium text-muted-foreground focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
                             placeholder="e.g., Research & Development"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-bold text-gray-900 mb-2">Location</label>
+                          <label className="block text-sm font-bold text-foreground mb-2">Location</label>
                           <input
                             type="text"
                             value={newUser.location}
                             onChange={(e) => setNewUser({...newUser, location: e.target.value})}
-                            className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 font-medium text-gray-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+                            className="w-full border-2 border rounded-xl px-4 py-3 font-medium text-muted-foreground focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
                             placeholder="e.g., Amsterdam, Netherlands"
                           />
                         </div>
                       </div>
 
-                      <div className="flex justify-end gap-4 pt-6 border-t-2 border-gray-100">
+                      <div className="flex justify-end gap-4 pt-6 border-t-2 border">
                         <button
                           type="button"
                           onClick={() => setShowCreateModal(false)}
-                          className="px-6 py-3 text-gray-700 font-semibold border-2 border-gray-300 rounded-xl hover:bg-gray-50 active:scale-95 transition-all"
+                          className="px-6 py-3 text-muted-foreground font-semibold border-2 border-gray-300 rounded-xl hover:bg-secondary active:scale-95 transition-all"
                         >
                           Cancel
                         </button>
@@ -725,7 +725,7 @@ const AdminDashboard: React.FC = () => {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="mb-6 bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+            <div className="mb-6 bg-card rounded-2xl p-6 shadow-lg border border">
               <div className="flex flex-wrap gap-4 items-center">
                 <button
                   onClick={() => {
@@ -758,14 +758,14 @@ const AdminDashboard: React.FC = () => {
                     placeholder="🔍 Search greenhouses..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl font-medium text-gray-700 focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all"
+                    className="w-full px-4 py-3 border-2 border rounded-xl font-medium text-muted-foreground focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all"
                   />
                 </div>
 
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
-                  className="px-4 py-3 border-2 border-gray-200 rounded-xl font-medium text-gray-700 focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all"
+                  className="px-4 py-3 border-2 border rounded-xl font-medium text-muted-foreground focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all"
                 >
                   <option value="name">Sort by Name</option>
                   <option value="created_at">Sort by Date</option>
@@ -774,14 +774,14 @@ const AdminDashboard: React.FC = () => {
 
                 <button
                   onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                  className="px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl shadow-md hover:shadow-lg active:scale-95 transition-all duration-200"
+                  className="px-4 py-3 bg-secondary hover:bg-gray-200 text-muted-foreground font-bold rounded-xl shadow-md hover:shadow-lg active:scale-95 transition-all duration-200"
                 >
                   {sortOrder === 'asc' ? '⬆️ Asc' : '⬇️ Desc'}
                 </button>
 
                 <button
                   onClick={loadGreenhouses}
-                  className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl shadow-md hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center gap-3"
+                  className="px-6 py-3 bg-secondary hover:bg-gray-200 text-muted-foreground font-semibold rounded-xl shadow-md hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center gap-3"
                 >
                   <span className="text-lg">🔄</span>
                   <span>Refresh</span>
@@ -789,15 +789,15 @@ const AdminDashboard: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-              <div className="px-8 py-6 border-b border-gray-100 bg-gradient-to-r from-green-50 to-emerald-50">
-                <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+            <div className="bg-card rounded-2xl shadow-lg border border overflow-hidden">
+              <div className="px-8 py-6 border-b border bg-gradient-to-r from-green-50 to-emerald-50">
+                <h2 className="text-2xl font-bold text-foreground flex items-center gap-3">
                   <span className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-lg">
                     <span className="text-xl">🏡</span>
                   </span>
                   Greenhouse Facilities
                 </h2>
-                <p className="text-sm text-gray-600 mt-2">Monitor and manage all greenhouse operations</p>
+                <p className="text-sm text-muted-foreground mt-2">Monitor and manage all greenhouse operations</p>
               </div>
 
               <div className="p-6">
@@ -805,14 +805,14 @@ const AdminDashboard: React.FC = () => {
                 {greenhouseLoading ? (
                   <div className="text-center py-12">
                     <div className="animate-spin rounded-full h-16 w-16 border-4 border-green-200 border-t-green-600 mx-auto"></div>
-                    <p className="mt-6 text-gray-600 font-medium">Loading greenhouses...</p>
+                    <p className="mt-6 text-muted-foreground font-medium">Loading greenhouses...</p>
                   </div>
                 ) : greenhouses.length === 0 ? (
                   <div className="text-center py-16">
-                    <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <div className="w-20 h-20 bg-secondary rounded-full flex items-center justify-center mx-auto mb-4">
                       <span className="text-4xl">🏡</span>
                     </div>
-                    <p className="text-gray-700 text-xl font-semibold">No greenhouses found</p>
+                    <p className="text-muted-foreground text-xl font-semibold">No greenhouses found</p>
                     <p className="text-gray-500 text-sm mt-2">Create your first greenhouse to get started</p>
                   </div>
                 ) : (
@@ -823,7 +823,7 @@ const AdminDashboard: React.FC = () => {
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         whileHover={{ y: -8 }}
-                        className="bg-gradient-to-br from-white to-green-50 rounded-2xl p-6 border-2 border-gray-100 hover:border-green-300 shadow-lg hover:shadow-2xl transition-all duration-300"
+                        className="bg-gradient-to-br from-white to-green-50 rounded-2xl p-6 border-2 border hover:border-green-300 shadow-lg hover:shadow-2xl transition-all duration-300"
                       >
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex items-center gap-3">
@@ -831,8 +831,8 @@ const AdminDashboard: React.FC = () => {
                               <span className="text-2xl">🏡</span>
                             </div>
                             <div>
-                              <h3 className="text-lg font-bold text-gray-900">{greenhouse.name}</h3>
-                              <p className="text-xs text-gray-600 flex items-center gap-1">
+                              <h3 className="text-lg font-bold text-foreground">{greenhouse.name}</h3>
+                              <p className="text-xs text-muted-foreground flex items-center gap-1">
                                 <span>📍</span>
                                 {greenhouse.location.city}, {greenhouse.location.region}
                               </p>
@@ -847,13 +847,13 @@ const AdminDashboard: React.FC = () => {
                           </span>
                         </div>
 
-                        <div className="space-y-3 mb-5 bg-white rounded-xl p-4 shadow-inner">
+                        <div className="space-y-3 mb-5 bg-card rounded-xl p-4 shadow-inner">
                           <div className="flex justify-between items-center">
-                            <span className="text-sm text-gray-600 font-medium">Area:</span>
-                            <span className="text-sm font-bold text-gray-900 bg-gray-100 px-3 py-1 rounded-lg">{greenhouse.details.landArea} m²</span>
+                            <span className="text-sm text-muted-foreground font-medium">Area:</span>
+                            <span className="text-sm font-bold text-foreground bg-secondary px-3 py-1 rounded-lg">{greenhouse.details.landArea} m²</span>
                           </div>
                           <div className="flex justify-between items-center">
-                            <span className="text-sm text-gray-600 font-medium">Crop Type:</span>
+                            <span className="text-sm text-muted-foreground font-medium">Crop Type:</span>
                             <span className="text-sm font-bold text-green-700 capitalize bg-green-50 px-3 py-1 rounded-lg">
                               {(() => {
                                 const cropsData = Array.isArray(greenhouse.crops) ? greenhouse.crops[0] : greenhouse.crops;
@@ -862,8 +862,8 @@ const AdminDashboard: React.FC = () => {
                             </span>
                           </div>
                           <div className="flex justify-between items-center">
-                            <span className="text-sm text-gray-600 font-medium">Variety:</span>
-                            <span className="text-sm font-bold text-gray-900 bg-gray-100 px-3 py-1 rounded-lg">
+                            <span className="text-sm text-muted-foreground font-medium">Variety:</span>
+                            <span className="text-sm font-bold text-foreground bg-secondary px-3 py-1 rounded-lg">
                               {(() => {
                                 const cropsData = Array.isArray(greenhouse.crops) ? greenhouse.crops[0] : greenhouse.crops;
                                 return cropsData?.variety || 'N/A';
@@ -872,7 +872,7 @@ const AdminDashboard: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="flex gap-2 pt-4 border-t-2 border-gray-100">
+                        <div className="flex gap-2 pt-4 border-t-2 border">
                           <button
                             onClick={() => openEditModal(greenhouse)}
                             className="flex-1 px-4 py-2.5 text-sm font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:shadow-lg active:scale-95 transition-all"
@@ -899,7 +899,7 @@ const AdminDashboard: React.FC = () => {
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="bg-white rounded-3xl max-w-2xl w-full p-8 shadow-strong max-h-[90vh] overflow-y-auto scrollbar-thin"
+                  className="bg-card rounded-3xl max-w-2xl w-full p-8 shadow-strong max-h-[90vh] overflow-y-auto scrollbar-thin"
                 >
                   <h3 className="text-2xl font-bold mb-6 bg-gradient-to-r from-horti-green-600 to-horti-blue-600 bg-clip-text text-transparent">
                     {editingGreenhouse ? 'Edit Greenhouse' : 'Create New Greenhouse'}
@@ -907,7 +907,7 @@ const AdminDashboard: React.FC = () => {
                   <form onSubmit={editingGreenhouse ? handleUpdateGreenhouse : handleCreateGreenhouse} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="md:col-span-2">
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">Greenhouse Name</label>
+                        <label className="block text-sm font-semibold text-foreground mb-2">Greenhouse Name</label>
                         <input
                           type="text"
                           required
@@ -919,7 +919,7 @@ const AdminDashboard: React.FC = () => {
                       </div>
 
                       <div className="md:col-span-2">
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">Location</label>
+                        <label className="block text-sm font-semibold text-foreground mb-2">Location</label>
                         <input
                           type="text"
                           required
@@ -931,7 +931,7 @@ const AdminDashboard: React.FC = () => {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">Area (m²)</label>
+                        <label className="block text-sm font-semibold text-foreground mb-2">Area (m²)</label>
                         <input
                           type="number"
                           value={newGreenhouse.area_m2 || ''}
@@ -942,7 +942,7 @@ const AdminDashboard: React.FC = () => {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">Crop Type</label>
+                        <label className="block text-sm font-semibold text-foreground mb-2">Crop Type</label>
                         <input
                           type="text"
                           value={newGreenhouse.crop_type || ''}
@@ -953,7 +953,7 @@ const AdminDashboard: React.FC = () => {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">Variety</label>
+                        <label className="block text-sm font-semibold text-foreground mb-2">Variety</label>
                         <input
                           type="text"
                           value={newGreenhouse.variety || ''}
@@ -964,7 +964,7 @@ const AdminDashboard: React.FC = () => {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">Supplier</label>
+                        <label className="block text-sm font-semibold text-foreground mb-2">Supplier</label>
                         <input
                           type="text"
                           value={newGreenhouse.supplier || ''}
@@ -975,7 +975,7 @@ const AdminDashboard: React.FC = () => {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">Climate System</label>
+                        <label className="block text-sm font-semibold text-foreground mb-2">Climate System</label>
                         <input
                           type="text"
                           value={newGreenhouse.climate_system || ''}
@@ -986,7 +986,7 @@ const AdminDashboard: React.FC = () => {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">Lighting System</label>
+                        <label className="block text-sm font-semibold text-foreground mb-2">Lighting System</label>
                         <input
                           type="text"
                           value={newGreenhouse.lighting_system || ''}
@@ -997,7 +997,7 @@ const AdminDashboard: React.FC = () => {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">CO2 Target (ppm)</label>
+                        <label className="block text-sm font-semibold text-foreground mb-2">CO2 Target (ppm)</label>
                         <input
                           type="number"
                           value={newGreenhouse.co2_target_ppm || ''}
@@ -1008,7 +1008,7 @@ const AdminDashboard: React.FC = () => {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">Temperature Range (°C)</label>
+                        <label className="block text-sm font-semibold text-foreground mb-2">Temperature Range (°C)</label>
                         <input
                           type="text"
                           value={newGreenhouse.temperature_range_c || ''}
@@ -1019,7 +1019,7 @@ const AdminDashboard: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                    <div className="flex justify-end space-x-4 pt-6 border-t border">
                       <button
                         type="button"
                         onClick={() => {

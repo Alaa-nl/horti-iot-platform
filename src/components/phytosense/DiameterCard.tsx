@@ -67,6 +67,13 @@ const DiameterCard: React.FC<DiameterCardProps> = ({ className = '' }) => {
       const daysAgo = Math.floor((now.getTime() - deviceEndDate.getTime()) / (1000 * 60 * 60 * 24));
       const isDeviceActive = daysAgo < 7;
 
+      // If data is more than 7 days old, show error immediately
+      if (!isDeviceActive) {
+        setError(`Stem diameter sensors offline since ${format(deviceEndDate, 'MMM dd, yyyy')} (${daysAgo} days ago). No live data available.`);
+        setLoading(false);
+        return;
+      }
+
       // Helper function to fetch diameter data
       const fetchData = async (deviceName: string, setupId: number, tdId: number, hourRange: number) => {
         let before, after;
@@ -202,7 +209,7 @@ const DiameterCard: React.FC<DiameterCardProps> = ({ className = '' }) => {
     <div className={`card-elevated p-6 hover:-translate-y-2 ${className}`}>
       <div className="mb-4">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-lg font-bold text-gray-900">
+          <h3 className="text-lg font-bold text-foreground">
             Stem Diameter
           </h3>
           {loading ? (
@@ -223,7 +230,7 @@ const DiameterCard: React.FC<DiameterCardProps> = ({ className = '' }) => {
             </div>
           )}
         </div>
-        <p className="text-sm text-gray-600 font-medium">
+        <p className="text-sm text-muted-foreground font-medium">
           {diameter.deviceName && `${diameter.deviceName} • `}
           {diameter.timeRange}
           {diameter.isLive && ' • Updates every 60s'}
@@ -231,11 +238,11 @@ const DiameterCard: React.FC<DiameterCardProps> = ({ className = '' }) => {
       </div>
 
       {error ? (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
-          <p className="text-amber-700 text-sm">{error}</p>
+        <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 mb-4">
+          <p className="text-destructive text-sm">{error}</p>
           <button
             onClick={fetchDiameterData}
-            className="mt-2 text-amber-700 underline hover:no-underline text-sm"
+            className="mt-2 text-destructive underline hover:no-underline text-sm"
           >
             Retry
           </button>
@@ -243,17 +250,17 @@ const DiameterCard: React.FC<DiameterCardProps> = ({ className = '' }) => {
       ) : (
         <>
           {/* Current Value */}
-          <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-4 mb-4 border border-blue-200/50">
-            <p className="text-sm text-gray-700 mb-1 font-medium">
+          <div className="bg-primary/10 rounded-xl p-4 mb-4 border border-primary/30">
+            <p className="text-sm text-muted-foreground mb-1 font-medium">
               Current Diameter
             </p>
             <div className="flex items-baseline">
-              <span className="text-3xl font-bold text-blue-700">{diameter.current}</span>
-              <span className="text-base text-blue-600 ml-2 font-semibold">{diameter.unit}</span>
+              <span className="text-3xl font-bold text-primary">{diameter.current}</span>
+              <span className="text-base text-primary ml-2 font-semibold">{diameter.unit}</span>
             </div>
             {diameter.lastUpdated && (
-              <div className="mt-3 pt-3 border-t border-blue-300/50">
-                <span className="text-xs text-gray-700 font-medium">
+              <div className="mt-3 pt-3 border-t border-primary/30">
+                <span className="text-xs text-muted-foreground font-medium">
                   Last Updated: {diameter.lastUpdated}
                 </span>
               </div>
@@ -263,7 +270,7 @@ const DiameterCard: React.FC<DiameterCardProps> = ({ className = '' }) => {
           {/* Historical Chart */}
           {diameter.data.length > 0 && (
             <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={diameter.data} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
+              <LineChart data={diameter.data} margin={{ top: 5, right: 5, bottom: 50, left: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis
                   dataKey="time"

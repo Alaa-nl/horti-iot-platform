@@ -1,10 +1,9 @@
-// High-Performance Chart Component using uPlot
-// Optimized for rendering 100k+ data points without performance issues
+// High-Performance Chart Component using Apache ECharts
+// Optimized for rendering large datasets with excellent performance
 
 import React, { useMemo } from 'react';
-import UplotReact from 'uplot-react';
-import uPlot from 'uplot';
-import 'uplot/dist/uPlot.min.css';
+import ReactECharts from 'echarts-for-react';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface ChartDataPoint {
   time: string;
@@ -22,273 +21,239 @@ interface PhytoSenseChartProps {
 const PhytoSenseChart: React.FC<PhytoSenseChartProps> = ({
   data,
   measurementType,
-  height = 400
+  height = 500
 }) => {
-  // Transform data for uPlot (requires timestamps as seconds and separate arrays for each series)
-  const { plotData, options } = useMemo((): { plotData: any[], options: uPlot.Options } => {
+  const { theme } = useTheme();
+
+  // Get theme colors
+  const isDark = theme === 'dark';
+  const textColor = isDark ? '#9ca3af' : '#6b7280';
+  const gridColor = isDark ? '#374151' : '#e5e7eb';
+  const backgroundColor = isDark ? '#1f2937' : '#ffffff';
+  const borderColor = isDark ? '#374151' : '#e5e7eb';
+
+  // Configure ECharts options
+  const options = useMemo(() => {
     if (!data || data.length === 0) {
-      // Return minimal valid options for empty data
-      return {
-        plotData: [[], []],
-        options: {
-          width: 800,
-          height: height,
-          series: [],
-          axes: []
-        }
-      };
+      return {};
     }
 
-    // Convert timestamps to Unix timestamps (seconds)
-    const timestamps = data.map(d => new Date(d.fullTimestamp).getTime() / 1000);
+    // Prepare data series
+    const timestamps = data.map(d => d.fullTimestamp);
+    const diameterData = data.map(d => d.diameter ?? null);
+    const sapFlowData = data.map(d => d.sapFlow ?? null);
 
-    // Extract diameter and sap flow values
-    const diameterValues = data.map(d => d.diameter ?? null);
-    const sapFlowValues = data.map(d => d.sapFlow ?? null);
+    const series: any[] = [];
+    const yAxis: any[] = [];
+    const legend: string[] = [];
 
-    // Build series configuration based on measurement type
-    const series: uPlot.Series[] = [
-      {
-        // First series is always the x-axis (timestamp)
-      }
-    ];
-
-    let plotData: any[] = [timestamps];
-
+    // Add Diameter series
     if (measurementType === 'both' || measurementType === 'diameter') {
       series.push({
-        label: 'Diameter (mm)',
-        stroke: '#10B981',
-        width: 2,
-        spanGaps: false,
-        points: { show: false }
+        name: 'Diameter (mm)',
+        type: 'line',
+        data: diameterData,
+        smooth: false,
+        symbol: 'none',
+        lineStyle: {
+          color: '#10B981',
+          width: 2
+        },
+        itemStyle: {
+          color: '#10B981'
+        },
+        yAxisIndex: 0
       });
-      plotData.push(diameterValues);
+      legend.push('Diameter (mm)');
+
+      yAxis.push({
+        type: 'value',
+        name: 'Diameter (mm)',
+        position: 'left',
+        nameTextStyle: {
+          color: '#10B981',
+          fontSize: 13,
+          fontWeight: 600
+        },
+        axisLine: {
+          show: true,
+          lineStyle: {
+            color: '#10B981'
+          }
+        },
+        axisLabel: {
+          color: '#10B981',
+          fontSize: 11
+        },
+        splitLine: {
+          lineStyle: {
+            color: gridColor,
+            type: 'dashed'
+          }
+        }
+      });
     }
 
+    // Add Sap Flow series
     if (measurementType === 'both' || measurementType === 'sapflow') {
       series.push({
-        label: 'Sap Flow (g/h)',
-        stroke: '#3B82F6',
-        width: 2,
-        spanGaps: false,
-        points: { show: false },
-        scale: measurementType === 'both' ? 'sapflow' : undefined
-      });
-      plotData.push(sapFlowValues);
-    }
-
-    // Configure axes
-    const axes: uPlot.Axis[] = [
-      {
-        // X-axis (time)
-        stroke: '#6B7280',
-        grid: {
-          stroke: '#E5E7EB',
-          width: 1
+        name: 'Sap Flow (g/h)',
+        type: 'line',
+        data: sapFlowData,
+        smooth: false,
+        symbol: 'none',
+        lineStyle: {
+          color: '#3B82F6',
+          width: 2
         },
-        space: 80,
-        values: (u: uPlot, vals: number[]) => vals.map((v: number) => {
-          const date = new Date(v * 1000);
-          const hours = date.getHours().toString().padStart(2, '0');
-          const minutes = date.getMinutes().toString().padStart(2, '0');
-          const month = date.toLocaleDateString('en-US', { month: 'short' });
-          const day = date.getDate();
-          return `${month} ${day} ${hours}:${minutes}`;
-        })
-      }
-    ];
-
-    // Add Y-axis for diameter
-    if (measurementType === 'both' || measurementType === 'diameter') {
-      axes.push({
-        stroke: '#10B981',
-        grid: {
-          stroke: '#E5E7EB',
-          width: 1
+        itemStyle: {
+          color: '#3B82F6'
         },
-        scale: 'y',
-        label: 'Diameter (mm)',
-        labelSize: 30,
-        size: 60,
-        side: 3 // Left side
+        yAxisIndex: measurementType === 'both' ? 1 : 0
       });
-    }
+      legend.push('Sap Flow (g/h)');
 
-    // Add Y-axis for sap flow
-    if (measurementType === 'both' || measurementType === 'sapflow') {
-      axes.push({
-        stroke: '#3B82F6',
-        grid: measurementType === 'both' ? { show: false } : {
-          stroke: '#E5E7EB',
-          width: 1
+      yAxis.push({
+        type: 'value',
+        name: 'Sap Flow (g/h)',
+        position: measurementType === 'both' ? 'right' : 'left',
+        nameTextStyle: {
+          color: '#3B82F6',
+          fontSize: 13,
+          fontWeight: 600
         },
-        scale: measurementType === 'both' ? 'sapflow' : 'y',
-        label: 'Sap Flow (g/h)',
-        labelSize: 30,
-        size: 60,
-        side: measurementType === 'both' ? 1 : 3 // Right side if both, left if only sapflow
-      });
-    }
-
-    // Configure scales
-    const scales: Record<string, any> = {
-      x: {
-        time: true
-      },
-      y: {
-        auto: true,
-        range: (u: uPlot, min: number, max: number) => {
-          // Add 10% padding
-          const padding = (max - min) * 0.1;
-          return [min - padding, max + padding];
+        axisLine: {
+          show: true,
+          lineStyle: {
+            color: '#3B82F6'
+          }
+        },
+        axisLabel: {
+          color: '#3B82F6',
+          fontSize: 11
+        },
+        splitLine: {
+          show: measurementType === 'both' ? false : true,
+          lineStyle: {
+            color: gridColor,
+            type: 'dashed'
+          }
         }
-      }
-    };
-
-    if (measurementType === 'both') {
-      scales.sapflow = {
-        auto: true,
-        range: (u: uPlot, min: number, max: number) => {
-          const padding = (max - min) * 0.1;
-          return [min - padding, max + padding];
-        }
-      };
+      });
     }
 
-    const options: uPlot.Options = {
-      width: 800, // Will be overridden by parent container
-      height: height,
-      series,
-      axes,
-      scales,
-      cursor: {
-        lock: true,
-        focus: {
-          prox: 16
+    return {
+      backgroundColor: backgroundColor,
+      tooltip: {
+        trigger: 'axis',
+        backgroundColor: backgroundColor,
+        borderColor: borderColor,
+        textStyle: {
+          color: textColor
         },
-        sync: {
-          key: 'phytosense'
-        },
-        drag: {
-          x: true,
-          y: false
+        formatter: (params: any) => {
+          if (!params || params.length === 0) return '';
+
+          const timestamp = params[0].axisValue;
+          let html = `<div style="font-weight: 600; margin-bottom: 6px;">${timestamp}</div>`;
+
+          params.forEach((param: any) => {
+            if (param.value !== null && param.value !== undefined) {
+              html += `<div style="color: ${param.color};">
+                ${param.seriesName}: <strong>${Number(param.value).toFixed(4)}</strong>
+              </div>`;
+            }
+          });
+
+          return html;
         }
       },
       legend: {
-        show: true,
-        live: true
-      },
-      plugins: [
-        // Tooltip plugin
-        {
-          hooks: {
-            init: (u) => {
-              const tooltip = document.createElement('div');
-              tooltip.className = 'uplot-tooltip';
-              tooltip.style.cssText = `
-                display: none;
-                position: absolute;
-                background: rgba(249, 250, 251, 0.98);
-                border: 1px solid #E5E7EB;
-                border-radius: 8px;
-                padding: 8px 12px;
-                font-size: 12px;
-                pointer-events: none;
-                z-index: 100;
-                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-              `;
-              u.over.appendChild(tooltip);
-
-              u.over.addEventListener('mouseleave', () => {
-                tooltip.style.display = 'none';
-              });
-            },
-            setCursor: (u) => {
-              const { left, top, idx } = u.cursor;
-              const tooltip = u.over.querySelector('.uplot-tooltip') as HTMLElement;
-
-              if (!tooltip || idx === null || idx === undefined) {
-                if (tooltip) tooltip.style.display = 'none';
-                return;
-              }
-
-              const timestamp = u.data[0][idx];
-              const date = new Date(timestamp * 1000);
-              const formattedDate = date.toLocaleString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-              });
-
-              let html = `<div style="font-weight: 600; margin-bottom: 4px;">${formattedDate}</div>`;
-
-              let seriesIdx = 1;
-              if (measurementType === 'both' || measurementType === 'diameter') {
-                const diameterValue = u.data[seriesIdx][idx];
-                if (diameterValue !== null && diameterValue !== undefined) {
-                  html += `<div style="color: #10B981;">Diameter: ${diameterValue.toFixed(4)} mm</div>`;
-                }
-                seriesIdx++;
-              }
-
-              if (measurementType === 'both' || measurementType === 'sapflow') {
-                const sapFlowValue = u.data[seriesIdx][idx];
-                if (sapFlowValue !== null && sapFlowValue !== undefined) {
-                  html += `<div style="color: #3B82F6;">Sap Flow: ${sapFlowValue.toFixed(4)} g/h</div>`;
-                }
-              }
-
-              tooltip.innerHTML = html;
-              tooltip.style.display = 'block';
-
-              // Position tooltip
-              const tooltipRect = tooltip.getBoundingClientRect();
-              const plotRect = u.over.getBoundingClientRect();
-
-              let tooltipLeft = left! + 10;
-              let tooltipTop = top! - 10;
-
-              // Keep tooltip within plot bounds
-              if (tooltipLeft + tooltipRect.width > plotRect.width) {
-                tooltipLeft = left! - tooltipRect.width - 10;
-              }
-              if (tooltipTop + tooltipRect.height > plotRect.height) {
-                tooltipTop = plotRect.height - tooltipRect.height - 10;
-              }
-
-              tooltip.style.left = tooltipLeft + 'px';
-              tooltip.style.top = tooltipTop + 'px';
-            }
-          }
+        data: legend,
+        top: 10,
+        textStyle: {
+          color: textColor,
+          fontSize: 13
         }
-      ]
+      },
+      grid: {
+        left: '60px',
+        right: measurementType === 'both' ? '60px' : '20px',
+        top: '50px',
+        bottom: '80px',
+        containLabel: false
+      },
+      xAxis: {
+        type: 'category',
+        data: timestamps,
+        axisLabel: {
+          color: textColor,
+          fontSize: 11,
+          rotate: 45,
+          formatter: (value: string) => {
+            const date = new Date(value);
+            const month = date.toLocaleDateString('en-US', { month: 'short' });
+            const day = date.getDate();
+            const hours = date.getHours().toString().padStart(2, '0');
+            const minutes = date.getMinutes().toString().padStart(2, '0');
+            return `${month} ${day} ${hours}:${minutes}`;
+          }
+        },
+        axisLine: {
+          lineStyle: {
+            color: textColor
+          }
+        },
+        axisTick: {
+          alignWithLabel: true
+        }
+      },
+      yAxis: yAxis,
+      series: series,
+      dataZoom: [
+        {
+          type: 'inside',
+          start: 0,
+          end: 100
+        },
+        {
+          start: 0,
+          end: 100,
+          height: 30,
+          bottom: 20,
+          handleStyle: {
+            color: '#3B82F6'
+          },
+          textStyle: {
+            color: textColor
+          },
+          borderColor: borderColor
+        }
+      ],
+      animation: false // Disable animation for better performance with large datasets
     };
-
-    return { plotData, options };
-  }, [data, measurementType, height]);
+  }, [data, measurementType, textColor, gridColor, backgroundColor, borderColor]);
 
   if (!data || data.length === 0) {
     return (
-      <div className="bg-gray-50 rounded-lg p-8 text-center" style={{ height }}>
-        <p className="text-gray-600">No data available</p>
+      <div
+        className="rounded-lg flex items-center justify-center bg-card text-muted-foreground"
+        style={{ height }}
+      >
+        <p>No data available</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-gray-50 rounded-lg p-4">
-      <div style={{ width: '100%', height: height }}>
-        <UplotReact
-          options={options}
-          data={plotData}
-        />
-      </div>
-      <div className="mt-2 text-xs text-gray-600 text-center">
-        <span className="font-medium">💡 Tip:</span> Drag to zoom, double-click to reset • Rendering {data.length.toLocaleString()} points
-      </div>
+    <div className="w-full bg-card rounded-lg p-4 border">
+      <ReactECharts
+        option={options}
+        style={{ height: `${height}px`, width: '100%' }}
+        opts={{ renderer: 'canvas' }}
+        notMerge={true}
+        lazyUpdate={true}
+      />
     </div>
   );
 };

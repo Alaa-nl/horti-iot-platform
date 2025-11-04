@@ -346,13 +346,16 @@ const RawSensorDisplay: React.FC = () => {
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <h3 className="font-semibold text-lg mb-4">Real-Time Sensor Measurements</h3>
           <ResponsiveContainer width="100%" height={400}>
-            <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+            <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 60 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
               <XAxis
                 dataKey="time"
                 tick={{ fontSize: 11 }}
                 stroke="#6B7280"
                 interval="preserveStartEnd"
+                angle={-45}
+                textAnchor="end"
+                height={60}
               />
               <YAxis
                 yAxisId="diameter"
