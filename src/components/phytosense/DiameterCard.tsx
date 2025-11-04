@@ -46,18 +46,18 @@ const DiameterCard: React.FC<DiameterCardProps> = ({ className = '' }) => {
 
       const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
 
-      // Device configurations (NL 2023-2024 MKB Raak)
+      // Device configurations (NL 2023-2024 MKB Raak) - CORRECTED TDIDs
       const devices = [
         {
           name: 'Stem051',
           setupId: 1508,
-          diameterTDID: 39999,
+          diameterTDID: 39987,  // CORRECTED - was 39999
           toDate: '2024-10-15T12:00:00'
         },
         {
           name: 'Stem136',
           setupId: 1508,
-          diameterTDID: 40007,
+          diameterTDID: 39981,  // CORRECTED - was 40007
           toDate: '2024-10-15T12:00:00'
         }
       ];
@@ -187,13 +187,13 @@ const DiameterCard: React.FC<DiameterCardProps> = ({ className = '' }) => {
     }
   }, []);
 
-  // Auto-refresh data every 5 minutes
+  // Auto-refresh data every 60 seconds (same as sap flow for consistency)
   useEffect(() => {
     fetchDiameterData();
 
     const interval = setInterval(() => {
       fetchDiameterData();
-    }, 300000); // 5 minutes (less frequent than sap flow since diameter changes slowly)
+    }, 60000); // 60 seconds - same as sap flow
 
     return () => clearInterval(interval);
   }, [fetchDiameterData]);
@@ -226,7 +226,7 @@ const DiameterCard: React.FC<DiameterCardProps> = ({ className = '' }) => {
         <p className="text-sm text-gray-600 font-medium">
           {diameter.deviceName && `${diameter.deviceName} • `}
           {diameter.timeRange}
-          {diameter.isLive && ' • Updates every 5 min'}
+          {diameter.isLive && ' • Updates every 60s'}
         </p>
       </div>
 

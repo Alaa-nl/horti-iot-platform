@@ -46,18 +46,18 @@ const SapFlowCard: React.FC<SapFlowCardProps> = ({ className = '' }) => {
 
       const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
 
-      // Device configurations (NL 2023-2024 MKB Raak)
+      // Device configurations (NL 2023-2024 MKB Raak) - CORRECTED TDIDs
       const devices = [
         {
           name: 'Stem051',
           setupId: 1508,
-          sapFlowTDID: 39987,
+          sapFlowTDID: 39999,  // CORRECTED - was 39987
           toDate: '2024-10-15T12:00:00'
         },
         {
           name: 'Stem136',
           setupId: 1508,
-          sapFlowTDID: 39981,
+          sapFlowTDID: 40007,  // CORRECTED - was 39981
           toDate: '2024-10-15T12:00:00'
         }
       ];

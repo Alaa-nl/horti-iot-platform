@@ -2,9 +2,9 @@
 // Shows exact 5-minute interval sensor data without any aggregation
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { format, subDays } from 'date-fns';
 import * as XLSX from 'xlsx';
+import PhytoSenseChart from './PhytoSenseChart';
 
 interface PhytoSenseOptimizedProps {
   className?: string;
@@ -379,69 +379,13 @@ const PhytoSenseOptimized: React.FC<PhytoSenseOptimizedProps> = ({ className = '
         </div>
       )}
 
-      {/* Chart */}
+      {/* Chart - High Performance uPlot */}
       {chartData.length > 0 && (
-        <div className="bg-gray-50 rounded-lg p-4">
-          <ResponsiveContainer width="100%" height={400}>
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-              <XAxis
-                dataKey="time"
-                tick={{ fontSize: 11 }}
-                stroke="#6B7280"
-                interval="preserveStartEnd"
-              />
-              {(measurementType === 'both' || measurementType === 'diameter') && (
-                <YAxis
-                  yAxisId="diameter"
-                  orientation="left"
-                  tick={{ fontSize: 11 }}
-                  stroke="#10B981"
-                  label={{ value: 'Diameter (mm)', angle: -90, position: 'insideLeft', style: { fontSize: 12 } }}
-                />
-              )}
-              {(measurementType === 'both' || measurementType === 'sapflow') && (
-                <YAxis
-                  yAxisId="sapflow"
-                  orientation="right"
-                  tick={{ fontSize: 11 }}
-                  stroke="#3B82F6"
-                  label={{ value: 'Sap Flow (g/h)', angle: 90, position: 'insideRight', style: { fontSize: 12 } }}
-                />
-              )}
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: '#F9FAFB',
-                  border: '1px solid #E5E7EB',
-                  borderRadius: '8px'
-                }}
-              />
-              <Legend />
-              {(measurementType === 'both' || measurementType === 'diameter') && (
-                <Line
-                  yAxisId="diameter"
-                  type="monotone"
-                  dataKey="diameter"
-                  stroke="#10B981"
-                  strokeWidth={2}
-                  dot={false}
-                  name="Diameter (mm)"
-                />
-              )}
-              {(measurementType === 'both' || measurementType === 'sapflow') && (
-                <Line
-                  yAxisId="sapflow"
-                  type="monotone"
-                  dataKey="sapFlow"
-                  stroke="#3B82F6"
-                  strokeWidth={2}
-                  dot={false}
-                  name="Sap Flow (g/h)"
-                />
-              )}
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+        <PhytoSenseChart
+          data={chartData}
+          measurementType={measurementType}
+          height={400}
+        />
       )}
 
       {/* Empty State */}
