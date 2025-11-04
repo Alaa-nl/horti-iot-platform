@@ -11,6 +11,7 @@ import greenhouseRoutes from './routes/greenhouse';
 import adminRoutes from './routes/admin.routes';
 import profileRoutes from './routes/profile.routes';
 import phytosenseRoutes from './routes/phytosense.routes';
+import sensorDataRoutes from './routes/sensorData.routes';
 
 // Import database
 import database from './utils/database';
@@ -18,6 +19,10 @@ import database from './utils/database';
 // Import security middleware
 import { securityHeaders } from './middleware/security';
 import tokenService from './services/tokenService';
+
+// Import data sync service
+import { dataSyncService } from './services/dataSync.service';
+import { logger } from './utils/logger';
 
 // Load environment variables
 dotenv.config();
@@ -123,6 +128,7 @@ class App {
     this.app.use('/api/admin', adminRoutes);
     this.app.use('/api/profile', profileRoutes);
     this.app.use('/api/phytosense', phytosenseRoutes);
+    this.app.use('/api/sensors', sensorDataRoutes);
 
     // 404 handler for API routes
     this.app.use('/api/*', (req: Request, res: Response) => {
@@ -212,6 +218,9 @@ class App {
             console.error('Failed to cleanup expired tokens:', error);
           }
         }, 3600000); // Run every hour
+
+        // Start the data sync service
+        this.initializeDataSync();
       } else {
         console.error('❌ Failed to establish database connection');
         process.exit(1);
@@ -219,6 +228,20 @@ class App {
     } catch (error) {
       console.error('❌ Database initialization error:', error);
       process.exit(1);
+    }
+  }
+
+  private initializeDataSync(): void {
+    try {
+      // Start the data synchronization service
+      dataSyncService.start();
+      console.log('🔄 Data sync service started - syncing sensor data every 5 minutes');
+      logger.info('Data sync service initialized successfully');
+    } catch (error) {
+      console.error('⚠️  Failed to start data sync service:', error);
+      logger.error('Data sync service initialization failed:', error);
+      // Don't exit the process, as the app can still function without auto-sync
+      // Users can still trigger manual sync via the API
     }
   }
 

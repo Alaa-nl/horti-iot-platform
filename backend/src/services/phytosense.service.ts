@@ -69,16 +69,16 @@ class PhytoSenseService {
       maxBodyLength: this.config.maxContentLength
     });
 
-    // Device configurations
+    // Device configurations - CORRECTED TDIDs (were previously swapped)
     this.devices = [
       {
         setupId: 1324,
         name: 'Stem051 - NL 2022 MKB Raak',
         fromDate: '2022-10-19T00:00:00',
         toDate: '2023-06-01T09:42:23',
-        diameterTDID: 33385,
+        diameterTDID: 33387,  // CORRECTED: was 33385
         diameterChannelId: 0,
-        sapFlowTDID: 33387,
+        sapFlowTDID: 33385,   // CORRECTED: was 33387
         sapFlowChannelId: 0,
         cropType: 'General'
       },
@@ -87,9 +87,9 @@ class PhytoSenseService {
         name: 'Stem127 - NL 2022 MKB Raak',
         fromDate: '2022-10-19T00:00:00',
         toDate: '2023-06-01T09:42:23',
-        diameterTDID: 33386,
+        diameterTDID: 33388,  // CORRECTED: was 33386
         diameterChannelId: 0,
-        sapFlowTDID: 33388,
+        sapFlowTDID: 33386,   // CORRECTED: was 33388
         sapFlowChannelId: 0,
         cropType: 'General'
       },
@@ -98,9 +98,9 @@ class PhytoSenseService {
         name: 'Stem051 - NL 2023 Tomato',
         fromDate: '2023-06-23T00:00:00',
         toDate: '2023-08-25T13:30:00',
-        diameterTDID: 38210,
+        diameterTDID: 39916,  // CORRECTED: was 38210
         diameterChannelId: 0,
-        sapFlowTDID: 39916,
+        sapFlowTDID: 38210,   // CORRECTED: was 39916
         sapFlowChannelId: 0,
         cropType: 'Tomato'
       },
@@ -109,9 +109,9 @@ class PhytoSenseService {
         name: 'Stem136 - NL 2023 Tomato',
         fromDate: '2023-06-23T00:00:00',
         toDate: '2023-08-25T13:30:00',
-        diameterTDID: 38211,
+        diameterTDID: 39915,  // CORRECTED: was 38211
         diameterChannelId: 0,
-        sapFlowTDID: 39915,
+        sapFlowTDID: 38211,   // CORRECTED: was 39915
         sapFlowChannelId: 0,
         cropType: 'Tomato'
       },
@@ -120,9 +120,9 @@ class PhytoSenseService {
         name: 'Stem051 - NL 2023 Cucumber',
         fromDate: '2023-08-25T13:30:00',
         toDate: '2023-10-20T00:00:00',
-        diameterTDID: 38210,
+        diameterTDID: 39916,  // CORRECTED: was 38210
         diameterChannelId: 0,
-        sapFlowTDID: 39916,
+        sapFlowTDID: 38210,   // CORRECTED: was 39916
         sapFlowChannelId: 0,
         cropType: 'Cucumber'
       },
@@ -131,9 +131,9 @@ class PhytoSenseService {
         name: 'Stem136 - NL 2023 Cucumber',
         fromDate: '2023-08-25T13:30:00',
         toDate: '2023-10-20T00:00:00',
-        diameterTDID: 38211,
+        diameterTDID: 39915,  // CORRECTED: was 38211
         diameterChannelId: 0,
-        sapFlowTDID: 39915,
+        sapFlowTDID: 38211,   // CORRECTED: was 39915
         sapFlowChannelId: 0,
         cropType: 'Cucumber'
       },
@@ -142,9 +142,9 @@ class PhytoSenseService {
         name: 'Stem051 - NL 2023-2024 MKB Raak',
         fromDate: '2023-11-01T00:00:00',
         toDate: '2024-10-15T12:00:00',
-        diameterTDID: 39999,
+        diameterTDID: 39987,  // CORRECTED: was 39999
         diameterChannelId: 0,
-        sapFlowTDID: 39987,
+        sapFlowTDID: 39999,   // CORRECTED: was 39987
         sapFlowChannelId: 0,
         cropType: 'General'
       },
@@ -153,9 +153,9 @@ class PhytoSenseService {
         name: 'Stem136 - NL 2023-2024 MKB Raak',
         fromDate: '2023-11-01T00:00:00',
         toDate: '2024-10-15T12:00:00',
-        diameterTDID: 40007,
+        diameterTDID: 39981,  // CORRECTED: was 40007
         diameterChannelId: 0,
-        sapFlowTDID: 39981,
+        sapFlowTDID: 40007,   // CORRECTED: was 39981
         sapFlowChannelId: 0,
         cropType: 'General'
       }

@@ -7,6 +7,7 @@ import GrowerDashboard from './pages/GrowerDashboard';
 import StatisticsPage from './pages/StatisticsPage';
 import AdminDashboard from './pages/AdminDashboard';
 import ProfilePage from './pages/ProfilePage';
+import RawSensorDisplay from './components/sensors/RawSensorDisplay';
 
 // Protected Route Component with multiple allowed roles
 const ProtectedRoute: React.FC<{
@@ -63,6 +64,13 @@ const AppRoutes: React.FC = () => {
       <Route path="/researcher/statistics" element={
         <ProtectedRoute allowedRoles={['researcher', 'grower', 'farmer', 'admin']}>
           <StatisticsPage />
+        </ProtectedRoute>
+      } />
+
+      {/* Raw Sensor Data Display - accessible by all authenticated users */}
+      <Route path="/sensors" element={
+        <ProtectedRoute allowedRoles={['researcher', 'grower', 'farmer', 'admin']}>
+          <RawSensorDisplay />
         </ProtectedRoute>
       } />
 
