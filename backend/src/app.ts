@@ -12,6 +12,7 @@ import adminRoutes from './routes/admin.routes';
 import profileRoutes from './routes/profile.routes';
 import phytosenseRoutes from './routes/phytosense.routes';
 import sensorDataRoutes from './routes/sensorData.routes';
+import phytosenseProxyRoutes from './routes/phytosenseProxy.routes';
 
 // Import database
 import database from './utils/database';
@@ -129,6 +130,7 @@ class App {
     this.app.use('/api/profile', profileRoutes);
     this.app.use('/api/phytosense', phytosenseRoutes);
     this.app.use('/api/sensors', sensorDataRoutes);
+    this.app.use('/api/phytosense-proxy', phytosenseProxyRoutes);
 
     // 404 handler for API routes
     this.app.use('/api/*', (req: Request, res: Response) => {
