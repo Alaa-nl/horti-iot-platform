@@ -588,72 +588,72 @@ const AdminDashboard: React.FC = () => {
                   animate={{ opacity: 1, scale: 1 }}
                   className="bg-card rounded-3xl max-w-2xl w-full shadow-2xl overflow-hidden"
                 >
-                  <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-8 py-6">
+                  <div className="bg-gradient-to-r from-primary to-primary/80 px-8 py-6">
                     <h3 className="text-2xl font-bold text-white flex items-center gap-3">
                       <span className="text-3xl">👤</span>
                       Create New User
                     </h3>
-                    <p className="text-indigo-100 text-sm mt-1">Add a new user to the system</p>
+                    <p className="text-white/80 text-sm mt-1">Add a new user to the system</p>
                   </div>
                   <div className="p-8">
                     <form onSubmit={handleCreateUser} className="space-y-6">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                          <label className="block text-sm font-bold text-foreground mb-2">Full Name *</label>
+                          <label className="label-form">Full Name *</label>
                           <input
                             type="text"
                             required
                             value={newUser.name}
                             onChange={(e) => setNewUser({...newUser, name: e.target.value})}
-                            className="w-full border-2 border-border rounded-xl px-4 py-3 font-medium bg-background text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                            className="input-form"
                             placeholder="John Doe"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-bold text-foreground mb-2">Email Address *</label>
+                          <label className="label-form">Email Address *</label>
                           <input
                             type="email"
                             required
                             value={newUser.email}
                             onChange={(e) => setNewUser({...newUser, email: e.target.value})}
-                            className="w-full border-2 border-border rounded-xl px-4 py-3 font-medium bg-background text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                            className="input-form"
                             placeholder="john@example.com"
                           />
                         </div>
                       </div>
                       <div>
-                        <label className="block text-sm font-bold text-foreground mb-2">Password *</label>
+                        <label className="label-form">Password *</label>
                         <div className="relative">
                           <input
                             type={showPassword ? "text" : "password"}
                             required
                             value={newUser.password}
                             onChange={(e) => setNewUser({...newUser, password: e.target.value})}
-                            className="w-full border-2 border rounded-xl px-4 py-3 pr-12 font-medium text-muted-foreground focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+                            className="input-form pr-12"
                             placeholder="Min 8 chars with special characters"
                           />
                           <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-all"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/30 dark:hover:bg-muted/20 rounded-lg transition-all"
                             tabIndex={-1}
                           >
                             {showPassword ? '👁️' : '🔒'}
                           </button>
                         </div>
-                        <p className="mt-2 text-xs text-muted-foreground bg-secondary px-3 py-2 rounded-lg">
+                        <p className="helper-text">
                           Must be at least 8 characters with uppercase, lowercase, number, and special character (@$!%*?&)
                         </p>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                          <label className="block text-sm font-bold text-foreground mb-2">Role *</label>
+                          <label className="label-form">Role *</label>
                           <select
                             required
                             value={newUser.role}
                             onChange={(e) => setNewUser({...newUser, role: e.target.value as any})}
-                            className="w-full border-2 border-border rounded-xl px-4 py-3 font-medium bg-background text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                            className="select-modern"
                           >
                             <option value="farmer">Farmer</option>
                             <option value="researcher">Researcher</option>
@@ -661,12 +661,12 @@ const AdminDashboard: React.FC = () => {
                           </select>
                         </div>
                         <div>
-                          <label className="block text-sm font-bold text-foreground mb-2">Phone Number</label>
+                          <label className="label-form">Phone Number</label>
                           <input
                             type="tel"
                             value={newUser.phone_number}
                             onChange={(e) => setNewUser({...newUser, phone_number: e.target.value})}
-                            className="w-full border-2 border-border rounded-xl px-4 py-3 font-medium bg-background text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                            className="input-form"
                             placeholder="+31 6 12345678"
                           />
                         </div>
@@ -674,22 +674,22 @@ const AdminDashboard: React.FC = () => {
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                          <label className="block text-sm font-bold text-foreground mb-2">Department</label>
+                          <label className="label-form">Department</label>
                           <input
                             type="text"
                             value={newUser.department}
                             onChange={(e) => setNewUser({...newUser, department: e.target.value})}
-                            className="w-full border-2 border-border rounded-xl px-4 py-3 font-medium bg-background text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                            className="input-form"
                             placeholder="e.g., Research & Development"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-bold text-foreground mb-2">Location</label>
+                          <label className="label-form">Location</label>
                           <input
                             type="text"
                             value={newUser.location}
                             onChange={(e) => setNewUser({...newUser, location: e.target.value})}
-                            className="w-full border-2 border-border rounded-xl px-4 py-3 font-medium bg-background text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                            className="input-form"
                             placeholder="e.g., Amsterdam, Netherlands"
                           />
                         </div>
