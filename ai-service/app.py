@@ -49,11 +49,11 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 RESULTS_DIR.mkdir(exist_ok=True)
 MODELS_DIR.mkdir(exist_ok=True)
 
-# Model configurations
+# Model configurations (based on your trained models)
 MODEL_CONFIGS = {
     "yolov8n": {
         "path": "models/yolov8n_tomato.pt",
-        "description": "YOLOv8 Nano - Fastest, less accurate",
+        "description": "YOLOv8 Nano - Fastest inference, good accuracy",
         "speed": "fast",
         "accuracy": 0.894
     },
@@ -63,9 +63,21 @@ MODEL_CONFIGS = {
         "speed": "medium",
         "accuracy": 0.889
     },
+    "yolov9t": {
+        "path": "models/yolov9t_tomato.pt",
+        "description": "YOLOv9 Tiny - Compact model with good performance",
+        "speed": "fast",
+        "accuracy": 0.826
+    },
+    "yolov10n": {
+        "path": "models/yolov10n_tomato.pt",
+        "description": "YOLOv10 Nano - Advanced architecture",
+        "speed": "fast",
+        "accuracy": 0.755
+    },
     "yolov11n": {
         "path": "models/yolov11n_tomato.pt",
-        "description": "YOLOv11 Nano - Latest architecture",
+        "description": "YOLOv11 Nano - Latest YOLO architecture",
         "speed": "fast",
         "accuracy": 0.780
     }

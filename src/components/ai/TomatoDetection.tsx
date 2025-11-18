@@ -45,6 +45,8 @@ const TomatoDetection: React.FC<TomatoDetectionProps> = ({
   const models = [
     { id: 'yolov8n', name: 'YOLOv8 Nano', speed: 'Fast', accuracy: '89.4%' },
     { id: 'yolov8s', name: 'YOLOv8 Small', speed: 'Medium', accuracy: '88.9%' },
+    { id: 'yolov9t', name: 'YOLOv9 Tiny', speed: 'Fast', accuracy: '82.6%' },
+    { id: 'yolov10n', name: 'YOLOv10 Nano', speed: 'Fast', accuracy: '75.5%' },
     { id: 'yolov11n', name: 'YOLOv11 Nano', speed: 'Fast', accuracy: '78.0%' }
   ];
 
