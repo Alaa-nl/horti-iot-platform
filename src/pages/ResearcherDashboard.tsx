@@ -483,7 +483,7 @@ const ResearcherDashboard: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             className="grid grid-cols-1 lg:grid-cols-12 gap-6"
           >
-            {/* ML Predictions and Plant Monitoring Section - Full width */}
+            {/* ML Predictions and Plant Monitoring Section - Full width with 4 cards */}
             <div className="col-span-12">
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
                 {/* Head Thickness Prediction Panel */}
@@ -566,59 +566,66 @@ const ResearcherDashboard: React.FC = () => {
                 {/* Sap Flow Card */}
                 <SapFlowCard />
 
-              {/* Diameter Card */}
-              <DiameterCard />
+                {/* Diameter Card */}
+                <DiameterCard />
 
-              {/* Environmental Heatmap Card */}
-              <GreenhouseHeatmap greenhouseId={selectedGreenhouse?.id} />
-
-              {/* Greenhouse Location Map Panel - Vertically longer */}
-              <div className="bg-card rounded-xl shadow-lg border border-border/50 overflow-hidden hover:shadow-xl transition-all duration-300">
-                <div className="p-6">
-                  <div className="mb-4">
-                    <h3 className="text-lg font-bold text-foreground whitespace-nowrap">Greenhouse Location</h3>
-                  </div>
-                  <div className="h-72">
-                    {selectedGreenhouse ? (
-                      <RealMap
-                        center={{
-                          lat: selectedGreenhouse.location.coordinates.lat,
-                          lng: selectedGreenhouse.location.coordinates.lon
-                        }}
-                        zoom={16}
-                        className="h-full rounded-lg overflow-hidden"
-                        markers={[
-                          {
-                            id: selectedGreenhouse.id,
-                            lat: selectedGreenhouse.location.coordinates.lat,
-                            lng: selectedGreenhouse.location.coordinates.lon,
-                            title: selectedGreenhouse.name,
-                            type: 'greenhouse',
-                            status: 'active',
-                            description: `${selectedGreenhouse.details.landArea}m² ${selectedGreenhouse.details.type} greenhouse with ${selectedGreenhouse.crops.length} crop types.`
-                          }
-                        ]}
-                      />
-                    ) : (
-                      <div className="h-full bg-secondary rounded-lg flex items-center justify-center">
-                        <p className="text-muted-foreground text-sm font-medium">Select a greenhouse to view map</p>
-                      </div>
-                    )}
-                  </div>
-                  <div className="mt-4 pt-3 border-t">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground font-medium">📍 Location</span>
-                      <span className="font-medium text-foreground">{selectedGreenhouse?.location.city || 'N/A'}, {selectedGreenhouse?.location.region || 'Netherlands'}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+                {/* Environmental Heatmap Card */}
+                <GreenhouseHeatmap greenhouseId={selectedGreenhouse?.id} />
               </div>
             </div>
 
-            {/* PhytoSense 2grow Data Panel - Full Width */}
+            {/* Second Row: Location and PhytoSense - Side by Side */}
             <div className="col-span-12 mt-6">
-              <PhytoSenseOptimizedDirect />
+              <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+                {/* Greenhouse Location Map - Left side */}
+                <div className="xl:col-span-4">
+                  <div className="bg-card rounded-xl shadow-lg border border-border/50 overflow-hidden hover:shadow-xl transition-all duration-300 h-full">
+                    <div className="p-6 h-full flex flex-col">
+                      <div className="mb-4">
+                        <h3 className="text-lg font-bold text-foreground whitespace-nowrap">Greenhouse Location</h3>
+                      </div>
+                      <div className="flex-1 min-h-[400px]">
+                        {selectedGreenhouse ? (
+                          <RealMap
+                            center={{
+                              lat: selectedGreenhouse.location.coordinates.lat,
+                              lng: selectedGreenhouse.location.coordinates.lon
+                            }}
+                            zoom={16}
+                            className="h-full rounded-lg overflow-hidden"
+                            markers={[
+                              {
+                                id: selectedGreenhouse.id,
+                                lat: selectedGreenhouse.location.coordinates.lat,
+                                lng: selectedGreenhouse.location.coordinates.lon,
+                                title: selectedGreenhouse.name,
+                                type: 'greenhouse',
+                                status: 'active',
+                                description: `${selectedGreenhouse.details.landArea}m² ${selectedGreenhouse.details.type} greenhouse with ${selectedGreenhouse.crops.length} crop types.`
+                              }
+                            ]}
+                          />
+                        ) : (
+                          <div className="h-full bg-secondary rounded-lg flex items-center justify-center">
+                            <p className="text-muted-foreground text-sm font-medium">Select a greenhouse to view map</p>
+                          </div>
+                        )}
+                      </div>
+                      <div className="mt-4 pt-3 border-t">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground font-medium">📍 Location</span>
+                          <span className="font-medium text-foreground">{selectedGreenhouse?.location.city || 'N/A'}, {selectedGreenhouse?.location.region || 'Netherlands'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* PhytoSense Data Panel - Right side with more space */}
+                <div className="xl:col-span-8">
+                  <PhytoSenseOptimizedDirect />
+                </div>
+              </div>
             </div>
 
           </motion.div>
