@@ -174,11 +174,11 @@ const ProfilePage: React.FC = () => {
         )}
 
         {success && (
-          <div className="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded">
+          <div className="mb-6 bg-horti-status-success/10 dark:bg-horti-status-success/20 border border-horti-status-success/30 text-horti-status-success px-4 py-3 rounded">
             {success}
             <button
               onClick={() => setSuccess(null)}
-              className="ml-4 text-green-500 hover:text-green-700"
+              className="ml-4 text-horti-status-success hover:text-horti-status-success/80"
             >
               ×
             </button>
@@ -230,7 +230,7 @@ const ProfilePage: React.FC = () => {
                   <button
                     onClick={handleRemovePhoto}
                     disabled={uploading}
-                    className="w-full bg-red-600 text-primary-foreground py-2 px-4 rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+                    className="w-full bg-horti-status-error text-white py-2 px-4 rounded-lg hover:bg-horti-status-error/90 disabled:opacity-50 transition-colors"
                   >
                     Remove Photo
                   </button>
@@ -266,7 +266,7 @@ const ProfilePage: React.FC = () => {
                           });
                         }
                       }}
-                      className="bg-gray-600 text-primary-foreground px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+                      className="bg-secondary text-secondary-foreground px-4 py-2 rounded-lg hover:bg-secondary/80 transition-colors"
                     >
                       Cancel
                     </button>
@@ -285,7 +285,7 @@ const ProfilePage: React.FC = () => {
                         type="text"
                         value={formData.name}
                         onChange={(e) => setFormData({...formData, name: e.target.value})}
-                        className="w-full bg-background text-foreground border border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full bg-background text-foreground border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
                       />
                     </div>
 
@@ -297,7 +297,7 @@ const ProfilePage: React.FC = () => {
                         type="tel"
                         value={formData.phone_number}
                         onChange={(e) => setFormData({...formData, phone_number: e.target.value})}
-                        className="w-full bg-background text-foreground border border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full bg-background text-foreground border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
                       />
                     </div>
 
@@ -309,7 +309,7 @@ const ProfilePage: React.FC = () => {
                         type="text"
                         value={formData.department}
                         onChange={(e) => setFormData({...formData, department: e.target.value})}
-                        className="w-full bg-background text-foreground border border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full bg-background text-foreground border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
                       />
                     </div>
 
@@ -321,7 +321,7 @@ const ProfilePage: React.FC = () => {
                         type="text"
                         value={formData.location}
                         onChange={(e) => setFormData({...formData, location: e.target.value})}
-                        className="w-full bg-background text-foreground border border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full bg-background text-foreground border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
                       />
                     </div>
                   </div>

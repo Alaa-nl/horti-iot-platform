@@ -306,7 +306,7 @@ const AdminDashboard: React.FC = () => {
                 <p className="text-lg text-muted-foreground">Comprehensive system management and control</p>
               </div>
               <div className="text-right">
-                <div className="text-sm text-gray-500 mb-1">System Status</div>
+                <div className="text-sm text-muted-foreground mb-1">System Status</div>
                 <div className="flex items-center gap-2 text-green-600 font-semibold">
                   <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                   All Systems Operational
@@ -322,7 +322,7 @@ const AdminDashboard: React.FC = () => {
                     <p className="text-sm font-medium text-muted-foreground mb-1">Total Users</p>
                     <p className="text-3xl font-bold text-foreground">{users.length}</p>
                   </div>
-                  <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                  <div className="w-12 h-12 bg-horti-blue-500/10 dark:bg-horti-blue-500/20 rounded-xl flex items-center justify-center">
                     <span className="text-2xl">👥</span>
                   </div>
                 </div>
@@ -334,7 +334,7 @@ const AdminDashboard: React.FC = () => {
                     <p className="text-sm font-medium text-muted-foreground mb-1">Greenhouses</p>
                     <p className="text-3xl font-bold text-foreground">{greenhouses.length}</p>
                   </div>
-                  <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                  <div className="w-12 h-12 bg-horti-green-500/10 dark:bg-horti-green-500/20 rounded-xl flex items-center justify-center">
                     <span className="text-2xl">🏡</span>
                   </div>
                 </div>
@@ -346,7 +346,7 @@ const AdminDashboard: React.FC = () => {
                     <p className="text-sm font-medium text-muted-foreground mb-1">Active Users</p>
                     <p className="text-3xl font-bold text-foreground">{users.filter(u => u.is_active).length}</p>
                   </div>
-                  <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
+                  <div className="w-12 h-12 bg-emerald-500/10 dark:bg-emerald-500/20 rounded-xl flex items-center justify-center">
                     <span className="text-2xl">✅</span>
                   </div>
                 </div>
@@ -386,7 +386,7 @@ const AdminDashboard: React.FC = () => {
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mb-6 bg-gradient-to-r from-red-50 to-pink-50 border-l-4 border-red-500 text-red-800 px-6 py-4 rounded-2xl shadow-lg flex items-center justify-between"
+              className="mb-6 bg-horti-status-error/10 dark:bg-horti-status-error/20 border-l-4 border-horti-status-error text-horti-status-error dark:text-horti-status-error px-6 py-4 rounded-2xl shadow-lg flex items-center justify-between"
             >
               <div className="flex items-center gap-3">
                 <span className="text-2xl">⚠️</span>
@@ -394,7 +394,7 @@ const AdminDashboard: React.FC = () => {
               </div>
               <button
                 onClick={() => setError(null)}
-                className="ml-4 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-100 text-red-600 font-bold text-xl transition-colors"
+                className="ml-4 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-horti-status-error/20 text-horti-status-error font-bold text-xl transition-colors"
               >
                 ×
               </button>
@@ -423,7 +423,7 @@ const AdminDashboard: React.FC = () => {
                   <select
                     value={filterRole}
                     onChange={(e) => setFilterRole(e.target.value)}
-                    className="w-full px-4 py-3 border-2 border rounded-xl font-medium text-muted-foreground focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+                    className="w-full px-4 py-3 border-2 border-border rounded-xl font-medium bg-background text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                   >
                     <option value="">All Roles</option>
                     <option value="admin">Admin</option>
@@ -437,7 +437,7 @@ const AdminDashboard: React.FC = () => {
                   <select
                     value={filterActive === undefined ? '' : String(filterActive)}
                     onChange={(e) => setFilterActive(e.target.value === '' ? undefined : e.target.value === 'true')}
-                    className="w-full px-4 py-3 border-2 border rounded-xl font-medium text-muted-foreground focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+                    className="w-full px-4 py-3 border-2 border-border rounded-xl font-medium bg-background text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                   >
                     <option value="">All Status</option>
                     <option value="true">Active</option>
@@ -447,7 +447,7 @@ const AdminDashboard: React.FC = () => {
 
                 <button
                   onClick={loadUsers}
-                  className="px-6 py-3 bg-secondary hover:bg-gray-200 text-muted-foreground font-semibold rounded-xl shadow-md hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center gap-3 mt-6"
+                  className="px-6 py-3 bg-secondary hover:bg-secondary/80 text-muted-foreground font-semibold rounded-xl shadow-md hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center gap-3 mt-6"
                 >
                   <span className="text-lg">🔄</span>
                   <span>Refresh</span>
@@ -456,7 +456,7 @@ const AdminDashboard: React.FC = () => {
             </div>
 
             <div className="bg-card rounded-2xl shadow-lg border border overflow-hidden">
-              <div className="px-8 py-6 border-b border bg-gradient-to-r from-gray-50 to-white">
+              <div className="px-8 py-6 border-b border bg-gradient-to-r from-secondary/50 to-background dark:from-secondary/30 dark:to-background">
                 <h2 className="text-2xl font-bold text-foreground flex items-center gap-3">
                   <span className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-lg">
                     <span className="text-xl">👥</span>
@@ -512,7 +512,7 @@ const AdminDashboard: React.FC = () => {
                                 <div>
                                   <div className="text-sm font-bold text-foreground">{user.name}</div>
                                   {user.phone_number && (
-                                    <div className="text-xs text-gray-500 flex items-center gap-1">
+                                    <div className="text-xs text-muted-foreground flex items-center gap-1">
                                       <span>📞</span>
                                       {user.phone_number}
                                     </div>
@@ -525,16 +525,16 @@ const AdminDashboard: React.FC = () => {
                             </td>
                             <td className="px-6 py-5">
                               <span className={`inline-flex px-3 py-1.5 text-xs font-bold rounded-lg shadow-sm ${
-                                user.role === 'admin' ? 'bg-purple-100 text-purple-700' :
-                                user.role === 'researcher' ? 'bg-blue-100 text-blue-700' :
-                                'bg-green-100 text-green-700'
+                                user.role === 'admin' ? 'bg-horti-accent-purple/10 text-horti-accent-purple dark:bg-horti-accent-purple/20 dark:text-horti-accent-purple' :
+                                user.role === 'researcher' ? 'bg-horti-blue-500/10 text-horti-blue-600 dark:bg-horti-blue-500/20 dark:text-horti-blue-400' :
+                                'bg-horti-green-500/10 text-horti-green-600 dark:bg-horti-green-500/20 dark:text-horti-green-400'
                               }`}>
                                 {user.role === 'grower' ? 'farmer' : user.role}
                               </span>
                             </td>
                             <td className="px-6 py-5">
                               <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg shadow-sm ${
-                                user.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                                user.is_active ? 'bg-horti-status-success/10 text-horti-status-success dark:bg-horti-status-success/20' : 'bg-horti-status-error/10 text-horti-status-error dark:bg-horti-status-error/20'
                               }`}>
                                 <span className={`w-1.5 h-1.5 rounded-full ${user.is_active ? 'bg-green-500' : 'bg-red-500'}`}></span>
                                 {user.is_active ? 'Active' : 'Inactive'}
@@ -549,22 +549,22 @@ const AdminDashboard: React.FC = () => {
                                   onClick={() => handleToggleUserStatus(user.id)}
                                   className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
                                     user.is_active
-                                      ? 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200'
-                                      : 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-200'
+                                      ? 'bg-horti-status-error/10 text-horti-status-error hover:bg-horti-status-error/20 border border-horti-status-error/30 dark:bg-horti-status-error/20 dark:hover:bg-horti-status-error/30'
+                                      : 'bg-horti-status-success/10 text-horti-status-success hover:bg-horti-status-success/20 border border-horti-status-success/30 dark:bg-horti-status-success/20 dark:hover:bg-horti-status-success/30'
                                   }`}
                                 >
                                   {user.is_active ? 'Deactivate' : 'Activate'}
                                 </button>
                                 <button
                                   onClick={() => handleResetPassword(user.id)}
-                                  className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 transition-all"
+                                  className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-horti-blue-500/10 text-horti-blue-600 hover:bg-horti-blue-500/20 border border-horti-blue-500/30 dark:bg-horti-blue-500/20 dark:hover:bg-horti-blue-500/30 dark:text-horti-blue-400 transition-all"
                                   title="Reset Password"
                                 >
                                   🔑
                                 </button>
                                 <button
                                   onClick={() => handleDeleteUser(user.id)}
-                                  className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 transition-all"
+                                  className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-horti-status-error/10 text-horti-status-error hover:bg-horti-status-error/20 border border-horti-status-error/30 dark:bg-horti-status-error/20 dark:hover:bg-horti-status-error/30 transition-all"
                                   title="Delete User"
                                 >
                                   🗑️
@@ -605,7 +605,7 @@ const AdminDashboard: React.FC = () => {
                             required
                             value={newUser.name}
                             onChange={(e) => setNewUser({...newUser, name: e.target.value})}
-                            className="w-full border-2 border rounded-xl px-4 py-3 font-medium text-muted-foreground focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+                            className="w-full border-2 border-border rounded-xl px-4 py-3 font-medium bg-background text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                             placeholder="John Doe"
                           />
                         </div>
@@ -616,7 +616,7 @@ const AdminDashboard: React.FC = () => {
                             required
                             value={newUser.email}
                             onChange={(e) => setNewUser({...newUser, email: e.target.value})}
-                            className="w-full border-2 border rounded-xl px-4 py-3 font-medium text-muted-foreground focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+                            className="w-full border-2 border-border rounded-xl px-4 py-3 font-medium bg-background text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                             placeholder="john@example.com"
                           />
                         </div>
@@ -635,7 +635,7 @@ const AdminDashboard: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-gray-500 hover:text-muted-foreground hover:bg-secondary rounded-lg transition-all"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-all"
                             tabIndex={-1}
                           >
                             {showPassword ? '👁️' : '🔒'}
@@ -653,7 +653,7 @@ const AdminDashboard: React.FC = () => {
                             required
                             value={newUser.role}
                             onChange={(e) => setNewUser({...newUser, role: e.target.value as any})}
-                            className="w-full border-2 border rounded-xl px-4 py-3 font-medium text-muted-foreground focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+                            className="w-full border-2 border-border rounded-xl px-4 py-3 font-medium bg-background text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                           >
                             <option value="farmer">Farmer</option>
                             <option value="researcher">Researcher</option>
@@ -666,7 +666,7 @@ const AdminDashboard: React.FC = () => {
                             type="tel"
                             value={newUser.phone_number}
                             onChange={(e) => setNewUser({...newUser, phone_number: e.target.value})}
-                            className="w-full border-2 border rounded-xl px-4 py-3 font-medium text-muted-foreground focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+                            className="w-full border-2 border-border rounded-xl px-4 py-3 font-medium bg-background text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                             placeholder="+31 6 12345678"
                           />
                         </div>
@@ -679,7 +679,7 @@ const AdminDashboard: React.FC = () => {
                             type="text"
                             value={newUser.department}
                             onChange={(e) => setNewUser({...newUser, department: e.target.value})}
-                            className="w-full border-2 border rounded-xl px-4 py-3 font-medium text-muted-foreground focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+                            className="w-full border-2 border-border rounded-xl px-4 py-3 font-medium bg-background text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                             placeholder="e.g., Research & Development"
                           />
                         </div>
@@ -689,7 +689,7 @@ const AdminDashboard: React.FC = () => {
                             type="text"
                             value={newUser.location}
                             onChange={(e) => setNewUser({...newUser, location: e.target.value})}
-                            className="w-full border-2 border rounded-xl px-4 py-3 font-medium text-muted-foreground focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+                            className="w-full border-2 border-border rounded-xl px-4 py-3 font-medium bg-background text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                             placeholder="e.g., Amsterdam, Netherlands"
                           />
                         </div>
@@ -699,7 +699,7 @@ const AdminDashboard: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setShowCreateModal(false)}
-                          className="px-6 py-3 text-muted-foreground font-semibold border-2 border-gray-300 rounded-xl hover:bg-secondary active:scale-95 transition-all"
+                          className="px-6 py-3 text-muted-foreground font-semibold border-2 border-border rounded-xl hover:bg-secondary active:scale-95 transition-all"
                         >
                           Cancel
                         </button>
@@ -758,14 +758,14 @@ const AdminDashboard: React.FC = () => {
                     placeholder="🔍 Search greenhouses..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full px-4 py-3 border-2 border rounded-xl font-medium text-muted-foreground focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all"
+                    className="w-full px-4 py-3 border-2 border rounded-xl font-medium bg-background text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                   />
                 </div>
 
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
-                  className="px-4 py-3 border-2 border rounded-xl font-medium text-muted-foreground focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all"
+                  className="px-4 py-3 border-2 border rounded-xl font-medium bg-background text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                 >
                   <option value="name">Sort by Name</option>
                   <option value="created_at">Sort by Date</option>
@@ -774,14 +774,14 @@ const AdminDashboard: React.FC = () => {
 
                 <button
                   onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                  className="px-4 py-3 bg-secondary hover:bg-gray-200 text-muted-foreground font-bold rounded-xl shadow-md hover:shadow-lg active:scale-95 transition-all duration-200"
+                  className="px-4 py-3 bg-secondary hover:bg-secondary/80 text-muted-foreground font-bold rounded-xl shadow-md hover:shadow-lg active:scale-95 transition-all duration-200"
                 >
                   {sortOrder === 'asc' ? '⬆️ Asc' : '⬇️ Desc'}
                 </button>
 
                 <button
                   onClick={loadGreenhouses}
-                  className="px-6 py-3 bg-secondary hover:bg-gray-200 text-muted-foreground font-semibold rounded-xl shadow-md hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center gap-3"
+                  className="px-6 py-3 bg-secondary hover:bg-secondary/80 text-muted-foreground font-semibold rounded-xl shadow-md hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center gap-3"
                 >
                   <span className="text-lg">🔄</span>
                   <span>Refresh</span>
@@ -790,7 +790,7 @@ const AdminDashboard: React.FC = () => {
             </div>
 
             <div className="bg-card rounded-2xl shadow-lg border border overflow-hidden">
-              <div className="px-8 py-6 border-b border bg-gradient-to-r from-green-50 to-emerald-50">
+              <div className="px-8 py-6 border-b border bg-gradient-to-r from-horti-status-success/5 to-horti-green-500/5 dark:from-horti-status-success/10 dark:to-horti-green-500/10">
                 <h2 className="text-2xl font-bold text-foreground flex items-center gap-3">
                   <span className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-lg">
                     <span className="text-xl">🏡</span>
@@ -804,7 +804,7 @@ const AdminDashboard: React.FC = () => {
 
                 {greenhouseLoading ? (
                   <div className="text-center py-12">
-                    <div className="animate-spin rounded-full h-16 w-16 border-4 border-green-200 border-t-green-600 mx-auto"></div>
+                    <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary/20 border-t-primary mx-auto"></div>
                     <p className="mt-6 text-muted-foreground font-medium">Loading greenhouses...</p>
                   </div>
                 ) : greenhouses.length === 0 ? (
@@ -813,7 +813,7 @@ const AdminDashboard: React.FC = () => {
                       <span className="text-4xl">🏡</span>
                     </div>
                     <p className="text-muted-foreground text-xl font-semibold">No greenhouses found</p>
-                    <p className="text-gray-500 text-sm mt-2">Create your first greenhouse to get started</p>
+                    <p className="text-muted-foreground text-sm mt-2">Create your first greenhouse to get started</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -823,7 +823,7 @@ const AdminDashboard: React.FC = () => {
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         whileHover={{ y: -8 }}
-                        className="bg-gradient-to-br from-white to-green-50 rounded-2xl p-6 border-2 border hover:border-green-300 shadow-lg hover:shadow-2xl transition-all duration-300"
+                        className="bg-gradient-to-br from-card via-card to-primary/5 dark:from-card dark:via-card dark:to-primary/10 rounded-2xl p-6 border-2 border-border hover:border-primary/30 shadow-lg hover:shadow-2xl transition-all duration-300"
                       >
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex items-center gap-3">
@@ -841,20 +841,20 @@ const AdminDashboard: React.FC = () => {
                         </div>
 
                         <div className="mb-4">
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-green-100 text-green-700 shadow-sm">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-horti-status-success/10 text-horti-status-success dark:bg-horti-status-success/20 shadow-sm">
                             <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
                             Active & Operational
                           </span>
                         </div>
 
-                        <div className="space-y-3 mb-5 bg-card rounded-xl p-4 shadow-inner">
+                        <div className="space-y-3 mb-5 bg-background/50 dark:bg-background/30 rounded-xl p-4 border border-border/50">
                           <div className="flex justify-between items-center">
                             <span className="text-sm text-muted-foreground font-medium">Area:</span>
                             <span className="text-sm font-bold text-foreground bg-secondary px-3 py-1 rounded-lg">{greenhouse.details.landArea} m²</span>
                           </div>
                           <div className="flex justify-between items-center">
                             <span className="text-sm text-muted-foreground font-medium">Crop Type:</span>
-                            <span className="text-sm font-bold text-green-700 capitalize bg-green-50 px-3 py-1 rounded-lg">
+                            <span className="text-sm font-bold text-horti-status-success capitalize bg-horti-status-success/10 dark:bg-horti-status-success/20 px-3 py-1 rounded-lg">
                               {(() => {
                                 const cropsData = Array.isArray(greenhouse.crops) ? greenhouse.crops[0] : greenhouse.crops;
                                 return cropsData?.type || 'N/A';
@@ -881,7 +881,7 @@ const AdminDashboard: React.FC = () => {
                           </button>
                           <button
                             onClick={() => handleDeleteGreenhouse(greenhouse.id)}
-                            className="px-4 py-2.5 text-sm font-semibold text-red-700 bg-red-50 border-2 border-red-200 rounded-xl hover:bg-red-100 active:scale-95 transition-all"
+                            className="px-4 py-2.5 text-sm font-semibold text-horti-status-error bg-horti-status-error/10 border-2 border-horti-status-error/30 rounded-xl hover:bg-horti-status-error/20 dark:bg-horti-status-error/20 dark:hover:bg-horti-status-error/30 active:scale-95 transition-all"
                           >
                             🗑️
                           </button>

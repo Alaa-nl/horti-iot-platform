@@ -11,7 +11,7 @@ const Layout: React.FC<LayoutProps> = ({ children, sidebarContent }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <HoverSidebar
         additionalContent={sidebarContent}
         isOpen={sidebarOpen}

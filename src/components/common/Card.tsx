@@ -19,8 +19,8 @@ const Card: React.FC<CardProps> = ({ children, className = '', hover = true }) =
     >
       <ShadcnCard
         className={cn(
-          "p-6 transition-all duration-300",
-          hover && "hover:shadow-lg",
+          "p-6 transition-all duration-300 backdrop-blur-sm bg-card/95 dark:bg-card/90 border-border/60",
+          hover && "hover:shadow-elevated-hover hover:border-primary/30 hover:bg-card",
           className
         )}
       >

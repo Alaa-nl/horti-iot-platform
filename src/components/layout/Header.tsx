@@ -26,7 +26,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-6 py-4 sticky top-0 z-40"
+      className="border-b border-border/50 bg-background/80 dark:bg-background/60 backdrop-blur-lg backdrop-saturate-150 px-6 py-4 sticky top-0 z-40 shadow-sm"
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">

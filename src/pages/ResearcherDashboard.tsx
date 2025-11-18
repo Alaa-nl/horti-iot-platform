@@ -317,12 +317,11 @@ const ResearcherDashboard: React.FC = () => {
         <div className="max-w-full mx-auto mb-8 px-4">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left: Greenhouse Selector merged with Farm Details */}
-            <div className="bg-card rounded-xl shadow-lg border border-border/50 overflow-hidden hover:shadow-xl transition-all duration-300 lg:col-span-2">
-              <div className="p-8">
-              <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center">
-                <span className="w-3 h-3 bg-primary rounded-full mr-3 animate-pulse-soft shadow-glow-green"></span>
+            <div className="card-elevated group lg:col-span-2 p-8">
+              <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center group-hover:translate-x-1 transition-transform duration-200">
+                <span className="w-3 h-3 bg-primary rounded-full mr-3 animate-pulse-soft shadow-glow-green-sm"></span>
                 <span className="text-2xl mr-2">🏡</span>
-                Greenhouse Control Panel
+                <span className="gradient-text-subtle">Greenhouse Control Panel</span>
               </h2>
 
               {/* Greenhouse Selector */}
@@ -338,53 +337,54 @@ const ResearcherDashboard: React.FC = () => {
               {/* Farm Details Grid */}
               {selectedGreenhouse && (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  <div className="bg-card rounded-xl p-3 border hover:shadow-soft transition-all duration-200">
-                    <p className="text-xs text-muted-foreground font-medium mb-1">🆔 Farm ID</p>
+                  <div className="group bg-card/50 backdrop-blur-sm rounded-xl p-3 border border-border/50 hover:bg-card hover:shadow-soft-sm hover:border-primary/20 hover:scale-105 transition-all duration-200 cursor-default">
+                    <p className="text-xs text-muted-foreground font-medium mb-1 group-hover:text-primary/80 transition-colors">🆔 Farm ID</p>
                     <p className="text-sm font-bold text-foreground truncate">{selectedGreenhouse?.farmCode || farmDetails.farmId}</p>
                   </div>
-                  <div className="bg-card rounded-xl p-3 border hover:shadow-soft transition-all duration-200">
-                    <p className="text-xs text-muted-foreground font-medium mb-1">📍 Location</p>
+                  <div className="group bg-card/50 backdrop-blur-sm rounded-xl p-3 border border-border/50 hover:bg-card hover:shadow-soft-sm hover:border-primary/20 hover:scale-105 transition-all duration-200 cursor-default">
+                    <p className="text-xs text-muted-foreground font-medium mb-1 group-hover:text-primary/80 transition-colors">📍 Location</p>
                     <p className="text-sm font-bold text-foreground truncate">{selectedGreenhouse.location.city}, {selectedGreenhouse.location.region}</p>
                   </div>
-                  <div className="bg-card rounded-xl p-3 border hover:shadow-soft transition-all duration-200">
-                    <p className="text-xs text-muted-foreground font-medium mb-1">📏 Area (m²)</p>
+                  <div className="group bg-card/50 backdrop-blur-sm rounded-xl p-3 border border-border/50 hover:bg-card hover:shadow-soft-sm hover:border-primary/20 hover:scale-105 transition-all duration-200 cursor-default">
+                    <p className="text-xs text-muted-foreground font-medium mb-1 group-hover:text-primary/80 transition-colors">📏 Area (m²)</p>
                     <p className="text-sm font-bold text-foreground">{selectedGreenhouse.details.landArea}</p>
                   </div>
-                  <div className="bg-card rounded-xl p-3 border hover:shadow-soft transition-all duration-200">
-                    <p className="text-xs text-muted-foreground font-medium mb-1">🌱 Crop Type</p>
+                  <div className="group bg-card/50 backdrop-blur-sm rounded-xl p-3 border border-border/50 hover:bg-card hover:shadow-soft-sm hover:border-primary/20 hover:scale-105 transition-all duration-200 cursor-default">
+                    <p className="text-xs text-muted-foreground font-medium mb-1 group-hover:text-primary/80 transition-colors">🌱 Crop Type</p>
                     <p className="text-sm font-bold text-foreground capitalize">{selectedGreenhouse.cropType || 'N/A'}</p>
                   </div>
-                  <div className="bg-card rounded-xl p-3 border hover:shadow-soft transition-all duration-200">
-                    <p className="text-xs text-muted-foreground font-medium mb-1">🍅 Variety</p>
+                  <div className="group bg-card/50 backdrop-blur-sm rounded-xl p-3 border border-border/50 hover:bg-card hover:shadow-soft-sm hover:border-primary/20 hover:scale-105 transition-all duration-200 cursor-default">
+                    <p className="text-xs text-muted-foreground font-medium mb-1 group-hover:text-primary/80 transition-colors">🍅 Variety</p>
                     <p className="text-sm font-bold text-foreground truncate">{selectedGreenhouse.variety || 'N/A'}</p>
                   </div>
-                  <div className="bg-card rounded-xl p-3 border hover:shadow-soft transition-all duration-200">
-                    <p className="text-xs text-muted-foreground font-medium mb-1">📦 Supplier</p>
+                  <div className="group bg-card/50 backdrop-blur-sm rounded-xl p-3 border border-border/50 hover:bg-card hover:shadow-soft-sm hover:border-primary/20 hover:scale-105 transition-all duration-200 cursor-default">
+                    <p className="text-xs text-muted-foreground font-medium mb-1 group-hover:text-primary/80 transition-colors">📦 Supplier</p>
                     <p className="text-sm font-bold text-foreground truncate">{selectedGreenhouse.supplier || 'N/A'}</p>
                   </div>
-                  <div className="bg-card rounded-xl p-3 border hover:shadow-soft transition-all duration-200">
-                    <p className="text-xs text-muted-foreground font-medium mb-1">🌡️ Climate System</p>
+                  <div className="group bg-card/50 backdrop-blur-sm rounded-xl p-3 border border-border/50 hover:bg-card hover:shadow-soft-sm hover:border-primary/20 hover:scale-105 transition-all duration-200 cursor-default">
+                    <p className="text-xs text-muted-foreground font-medium mb-1 group-hover:text-primary/80 transition-colors">🌡️ Climate System</p>
                     <p className="text-sm font-bold text-foreground truncate">{selectedGreenhouse.climateSystem || 'N/A'}</p>
                   </div>
-                  <div className="bg-card rounded-xl p-3 border hover:shadow-soft transition-all duration-200">
-                    <p className="text-xs text-muted-foreground font-medium mb-1">💡 Lighting System</p>
+                  <div className="group bg-card/50 backdrop-blur-sm rounded-xl p-3 border border-border/50 hover:bg-card hover:shadow-soft-sm hover:border-primary/20 hover:scale-105 transition-all duration-200 cursor-default">
+                    <p className="text-xs text-muted-foreground font-medium mb-1 group-hover:text-primary/80 transition-colors">💡 Lighting System</p>
                     <p className="text-sm font-bold text-foreground truncate">{selectedGreenhouse.lightingSystem || 'N/A'}</p>
                   </div>
-                  <div className="bg-card rounded-xl p-3 border hover:shadow-soft transition-all duration-200">
-                    <p className="text-xs text-muted-foreground font-medium mb-1">💨 CO2 Target (ppm)</p>
+                  <div className="group bg-card/50 backdrop-blur-sm rounded-xl p-3 border border-border/50 hover:bg-card hover:shadow-soft-sm hover:border-primary/20 hover:scale-105 transition-all duration-200 cursor-default">
+                    <p className="text-xs text-muted-foreground font-medium mb-1 group-hover:text-primary/80 transition-colors">💨 CO2 Target (ppm)</p>
                     <p className="text-sm font-bold text-foreground">{selectedGreenhouse.co2TargetPpm || 'N/A'}</p>
                   </div>
-                  <div className="bg-card rounded-xl p-3 border hover:shadow-soft transition-all duration-200">
-                    <p className="text-xs text-muted-foreground font-medium mb-1">🌡️ Temperature Range (°C)</p>
+                  <div className="group bg-card/50 backdrop-blur-sm rounded-xl p-3 border border-border/50 hover:bg-card hover:shadow-soft-sm hover:border-primary/20 hover:scale-105 transition-all duration-200 cursor-default">
+                    <p className="text-xs text-muted-foreground font-medium mb-1 group-hover:text-primary/80 transition-colors">🌡️ Temperature Range (°C)</p>
                     <p className="text-sm font-bold text-foreground">{selectedGreenhouse.temperatureRangeC || 'N/A'}</p>
                   </div>
                 </div>
               )}
-              </div>
             </div>
 
             {/* Right: Weather Card */}
-            <div className="bg-gradient-to-br from-horti-blue-600 via-horti-blue-700 to-horti-blue-800 rounded-xl shadow-lg border border-horti-blue-500/20 overflow-hidden hover:shadow-xl transition-all duration-300 h-fit">
+            <div className="relative bg-gradient-to-br from-horti-blue-500 via-horti-blue-600 to-horti-blue-700 rounded-xl shadow-glow-blue overflow-hidden group hover:shadow-glow-blue-lg hover:scale-[1.02] transition-all duration-300 h-fit">
+              <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-horti-accent-indigo/20 via-transparent to-transparent"></div>
               <div className="p-6 text-white relative flex flex-col">
               {weatherLoading && (
                 <div className="absolute inset-0 bg-blue-900/50 backdrop-blur-sm rounded-2xl flex items-center justify-center z-10">
@@ -401,21 +401,25 @@ const ResearcherDashboard: React.FC = () => {
               )}
 
               <div className="flex-shrink-0">
-                <div className="flex justify-between items-start mb-4">
+                <div className="flex justify-between items-start mb-6">
                   <div>
-                    <h3 className="text-lg font-bold mb-1">Today's Weather</h3>
-                    <p className="text-white/80 text-base">{weatherData.today.condition}</p>
-                    <p className="text-white/70 text-base mt-1">
+                    <h3 className="text-xl font-bold mb-2 text-white/95">Today's Weather</h3>
+                    <p className="text-white/90 text-base font-medium">{weatherData.today.condition}</p>
+                    <p className="text-white/80 text-sm mt-1 flex items-center">
+                      <span className="mr-1">📍</span>
                       {selectedGreenhouse?.location.city || 'Loading...'}
                     </p>
                   </div>
                   <div className="text-right">
-                    <div className="text-4xl font-light">{weatherData.today.temp}°C</div>
+                    <div className="text-5xl font-light text-white flex items-start">
+                      <span>{weatherData.today.temp}</span>
+                      <span className="text-2xl font-normal ml-1 mt-1">°C</span>
+                    </div>
                     {weatherData.today.feelsLike && (
-                      <p className="text-base text-white/70 mt-1">Feels like {weatherData.today.feelsLike}°C</p>
+                      <p className="text-sm text-white/80 mt-1">Feels like {weatherData.today.feelsLike}°C</p>
                     )}
-                    <div className="flex items-center justify-end mt-2">
-                      <span className="text-4xl">{getWeatherIcon(weatherData.today.condition)}</span>
+                    <div className="flex items-center justify-end mt-3">
+                      <span className="text-5xl filter drop-shadow-lg">{getWeatherIcon(weatherData.today.condition)}</span>
                     </div>
                   </div>
                 </div>
@@ -423,17 +427,17 @@ const ResearcherDashboard: React.FC = () => {
 
               {/* Weather Stats */}
               <div className="grid grid-cols-3 gap-2 mb-4 flex-shrink-0">
-                <div className="bg-primary/20 backdrop-blur-md rounded-lg p-4 text-center hover:bg-primary/30 hover:scale-105 transition-all duration-200 border border-primary/30 shadow-soft">
-                  <p className="text-base text-white/80 mb-1">💧 Humidity</p>
-                  <p className="text-xl font-bold">{weatherData.today.humidity}%</p>
+                <div className="bg-gradient-to-br from-white/15 to-white/10 backdrop-blur-md rounded-lg p-4 text-center hover:from-white/20 hover:to-white/15 hover:scale-105 transition-all duration-200 border border-white/25 shadow-soft cursor-default">
+                  <p className="text-sm text-white/90 mb-1 font-medium">💧 Humidity</p>
+                  <p className="text-2xl font-bold text-white">{weatherData.today.humidity}%</p>
                 </div>
-                <div className="bg-primary/20 backdrop-blur-md rounded-lg p-4 text-center hover:bg-primary/30 hover:scale-105 transition-all duration-200 border border-primary/30 shadow-soft">
-                  <p className="text-base text-white/80 mb-1">💨 Wind</p>
-                  <p className="text-xl font-bold">{weatherData.today.windSpeed} m/s</p>
+                <div className="bg-gradient-to-br from-white/15 to-white/10 backdrop-blur-md rounded-lg p-4 text-center hover:from-white/20 hover:to-white/15 hover:scale-105 transition-all duration-200 border border-white/25 shadow-soft cursor-default">
+                  <p className="text-sm text-white/90 mb-1 font-medium">💨 Wind</p>
+                  <p className="text-2xl font-bold text-white">{weatherData.today.windSpeed} m/s</p>
                 </div>
-                <div className="bg-primary/20 backdrop-blur-md rounded-lg p-4 text-center hover:bg-primary/30 hover:scale-105 transition-all duration-200 border border-primary/30 shadow-soft">
-                  <p className="text-base text-white/80 mb-1">{weatherData.today.pressure ? '🌡️ Pressure' : '🌧️ Rain'}</p>
-                  <p className="text-xl font-bold">
+                <div className="bg-gradient-to-br from-white/15 to-white/10 backdrop-blur-md rounded-lg p-4 text-center hover:from-white/20 hover:to-white/15 hover:scale-105 transition-all duration-200 border border-white/25 shadow-soft cursor-default">
+                  <p className="text-sm text-white/90 mb-1 font-medium">{weatherData.today.pressure ? '🌡️ Pressure' : '🌧️ Rain'}</p>
+                  <p className="text-2xl font-bold text-white">
                     {weatherData.today.pressure ? `${weatherData.today.pressure} hPa` : `${weatherData.today.rainProbability}%`}
                   </p>
                 </div>
@@ -443,10 +447,10 @@ const ResearcherDashboard: React.FC = () => {
               <div className="grid grid-cols-4 gap-2 mb-4">
                 {weatherData.forecast.length > 0 ? (
                   weatherData.forecast.map((day, index) => (
-                    <div key={index} className="text-center p-3 bg-primary/20 backdrop-blur-md rounded-lg border border-primary/30 hover:bg-primary/30 hover:scale-105 transition-all duration-200 flex flex-col justify-center shadow-soft">
-                      <p className="text-base text-white/80 mb-1 font-medium">{day.day}</p>
+                    <div key={index} className="text-center p-3 bg-gradient-to-br from-white/15 to-white/10 backdrop-blur-md rounded-lg border border-white/25 hover:from-white/20 hover:to-white/15 hover:scale-105 transition-all duration-200 flex flex-col justify-center shadow-soft cursor-default">
+                      <p className="text-xs text-white/95 mb-1 font-semibold uppercase tracking-wide">{day.day}</p>
                       <div className="text-3xl mb-1">{getWeatherIcon(day.condition)}</div>
-                      <p className="font-bold text-base">{day.temp}°C</p>
+                      <p className="font-bold text-lg text-white">{day.temp}°C</p>
                     </div>
                   ))
                 ) : (
@@ -457,9 +461,13 @@ const ResearcherDashboard: React.FC = () => {
               </div>
 
               {weatherData.today.sunrise && weatherData.today.sunset && (
-                <div className="mt-4 pt-4 border-t border-white/20 flex justify-center gap-4 text-base text-white/80 flex-shrink-0">
-                  <span className="bg-primary/20 px-3 py-1.5 rounded-full">☀️ {weatherData.today.sunrise}</span>
-                  <span className="bg-primary/20 px-3 py-1.5 rounded-full">🌙 {weatherData.today.sunset}</span>
+                <div className="mt-4 pt-4 border-t border-white/25 flex justify-center gap-4 text-sm text-white flex-shrink-0">
+                  <span className="bg-gradient-to-r from-yellow-400/20 to-orange-400/20 backdrop-blur px-4 py-2 rounded-full hover:from-yellow-400/30 hover:to-orange-400/30 transition-all duration-200 cursor-default border border-white/20 font-medium">
+                    ☀️ {weatherData.today.sunrise}
+                  </span>
+                  <span className="bg-gradient-to-r from-indigo-400/20 to-purple-400/20 backdrop-blur px-4 py-2 rounded-full hover:from-indigo-400/30 hover:to-purple-400/30 transition-all duration-200 cursor-default border border-white/20 font-medium">
+                    🌙 {weatherData.today.sunset}
+                  </span>
                 </div>
               )}
               </div>

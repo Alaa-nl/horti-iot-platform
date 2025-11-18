@@ -91,7 +91,7 @@ const HoverSidebar: React.FC<HoverSidebarProps> = ({ children, additionalContent
           x: isOpen ? 0 : -320
         }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="fixed left-0 top-0 h-full w-80 bg-background border-r z-50"
+        className="fixed left-0 top-0 h-full w-80 bg-background/95 dark:bg-background/90 backdrop-blur-lg border-r border-border/50 z-50 shadow-xl"
       >
         <ScrollArea className="h-full"
 >
