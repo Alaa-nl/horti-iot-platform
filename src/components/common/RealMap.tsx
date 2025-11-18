@@ -21,8 +21,32 @@ interface RealMapProps {
   height?: string;
 }
 
-// Map style - Street Map only
-const MAP_STYLE = 'https://tiles.openfreemap.org/styles/liberty';
+// Map style - Using OpenStreetMap tiles for better street detail
+const MAP_STYLE = {
+  version: 8,
+  sources: {
+    'osm-tiles': {
+      type: 'raster',
+      tiles: [
+        'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png'
+      ],
+      tileSize: 256,
+      attribution: '© OpenStreetMap contributors',
+      maxzoom: 19
+    }
+  },
+  layers: [
+    {
+      id: 'osm-tiles-layer',
+      type: 'raster',
+      source: 'osm-tiles',
+      minzoom: 0,
+      maxzoom: 19
+    }
+  ]
+};
 
 const RealMap: React.FC<RealMapProps> = ({
   center,
@@ -137,8 +161,10 @@ const RealMap: React.FC<RealMapProps> = ({
         ref={mapRef}
         {...viewState}
         onMove={evt => setViewState(evt.viewState)}
-        mapStyle={MAP_STYLE}
+        mapStyle={MAP_STYLE as any}
         style={{ width: '100%', height: '100%' }}
+        maxZoom={19}
+        minZoom={2}
       >
         {/* Navigation Controls (Zoom, Compass) */}
         <NavigationControl position="top-left" showCompass={true} />
