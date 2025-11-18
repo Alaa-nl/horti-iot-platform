@@ -116,8 +116,9 @@ const GreenhouseHeatmap: React.FC<HeatmapProps> = ({ greenhouseId }) => {
   }, [generateHeatmapData, selectedDataType]);
 
   return (
-    <div className="card-elevated p-6 hover:-translate-y-2">
-      <div className="mb-4">
+    <div className="bg-card rounded-xl shadow-lg border border-border/50 overflow-hidden hover:shadow-xl transition-all duration-300">
+      <div className="p-6">
+        <div className="mb-4">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-lg font-bold text-foreground">Heat Map</h3>
           <div className="badge-success">
@@ -208,6 +209,7 @@ const GreenhouseHeatmap: React.FC<HeatmapProps> = ({ greenhouseId }) => {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

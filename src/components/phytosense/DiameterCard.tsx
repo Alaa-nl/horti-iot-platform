@@ -206,7 +206,8 @@ const DiameterCard: React.FC<DiameterCardProps> = ({ className = '' }) => {
   }, [fetchDiameterData]);
 
   return (
-    <div className={`card-elevated p-6 hover:-translate-y-2 ${className}`}>
+    <div className={`bg-card rounded-xl shadow-lg border border-border/50 overflow-hidden hover:shadow-xl transition-all duration-300 ${className}`}>
+      <div className="p-6">
       <div className="mb-4">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-lg font-bold text-foreground">
@@ -306,6 +307,7 @@ const DiameterCard: React.FC<DiameterCardProps> = ({ className = '' }) => {
           )}
         </>
       )}
+      </div>
     </div>
   );
 };

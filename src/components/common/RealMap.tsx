@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import Map, { Marker, Popup, NavigationControl, FullscreenControl, ScaleControl } from 'react-map-gl/maplibre';
+import Map, { Marker, Popup, NavigationControl, ScaleControl } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { motion } from 'framer-motion';
 
@@ -31,7 +31,6 @@ const RealMap: React.FC<RealMapProps> = ({
   className = '',
   height = '400px'
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
   const [selectedMarker, setSelectedMarker] = useState<MapMarker | null>(null);
   const [viewState, setViewState] = useState({
     longitude: center.lng,
@@ -89,11 +88,6 @@ const RealMap: React.FC<RealMapProps> = ({
     return emojis[type as keyof typeof emojis] || '📍';
   };
 
-  // Toggle expanded view
-  const toggleExpanded = () => {
-    setIsExpanded(!isExpanded);
-  };
-
   // Fly to greenhouse location
   const flyToGreenhouse = () => {
     setViewState(prev => ({
@@ -110,10 +104,8 @@ const RealMap: React.FC<RealMapProps> = ({
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className={`relative bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden ${className} ${
-        isExpanded ? 'fixed inset-4 z-[9999]' : ''
-      }`}
-      style={isExpanded ? { height: 'calc(100vh - 2rem)' } : { height }}
+      className={`relative bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden ${className}`}
+      style={{ height }}
     >
       {/* Greenhouse Location Button - Top Left Below Controls */}
       <div className="absolute top-[140px] left-[10px] z-[1000] pointer-events-auto">
@@ -130,15 +122,6 @@ const RealMap: React.FC<RealMapProps> = ({
       {/* Map Controls - Top Right */}
       <div className="absolute top-4 right-4 z-[1000] flex items-center gap-2 pointer-events-none">
         <div className="flex items-center gap-2 pointer-events-auto">
-          {/* Expand/Collapse Button */}
-          <button
-            onClick={toggleExpanded}
-            className="bg-white/95 backdrop-blur-sm rounded-2xl px-3 py-2 shadow-lg text-xs font-medium text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-            title={isExpanded ? 'Exit Fullscreen' : 'Expand Map'}
-          >
-            {isExpanded ? '⬇️ Minimize' : '⬆️ Expand'}
-          </button>
-
           {/* Live Status */}
           <div className="bg-white/95 backdrop-blur-sm rounded-2xl px-3 py-2 shadow-lg">
             <div className="flex items-center text-xs text-gray-600">
@@ -159,9 +142,6 @@ const RealMap: React.FC<RealMapProps> = ({
       >
         {/* Navigation Controls (Zoom, Compass) */}
         <NavigationControl position="top-left" showCompass={true} />
-
-        {/* Fullscreen Control */}
-        <FullscreenControl position="top-left" />
 
         {/* Scale Control */}
         <ScaleControl position="bottom-left" />

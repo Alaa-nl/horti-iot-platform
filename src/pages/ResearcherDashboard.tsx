@@ -317,7 +317,8 @@ const ResearcherDashboard: React.FC = () => {
         <div className="max-w-full mx-auto mb-8 px-4">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left: Greenhouse Selector merged with Farm Details */}
-            <div className="card-elevated p-8 lg:col-span-2">
+            <div className="bg-card rounded-xl shadow-lg border border-border/50 overflow-hidden hover:shadow-xl transition-all duration-300 lg:col-span-2">
+              <div className="p-8">
               <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center">
                 <span className="w-3 h-3 bg-primary rounded-full mr-3 animate-pulse-soft shadow-glow-green"></span>
                 <span className="text-2xl mr-2">🏡</span>
@@ -379,10 +380,12 @@ const ResearcherDashboard: React.FC = () => {
                   </div>
                 </div>
               )}
+              </div>
             </div>
 
             {/* Right: Weather Card */}
-            <div className="bg-gradient-to-br from-horti-blue-600 via-horti-blue-700 to-horti-blue-800 rounded-3xl shadow-strong p-4 text-white relative overflow-hidden hover:shadow-[0_20px_60px_0_rgba(37,99,235,0.3)] hover:-translate-y-1 transition-all duration-300 flex flex-col border border-horti-blue-500/20 h-fit">
+            <div className="bg-gradient-to-br from-horti-blue-600 via-horti-blue-700 to-horti-blue-800 rounded-xl shadow-lg border border-horti-blue-500/20 overflow-hidden hover:shadow-xl transition-all duration-300 h-fit">
+              <div className="p-6 text-white relative flex flex-col">
               {weatherLoading && (
                 <div className="absolute inset-0 bg-blue-900/50 backdrop-blur-sm rounded-2xl flex items-center justify-center z-10">
                   <div className="text-white text-center">
@@ -459,6 +462,7 @@ const ResearcherDashboard: React.FC = () => {
                   <span className="bg-primary/20 px-3 py-1.5 rounded-full">🌙 {weatherData.today.sunset}</span>
                 </div>
               )}
+              </div>
             </div>
           </div>
         </div>
@@ -472,9 +476,11 @@ const ResearcherDashboard: React.FC = () => {
             className="grid grid-cols-1 lg:grid-cols-12 gap-6"
           >
             {/* ML Predictions and Plant Monitoring Section - Full width */}
-            <div className="col-span-12 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-              {/* Head Thickness Prediction Panel */}
-              <div className="card-elevated p-6 hover:-translate-y-2">
+            <div className="col-span-12">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                {/* Head Thickness Prediction Panel */}
+                <div className="bg-card rounded-xl shadow-lg border border-border/50 overflow-hidden hover:shadow-xl transition-all duration-300">
+                  <div className="p-6">
                 <div className="mb-4">
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-lg font-bold text-foreground">Head Thickness</h3>
@@ -552,10 +558,11 @@ const ResearcherDashboard: React.FC = () => {
                     </div>
                   ))}
                 </div>
-              </div>
+                  </div>
+                </div>
 
-              {/* Sap Flow Card */}
-              <SapFlowCard />
+                {/* Sap Flow Card */}
+                <SapFlowCard />
 
               {/* Diameter Card */}
               <DiameterCard />
@@ -563,48 +570,51 @@ const ResearcherDashboard: React.FC = () => {
               {/* Environmental Heatmap Card */}
               <GreenhouseHeatmap greenhouseId={selectedGreenhouse?.id} />
 
-              {/* Greenhouse Location Map Panel */}
-              <div className="card-elevated p-6 hover:-translate-y-2">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold text-foreground">Greenhouse Location</h3>
-                  <div className="badge-info">
-                    🗺️ Live Map
-                  </div>
-                </div>
-                <div className="h-64">
-                  {selectedGreenhouse ? (
-                    <RealMap
-                      center={{
-                        lat: selectedGreenhouse.location.coordinates.lat,
-                        lng: selectedGreenhouse.location.coordinates.lon
-                      }}
-                      zoom={16}
-                      className="h-full rounded-xl overflow-hidden border shadow-soft"
-                      markers={[
-                        {
-                          id: selectedGreenhouse.id,
-                          lat: selectedGreenhouse.location.coordinates.lat,
-                          lng: selectedGreenhouse.location.coordinates.lon,
-                          title: selectedGreenhouse.name,
-                          type: 'greenhouse',
-                          status: 'active',
-                          description: `${selectedGreenhouse.details.landArea}m² ${selectedGreenhouse.details.type} greenhouse with ${selectedGreenhouse.crops.length} crop types.`
-                        }
-                      ]}
-                    />
-                  ) : (
-                    <div className="h-full bg-secondary rounded-xl flex items-center justify-center border">
-                      <p className="text-muted-foreground text-sm font-medium">Select a greenhouse to view map</p>
+              {/* Greenhouse Location Map Panel - Vertically longer */}
+              <div className="bg-card rounded-xl shadow-lg border border-border/50 overflow-hidden hover:shadow-xl transition-all duration-300">
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-bold text-foreground whitespace-nowrap">Greenhouse Location</h3>
+                    <div className="badge-info">
+                      🗺️ Live Map
                     </div>
-                  )}
-                </div>
-                <div className="mt-4 pt-4 border-t">
-                  <div className="flex items-center text-sm">
-                    <span className="text-muted-foreground font-medium">📍 {selectedGreenhouse?.location.city || 'N/A'}</span>
+                  </div>
+                  <div className="h-72">
+                    {selectedGreenhouse ? (
+                      <RealMap
+                        center={{
+                          lat: selectedGreenhouse.location.coordinates.lat,
+                          lng: selectedGreenhouse.location.coordinates.lon
+                        }}
+                        zoom={16}
+                        className="h-full rounded-lg overflow-hidden"
+                        markers={[
+                          {
+                            id: selectedGreenhouse.id,
+                            lat: selectedGreenhouse.location.coordinates.lat,
+                            lng: selectedGreenhouse.location.coordinates.lon,
+                            title: selectedGreenhouse.name,
+                            type: 'greenhouse',
+                            status: 'active',
+                            description: `${selectedGreenhouse.details.landArea}m² ${selectedGreenhouse.details.type} greenhouse with ${selectedGreenhouse.crops.length} crop types.`
+                          }
+                        ]}
+                      />
+                    ) : (
+                      <div className="h-full bg-secondary rounded-lg flex items-center justify-center">
+                        <p className="text-muted-foreground text-sm font-medium">Select a greenhouse to view map</p>
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-4 pt-3 border-t">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground font-medium">📍 Location</span>
+                      <span className="font-medium text-foreground">{selectedGreenhouse?.location.city || 'N/A'}, {selectedGreenhouse?.location.region || 'Netherlands'}</span>
+                    </div>
                   </div>
                 </div>
               </div>
-
+              </div>
             </div>
 
             {/* PhytoSense 2grow Data Panel - Full Width */}
