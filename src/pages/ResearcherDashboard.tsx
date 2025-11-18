@@ -12,6 +12,7 @@ import { useAuth } from '../contexts/AuthContext';
 import PhytoSenseOptimizedDirect from '../components/phytosense/PhytoSenseOptimizedDirect';
 import SapFlowCard from '../components/phytosense/SapFlowCard';
 import DiameterCard from '../components/phytosense/DiameterCard';
+import GreenhouseHeatmap from '../components/heatmap/GreenhouseHeatmap';
 
 // Data interfaces
 interface FarmDetails {
@@ -471,7 +472,7 @@ const ResearcherDashboard: React.FC = () => {
             className="grid grid-cols-1 lg:grid-cols-12 gap-6"
           >
             {/* ML Predictions and Plant Monitoring Section - Full width */}
-            <div className="col-span-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="col-span-12 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
               {/* Head Thickness Prediction Panel */}
               <div className="card-elevated p-6 hover:-translate-y-2">
                 <div className="mb-4">
@@ -559,6 +560,9 @@ const ResearcherDashboard: React.FC = () => {
               {/* Diameter Card */}
               <DiameterCard />
 
+              {/* Environmental Heatmap Card */}
+              <GreenhouseHeatmap greenhouseId={selectedGreenhouse?.id} />
+
               {/* Greenhouse Location Map Panel */}
               <div className="card-elevated p-6 hover:-translate-y-2">
                 <div className="flex items-center justify-between mb-4">
@@ -567,7 +571,7 @@ const ResearcherDashboard: React.FC = () => {
                     🗺️ Live Map
                   </div>
                 </div>
-                <div className="h-96">
+                <div className="h-64">
                   {selectedGreenhouse ? (
                     <RealMap
                       center={{
