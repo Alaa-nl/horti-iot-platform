@@ -93,7 +93,7 @@ const StatisticsPage: React.FC = () => {
                 <select
                   value={selectedTimeRange}
                   onChange={(e) => setSelectedTimeRange(e.target.value)}
-                  className="px-4 py-2 rounded-xl border border bg-background text-foreground shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="select-modern"
                 >
                   <option value="1h">Last Hour</option>
                   <option value="24h">Last 24 Hours</option>

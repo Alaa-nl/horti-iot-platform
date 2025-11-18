@@ -41,7 +41,7 @@ const GreenhouseSelector: React.FC<GreenhouseSelectorProps> = ({
               if (greenhouse) onSelect(greenhouse);
             }}
             disabled={loading}
-            className="w-full px-4 py-3 pr-10 text-sm font-semibold text-foreground bg-background border-2 border-primary rounded-xl appearance-none cursor-pointer hover:border-primary hover:shadow-soft focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="select-elevated"
           >
             <option value="" disabled>Choose a greenhouse...</option>
             {greenhouses.map(greenhouse => (

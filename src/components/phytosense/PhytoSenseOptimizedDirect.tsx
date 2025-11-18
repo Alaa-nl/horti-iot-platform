@@ -362,7 +362,7 @@ const PhytoSenseOptimizedDirect: React.FC<PhytoSenseOptimizedProps> = ({ classNa
           <select
             value={selectedDeviceIndex}
             onChange={(e) => setSelectedDeviceIndex(Number(e.target.value))}
-            className="w-full px-3 py-2 border bg-background text-foreground rounded-lg focus:ring-2 focus:ring-ring"
+            className="select-elevated"
           >
             {DEVICES.map((device, index) => (
               <option key={device.id} value={index}>
@@ -378,7 +378,7 @@ const PhytoSenseOptimizedDirect: React.FC<PhytoSenseOptimizedProps> = ({ classNa
           <select
             value={measurementType}
             onChange={(e) => setMeasurementType(e.target.value as MeasurementType)}
-            className="w-full px-3 py-2 border bg-background text-foreground rounded-lg focus:ring-2 focus:ring-ring"
+            className="select-elevated"
           >
             <option value="both">Both (Diameter & Sap Flow)</option>
             <option value="diameter">Diameter Only</option>
@@ -392,7 +392,7 @@ const PhytoSenseOptimizedDirect: React.FC<PhytoSenseOptimizedProps> = ({ classNa
           <select
             value={dateRange}
             onChange={(e) => setDateRange(e.target.value as any)}
-            className="w-full px-3 py-2 border bg-background text-foreground rounded-lg focus:ring-2 focus:ring-ring"
+            className="select-elevated"
           >
             <option value="device">Full Device Period</option>
             <option value="7days">Last 7 Days</option>

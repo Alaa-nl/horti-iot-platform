@@ -211,11 +211,11 @@ const RawSensorDisplay: React.FC = () => {
         {/* Controls */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Sensor</label>
+            <label className="block text-sm font-medium text-foreground mb-1">Sensor</label>
             <select
               value={selectedSensor}
               onChange={(e) => setSelectedSensor(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+              className="select-modern"
             >
               <option value="all">All Sensors</option>
               {availableSensors.map(sensor => (
@@ -225,11 +225,11 @@ const RawSensorDisplay: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Time Range</label>
+            <label className="block text-sm font-medium text-foreground mb-1">Time Range</label>
             <select
               value={selectedRange}
               onChange={(e) => setSelectedRange(e.target.value as 'hour' | 'day' | 'week')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+              className="select-modern"
             >
               <option value="hour">Last Hour</option>
               <option value="day">Last 24 Hours</option>

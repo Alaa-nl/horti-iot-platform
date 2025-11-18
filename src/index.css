@@ -48,35 +48,35 @@
   }
 
   .dark {
-    /* Dark Theme - Modern & Sophisticated */
-    --background: 240 10% 8%;  /* Deep neutral background */
-    --foreground: 0 0% 98%;
-    --card: 240 10% 12%;  /* Slightly elevated cards */
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 12%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 142 71% 45%;  /* Keep green consistent */
+    /* Dark Theme - Professional Dark Green */
+    --background: 145 25% 7%;  /* Deep forest green background */
+    --foreground: 60 10% 96%;
+    --card: 145 20% 10%;  /* Slightly elevated dark green cards */
+    --card-foreground: 60 10% 96%;
+    --popover: 145 20% 11%;
+    --popover-foreground: 60 10% 96%;
+    --primary: 142 65% 42%;  /* Professional green */
     --primary-foreground: 0 0% 100%;
-    --secondary: 240 10% 18%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 10% 20%;
-    --muted-foreground: 240 5% 65%;
-    --accent: 142 50% 40%;
+    --secondary: 145 15% 15%;
+    --secondary-foreground: 60 10% 94%;
+    --muted: 145 12% 18%;
+    --muted-foreground: 145 5% 60%;
+    --accent: 142 50% 38%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 72% 50%;
     --destructive-foreground: 0 0% 100%;
-    --border: 240 10% 20%;
-    --input: 240 10% 18%;
-    --ring: 142 71% 45%;
+    --border: 145 15% 18%;
+    --input: 145 18% 14%;
+    --ring: 142 65% 45%;
 
     /* Extended Dark Theme Variables */
-    --surface-elevated: 240 10% 15%;
-    --surface-overlay: 240 10% 18%;
-    --hover-overlay: 0 0% 100%;
-    --hover-opacity: 0.08;
-    --focus-opacity: 0.16;
+    --surface-elevated: 145 18% 13%;
+    --surface-overlay: 145 18% 16%;
+    --hover-overlay: 142 50% 50%;
+    --hover-opacity: 0.06;
+    --focus-opacity: 0.14;
     --disabled-opacity: 0.38;
-    --backdrop-opacity: 0.7;
+    --backdrop-opacity: 0.8;
   }
 
   /* Modern Reset & Base Styles */
@@ -119,37 +119,57 @@
 }
 
 @layer components {
-  /* Enhanced Button Styles with Hover Effects */
+  /* Professional Button System */
   .btn-primary {
-    @apply relative overflow-hidden px-6 py-2.5 font-medium rounded-lg bg-primary text-primary-foreground;
-    @apply transition-all duration-200 ease-out;
-    @apply hover:shadow-soft-md hover:scale-[1.02] active:scale-[0.98];
-    @apply disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100;
-    @apply before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent;
-    @apply before:translate-x-[-100%] hover:before:translate-x-[100%] before:transition-transform before:duration-500;
+    @apply relative overflow-hidden px-6 py-2.5 font-semibold rounded-lg;
+    @apply bg-gradient-to-r from-primary to-primary/90 text-primary-foreground;
+    @apply shadow-md transition-all duration-200 ease-out;
+    @apply hover:shadow-lg hover:-translate-y-0.5 hover:from-primary/95 hover:to-primary/85;
+    @apply active:scale-[0.98] active:shadow-sm;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-md;
+    @apply before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent;
+    @apply before:translate-x-[-100%] hover:before:translate-x-[100%] before:transition-transform before:duration-700;
   }
 
   .btn-secondary {
-    @apply relative px-6 py-2.5 font-medium rounded-lg;
-    @apply bg-secondary text-secondary-foreground border border-border;
-    @apply transition-all duration-200 ease-out;
-    @apply hover:bg-secondary/80 hover:shadow-soft hover:border-border/80;
-    @apply active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply relative px-6 py-2.5 font-semibold rounded-lg;
+    @apply bg-secondary text-secondary-foreground border border-border/50;
+    @apply shadow-sm transition-all duration-200 ease-out;
+    @apply hover:bg-secondary/70 hover:shadow-md hover:border-border/70;
+    @apply active:scale-[0.98] active:shadow-sm;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-ghost {
-    @apply relative px-4 py-2 font-medium rounded-lg text-muted-foreground;
+    @apply relative px-4 py-2 font-semibold rounded-lg text-muted-foreground;
     @apply transition-all duration-200 ease-out;
-    @apply hover:bg-muted hover:text-foreground hover:shadow-soft-xs;
+    @apply hover:bg-accent/50 hover:text-accent-foreground hover:shadow-sm;
     @apply active:scale-[0.98];
   }
 
   .btn-outline {
-    @apply relative px-6 py-2.5 font-medium rounded-lg;
-    @apply bg-transparent text-primary border-2 border-primary;
-    @apply transition-all duration-200 ease-out;
-    @apply hover:bg-primary hover:text-primary-foreground hover:shadow-soft-md;
-    @apply active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply relative px-6 py-2.5 font-semibold rounded-lg;
+    @apply bg-transparent text-primary border-2 border-primary/30;
+    @apply transition-all duration-200 ease-out shadow-sm;
+    @apply hover:bg-primary/10 hover:border-primary/50 hover:shadow-md;
+    @apply active:scale-[0.98] active:shadow-sm;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-success {
+    @apply relative px-6 py-2.5 font-semibold rounded-lg;
+    @apply bg-gradient-to-r from-horti-status-success to-horti-status-success/85 text-white;
+    @apply shadow-md transition-all duration-200 ease-out;
+    @apply hover:shadow-lg hover:-translate-y-0.5 hover:from-horti-status-success/95 hover:to-horti-status-success/80;
+    @apply active:scale-[0.98] active:shadow-sm;
+  }
+
+  .btn-danger {
+    @apply relative px-6 py-2.5 font-semibold rounded-lg;
+    @apply bg-gradient-to-r from-destructive to-destructive/85 text-destructive-foreground;
+    @apply shadow-md transition-all duration-200 ease-out;
+    @apply hover:shadow-lg hover:-translate-y-0.5 hover:from-destructive/95 hover:to-destructive/80;
+    @apply active:scale-[0.98] active:shadow-sm;
   }
 
   /* Enhanced Input Styles */
@@ -171,6 +191,55 @@
     @apply hover:shadow-soft hover:border-primary/30;
     @apply focus:outline-none focus:border-primary focus:shadow-soft-md focus:ring-2 focus:ring-primary/20;
     @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* Professional Select/Dropdown Styles */
+  .select-modern {
+    @apply w-full px-4 py-2.5 pr-10 rounded-lg;
+    @apply bg-background dark:bg-card/50;
+    @apply border-2 border-border text-foreground font-medium;
+    @apply transition-all duration-200 ease-out cursor-pointer;
+    @apply hover:border-primary/50 hover:shadow-md;
+    @apply focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 focus:shadow-lg;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply appearance-none;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2322c55e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-position: right 0.75rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5rem;
+  }
+
+  .dark .select-modern {
+    @apply bg-card/60 border-border/80;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234ade80' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  }
+
+  .select-modern option {
+    @apply bg-background dark:bg-card text-foreground py-2;
+  }
+
+  .select-elevated {
+    @apply w-full px-4 py-3 pr-10 rounded-lg;
+    @apply bg-card dark:bg-card/70;
+    @apply border-2 border-primary/30 text-foreground font-semibold shadow-md;
+    @apply transition-all duration-200 ease-out cursor-pointer;
+    @apply hover:border-primary/50 hover:shadow-lg hover:-translate-y-0.5;
+    @apply focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 focus:shadow-xl;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0;
+    @apply appearance-none;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2322c55e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-position: right 0.75rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5rem;
+  }
+
+  .dark .select-elevated {
+    @apply bg-card/80 border-primary/40 text-foreground;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2386efac' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  }
+
+  .select-elevated option {
+    @apply bg-card dark:bg-card/95 text-foreground;
   }
 
   /* Enhanced Card Styles */

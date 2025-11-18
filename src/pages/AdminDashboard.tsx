@@ -359,10 +359,10 @@ const AdminDashboard: React.FC = () => {
             <nav className="flex gap-2">
               <button
                 onClick={() => setActiveTab('users')}
-                className={`flex-1 py-4 px-6 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-3 ${
+                className={`flex-1 py-3 px-6 rounded-lg font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2 ${
                   activeTab === 'users'
-                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg scale-105'
-                    : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                    ? 'bg-gradient-to-r from-primary to-primary/85 text-primary-foreground shadow-lg hover:from-primary/95 hover:to-primary/80 -translate-y-0.5'
+                    : 'bg-secondary border border-border/50 text-secondary-foreground hover:bg-secondary/70 hover:shadow-md shadow-sm'
                 }`}
               >
                 <span className="text-xl">👥</span>
@@ -370,10 +370,10 @@ const AdminDashboard: React.FC = () => {
               </button>
               <button
                 onClick={() => setActiveTab('greenhouses')}
-                className={`flex-1 py-4 px-6 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-3 ${
+                className={`flex-1 py-3 px-6 rounded-lg font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2 ${
                   activeTab === 'greenhouses'
-                    ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg scale-105'
-                    : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                    ? 'bg-gradient-to-r from-primary to-primary/85 text-primary-foreground shadow-lg hover:from-primary/95 hover:to-primary/80 -translate-y-0.5'
+                    : 'bg-secondary border border-border/50 text-secondary-foreground hover:bg-secondary/70 hover:shadow-md shadow-sm'
                 }`}
               >
                 <span className="text-xl">🏡</span>
@@ -423,7 +423,7 @@ const AdminDashboard: React.FC = () => {
                   <select
                     value={filterRole}
                     onChange={(e) => setFilterRole(e.target.value)}
-                    className="w-full px-4 py-3 border-2 border-border rounded-xl font-medium bg-background text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                    className="select-modern"
                   >
                     <option value="">All Roles</option>
                     <option value="admin">Admin</option>
@@ -437,7 +437,7 @@ const AdminDashboard: React.FC = () => {
                   <select
                     value={filterActive === undefined ? '' : String(filterActive)}
                     onChange={(e) => setFilterActive(e.target.value === '' ? undefined : e.target.value === 'true')}
-                    className="w-full px-4 py-3 border-2 border-border rounded-xl font-medium bg-background text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                    className="select-modern"
                   >
                     <option value="">All Status</option>
                     <option value="true">Active</option>
@@ -699,13 +699,13 @@ const AdminDashboard: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setShowCreateModal(false)}
-                          className="px-6 py-3 text-muted-foreground font-semibold border-2 border-border rounded-xl hover:bg-secondary active:scale-95 transition-all"
+                          className="btn-secondary"
                         >
                           Cancel
                         </button>
                         <button
                           type="submit"
-                          className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl active:scale-95 transition-all"
+                          className="btn-primary"
                         >
                           ✨ Create User
                         </button>
@@ -746,7 +746,7 @@ const AdminDashboard: React.FC = () => {
                     });
                     setShowGreenhouseModal(true);
                   }}
-                  className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-200 flex items-center gap-3"
+                  className="btn-primary flex items-center gap-2"
                 >
                   <span className="text-lg">➕</span>
                   <span>Create New Greenhouse</span>
@@ -765,7 +765,7 @@ const AdminDashboard: React.FC = () => {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
-                  className="px-4 py-3 border-2 border rounded-xl font-medium bg-background text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                  className="select-elevated"
                 >
                   <option value="name">Sort by Name</option>
                   <option value="created_at">Sort by Date</option>
@@ -774,14 +774,14 @@ const AdminDashboard: React.FC = () => {
 
                 <button
                   onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                  className="px-4 py-3 bg-secondary hover:bg-secondary/80 text-muted-foreground font-bold rounded-xl shadow-md hover:shadow-lg active:scale-95 transition-all duration-200"
+                  className="btn-secondary"
                 >
                   {sortOrder === 'asc' ? '⬆️ Asc' : '⬇️ Desc'}
                 </button>
 
                 <button
                   onClick={loadGreenhouses}
-                  className="px-6 py-3 bg-secondary hover:bg-secondary/80 text-muted-foreground font-semibold rounded-xl shadow-md hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center gap-3"
+                  className="btn-secondary flex items-center gap-2"
                 >
                   <span className="text-lg">🔄</span>
                   <span>Refresh</span>
