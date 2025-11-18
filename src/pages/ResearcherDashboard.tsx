@@ -482,13 +482,7 @@ const ResearcherDashboard: React.FC = () => {
                 <div className="bg-card rounded-xl shadow-lg border border-border/50 overflow-hidden hover:shadow-xl transition-all duration-300">
                   <div className="p-6">
                 <div className="mb-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-lg font-bold text-foreground">Head Thickness</h3>
-                    <div className="badge-success">
-                      🤖 AI Prediction
-                    </div>
-                  </div>
-                  <p className="text-sm text-muted-foreground font-medium">89% accuracy</p>
+                  <h3 className="text-lg font-bold text-foreground">Head Thickness</h3>
                 </div>
 
                 {/* Current Value Display */}
@@ -573,11 +567,8 @@ const ResearcherDashboard: React.FC = () => {
               {/* Greenhouse Location Map Panel - Vertically longer */}
               <div className="bg-card rounded-xl shadow-lg border border-border/50 overflow-hidden hover:shadow-xl transition-all duration-300">
                 <div className="p-6">
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="mb-4">
                     <h3 className="text-lg font-bold text-foreground whitespace-nowrap">Greenhouse Location</h3>
-                    <div className="badge-info">
-                      🗺️ Live Map
-                    </div>
                   </div>
                   <div className="h-72">
                     {selectedGreenhouse ? (

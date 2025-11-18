@@ -125,7 +125,6 @@ const GreenhouseHeatmap: React.FC<HeatmapProps> = ({ greenhouseId }) => {
             {selectedDataType.icon} Live
           </div>
         </div>
-        <p className="text-sm text-muted-foreground font-medium">Greenhouse zones monitoring</p>
       </div>
 
       {/* Compact Data Type Selector */}
