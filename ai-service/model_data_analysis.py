@@ -11,7 +11,7 @@ from datetime import datetime
 import random
 
 # Configuration
-DATA_DIR = Path("/Users/alaadrobe/Downloads/data")
+DATA_DIR = Path("./data")
 MODELS_DIR = Path("./models")
 RESULTS_DIR = Path("./baseline_results")
 RESULTS_DIR.mkdir(exist_ok=True)

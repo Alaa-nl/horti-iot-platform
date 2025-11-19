@@ -15,7 +15,7 @@ from typing import Dict, List, Any
 import random
 
 # Configuration
-DATA_DIR = Path("/Users/alaadrobe/Downloads/data")
+DATA_DIR = Path("./data")
 RESULTS_DIR = Path("./baseline_results")
 RESULTS_DIR.mkdir(exist_ok=True)
 API_BASE_URL = "http://localhost:8000"

@@ -1,0 +1,116 @@
+{
+  "timestamp": "20251119_144536",
+  "models": {
+    "yolov11n_tomato": {
+      "file": "yolov11n_tomato.pt",
+      "size_mb": 5.2,
+      "architecture": "YOLOv11 Nano",
+      "expected_performance": "Latest YOLO, 78.0% accuracy"
+    },
+    "yolov9t_tomato": {
+      "file": "yolov9t_tomato.pt",
+      "size_mb": 4.4,
+      "architecture": "YOLOv9 Tiny",
+      "expected_performance": "Compact model, 82.6% accuracy"
+    },
+    "yolov8n_tomato": {
+      "file": "yolov8n_tomato.pt",
+      "size_mb": 5.95,
+      "architecture": "YOLOv8 Nano",
+      "expected_performance": "Fast inference, 89.4% accuracy"
+    },
+    "yolov10n_tomato": {
+      "file": "yolov10n_tomato.pt",
+      "size_mb": 5.47,
+      "architecture": "YOLOv10 Nano",
+      "expected_performance": "Advanced architecture, 75.5% accuracy"
+    },
+    "yolov8s_tomato": {
+      "file": "yolov8s_tomato.pt",
+      "size_mb": 21.46,
+      "architecture": "YOLOv8 Small",
+      "expected_performance": "Balanced speed/accuracy, 88.9% accuracy"
+    }
+  },
+  "dataset": {
+    "training_version_2": {
+      "train_images": 1259,
+      "train_labels": 1259,
+      "valid_images": 120,
+      "valid_labels": 120,
+      "test_images": 60,
+      "test_labels": 60,
+      "total_labeled_images": 1439
+    },
+    "total": {
+      "total_images": 600,
+      "timestamps": [],
+      "sample_timestamps": [
+        "050000",
+        "073000",
+        "101000",
+        "125230",
+        "152500",
+        "052500",
+        "075500",
+        "102730",
+        "125730",
+        "152730"
+      ]
+    }
+  },
+  "recommendations": [
+    {
+      "category": "models",
+      "recommendation": "Test YOLOv8n first for baseline, then compare with others",
+      "rationale": "YOLOv8n has the highest expected accuracy"
+    },
+    {
+      "category": "dataset",
+      "recommendation": "Use the 60 test images for unbiased evaluation",
+      "rationale": "Test set provides ground truth for accuracy metrics"
+    },
+    {
+      "category": "time_series",
+      "recommendation": "Sample time-series data at 10-image intervals for growth tracking",
+      "rationale": "Provides temporal insights while keeping test time manageable"
+    },
+    {
+      "category": "testing",
+      "recommendation": "Implement multi-metric evaluation: accuracy, speed, and consistency",
+      "rationale": "Comprehensive evaluation for production deployment"
+    }
+  ],
+  "expected_performance": {
+    "yolov8n": {
+      "accuracy": "85-90%",
+      "inference_speed": "15-25ms per image",
+      "tomatoes_per_image": "8-15",
+      "confidence_range": "0.4-0.9"
+    },
+    "yolov8s": {
+      "accuracy": "83-88%",
+      "inference_speed": "20-35ms per image",
+      "tomatoes_per_image": "8-15",
+      "confidence_range": "0.4-0.9"
+    },
+    "yolov11n": {
+      "accuracy": "75-80%",
+      "inference_speed": "15-25ms per image",
+      "tomatoes_per_image": "7-14",
+      "confidence_range": "0.35-0.85"
+    }
+  },
+  "summary": {
+    "total_models": 5,
+    "total_labeled_images": 1439,
+    "total_timeseries_images": 600,
+    "recommended_model": "yolov8n",
+    "next_steps": [
+      "Run API baseline test when service is available",
+      "Fine-tune YOLOv8n with greenhouse-specific data",
+      "Implement time-series growth tracking",
+      "Set up continuous model evaluation pipeline"
+    ]
+  }
+}
