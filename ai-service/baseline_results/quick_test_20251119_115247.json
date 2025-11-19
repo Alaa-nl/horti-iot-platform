@@ -1,0 +1,17 @@
+{
+  "yolov8n": {
+    "status": "skipped"
+  },
+  "yolov8s": {
+    "status": "skipped"
+  },
+  "yolov9t": {
+    "status": "skipped"
+  },
+  "yolov10n": {
+    "status": "skipped"
+  },
+  "yolov11n": {
+    "status": "skipped"
+  }
+}
