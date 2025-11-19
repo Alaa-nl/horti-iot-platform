@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../../../Downloads/output_diameter"
+		},
+		{
+			"path": "../../../Downloads/best.pts"
+		},
+		{
+			"path": "../../../Downloads/Images"
+		}
+	],
+	"settings": {}
+}
