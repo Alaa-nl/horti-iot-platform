@@ -78,10 +78,10 @@ export function calculateWaterBalance(params: WaterBalanceParams): WaterBalanceO
     leafAreaIndex,
     irrigationRate,
     substrateWaterContent,
-    rootWaterUptake,
+    // rootWaterUptake, // Reserved for future calculations
     airTemperature,
     relativeHumidity,
-    radiation
+    // radiation // Reserved for future calculations
   } = params;
 
   // Calculate VPD if not directly provided
@@ -140,7 +140,7 @@ export function calculatePlantEnergyBalance(params: EnergyBalanceParams): Energy
     longwaveEmission,
     leafTemperature,
     airTemperature,
-    windSpeed,
+    // windSpeed, // Reserved for future calculations
     convectiveCoefficient,
     transpirationRate,
     latentHeatVaporization
@@ -184,8 +184,8 @@ export function calculateGreenhouseEnergyBalance(params: GreenhouseEnergyParams)
     outsideTemperature,
     insideTemperature,
     uValue,
-    infiltrationRate,
-    heatingCapacity,
+    // infiltrationRate, // Reserved for future calculations
+    // heatingCapacity, // Reserved for future calculations
     heatingSetpoint,
     ventilationRate,
     screenPosition,
@@ -246,7 +246,7 @@ export function calculateHumidityBalance(params: HumidityBalanceParams): Humidit
     ventilationRate,
     airLeakage,
     coverTemperature,
-    pipeTemperature
+    // pipeTemperature // Reserved for future calculations
   } = params;
 
   // Absolute humidity calculations (g/m3)
@@ -347,10 +347,10 @@ export function calculateCO2Balance(params: CO2BalanceParams): CO2BalanceOutputs
  */
 export function calculateCropJudgement(params: CropJudgementParams): CropJudgementOutputs {
   const {
-    plantHeight,
+    // plantHeight, // Reserved for future calculations
     internodesLength,
-    leafLength,
-    leafWidth,
+    // leafLength, // Reserved for future calculations
+    // leafWidth, // Reserved for future calculations
     stemDiameter,
     headThickness,
     flowersPerTruss,

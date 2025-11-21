@@ -1,12 +1,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Separator } from '../ui/separator';
 import { ScrollArea } from '../ui/scroll-area';
-import { cn } from '../../lib/utils';
 
 interface HoverSidebarProps {
   children?: React.ReactNode;
@@ -16,17 +15,7 @@ interface HoverSidebarProps {
 }
 
 const HoverSidebar: React.FC<HoverSidebarProps> = ({ children, additionalContent, isOpen = true, onToggle }) => {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/login');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
+  const { user } = useAuth();
 
   const getRoleDisplayName = (role: string) => {
     switch (role) {
@@ -35,16 +24,6 @@ const HoverSidebar: React.FC<HoverSidebarProps> = ({ children, additionalContent
       case 'grower': return 'Farmer'; // Grower is treated as Farmer
       case 'farmer': return 'Farmer';
       default: return 'User';
-    }
-  };
-
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'admin': return 'bg-purple-500';
-      case 'researcher': return 'bg-emerald-500';
-      case 'grower': return 'bg-green-500'; // Grower uses same color as farmer
-      case 'farmer': return 'bg-green-500';
-      default: return 'bg-gray-500';
     }
   };
 
