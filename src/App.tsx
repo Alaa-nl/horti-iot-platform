@@ -9,6 +9,7 @@ import StatisticsPage from './pages/StatisticsPage';
 import AdminDashboard from './pages/AdminDashboard';
 import ProfilePage from './pages/ProfilePage';
 import RawSensorDisplay from './components/sensors/RawSensorDisplay';
+import StudentAlgorithmDashboard from './pages/StudentAlgorithmDashboard';
 
 // Protected Route Component with multiple allowed roles
 const ProtectedRoute: React.FC<{
@@ -65,6 +66,13 @@ const AppRoutes: React.FC = () => {
       <Route path="/researcher/statistics" element={
         <ProtectedRoute allowedRoles={['researcher', 'grower', 'farmer', 'admin']}>
           <StatisticsPage />
+        </ProtectedRoute>
+      } />
+
+      {/* Student Algorithm Dashboard - accessible by all authenticated users */}
+      <Route path="/algorithms" element={
+        <ProtectedRoute allowedRoles={['researcher', 'grower', 'farmer', 'admin']}>
+          <StudentAlgorithmDashboard />
         </ProtectedRoute>
       } />
 
