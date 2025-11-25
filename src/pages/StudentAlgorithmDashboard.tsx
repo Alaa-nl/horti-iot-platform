@@ -305,8 +305,8 @@ const StudentAlgorithmDashboard: React.FC = () => {
           >
             <div>
               <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-                <span className="text-4xl">🎓</span>
-                Student Algorithm Dashboard
+                <span className="text-4xl">🌱</span>
+                Autonomous Greenhouse Dashboard
               </h1>
               <p className="text-muted-foreground mt-2">
                 Explore and adjust greenhouse balance algorithms interactively

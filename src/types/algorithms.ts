@@ -1,4 +1,4 @@
-// Algorithm Dashboard Types for Student Learning
+// Autonomous Greenhouse Types for Student Learning
 
 // Time scales for dashboard views
 export type TimeScale = 'momentaneous' | 'short_term' | 'long_term';

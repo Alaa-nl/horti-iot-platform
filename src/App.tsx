@@ -69,7 +69,7 @@ const AppRoutes: React.FC = () => {
         </ProtectedRoute>
       } />
 
-      {/* Student Algorithm Dashboard - accessible by all authenticated users */}
+      {/* Autonomous Greenhouse Dashboard - accessible by all authenticated users */}
       <Route path="/algorithms" element={
         <ProtectedRoute allowedRoles={['researcher', 'grower', 'farmer', 'admin']}>
           <StudentAlgorithmDashboard />
