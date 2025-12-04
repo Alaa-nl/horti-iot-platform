@@ -29,7 +29,7 @@ const HoverSidebar: React.FC<HoverSidebarProps> = ({ children, additionalContent
 
   const getNavigationItems = () => {
     const baseItems = [
-      { path: '/algorithms', label: '🌱 Autonomous Greenhouse', icon: '🌱' },
+      { path: '/algorithms', label: '🌱 Plant Balance Dashboard', icon: '🌱' },
       { path: '/profile', label: '👤 My Profile', icon: '👤' }
     ];
 
