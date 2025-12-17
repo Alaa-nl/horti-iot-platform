@@ -69,8 +69,8 @@ const AppRoutes: React.FC = () => {
         </ProtectedRoute>
       } />
 
-      {/* Educational Plant Balance Dashboard - accessible by all authenticated users */}
-      <Route path="/algorithms" element={
+      {/* Plant Balance Dashboard - educational tool accessible by all roles */}
+      <Route path="/plant-balance" element={
         <ProtectedRoute allowedRoles={['researcher', 'grower', 'farmer', 'admin']}>
           <PlantBalanceDashboard />
         </ProtectedRoute>

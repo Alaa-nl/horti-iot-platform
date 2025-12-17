@@ -1,369 +1,270 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { Card, CardHeader, CardContent } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Separator } from '../components/ui/separator';
+import { TimePeriod, AssimilateBalance, WaterBalance, EnergyBalance } from '../types/plantBalance';
 import Layout from '../components/layout/Layout';
 import {
-  LineChart, Line, AreaChart, Area, BarChart, Bar,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  Legend, PieChart, Pie, Cell, RadarChart, PolarGrid,
-  PolarAngleAxis, PolarRadiusAxis, Radar, Surface
-} from 'recharts';
-import {
-  TimeScale,
-  PhotosynthesisParams,
-  PhotosynthesisOutputs,
-  TranspirationParams,
-  TranspirationOutputs,
-  EnergyBalanceParams,
-  EnergyBalanceOutputs,
-  defaultPhotosynthesisParams,
-  defaultTranspirationParams,
-  defaultEnergyParams
-} from '../types/plantBalance';
-import {
-  calculatePhotosynthesis,
+  calculateNetAssimilation,
+  formatValue,
+  calculateRTR,
+  calculateVPD,
+  calculateDLI,
+  estimateWeeklyProduction,
   calculateTranspiration,
+  calculateWUE,
+  calculateEnthalpy,
+  calculateWaterBalance,
   calculateEnergyBalance
 } from '../utils/plantBalanceCalculations';
 
-// Parameter Slider Component with enhanced visuals
-interface ParamSliderProps {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  step?: number;
-  unit: string;
-  onChange: (value: number) => void;
-  description?: string;
-  colorClass?: string;
-}
-
-const ParamSlider: React.FC<ParamSliderProps> = ({
-  label, value, min, max, step = 1, unit, onChange, description, colorClass = 'primary'
-}) => {
-  const percentage = ((value - min) / (max - min)) * 100;
-
-  return (
-    <div className="mb-5">
-      <div className="flex justify-between items-center mb-2">
-        <label className="text-sm font-semibold text-foreground">{label}</label>
-        <div className="flex items-baseline gap-1">
-          <span className={`text-lg font-bold text-${colorClass}`}>{value}</span>
-          <span className="text-xs text-muted-foreground">{unit}</span>
-        </div>
-      </div>
-      {description && (
-        <p className="text-xs text-muted-foreground mb-2">{description}</p>
-      )}
-      <div className="relative">
-        <input
-          type="range"
-          min={min}
-          max={max}
-          step={step}
-          value={value}
-          onChange={(e) => onChange(parseFloat(e.target.value))}
-          className={`w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-${colorClass}`}
-          style={{
-            background: `linear-gradient(to right, hsl(var(--${colorClass})) 0%, hsl(var(--${colorClass})) ${percentage}%, hsl(var(--secondary)) ${percentage}%, hsl(var(--secondary)) 100%)`
-          }}
-        />
-        <div className="flex justify-between text-xs text-muted-foreground mt-1">
-          <span>{min}</span>
-          <span className="text-center">{((min + max) / 2).toFixed(1)}</span>
-          <span>{max}</span>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Enhanced Output Card
-interface OutputCardProps {
-  label: string;
-  value: number | string;
-  unit?: string;
-  status?: 'optimal' | 'good' | 'warning' | 'critical';
-  trend?: 'up' | 'down' | 'stable';
-  icon?: string;
-}
-
-const OutputCard: React.FC<OutputCardProps> = ({
-  label, value, unit, status = 'good', trend, icon
-}) => {
-  const statusColors = {
-    optimal: 'bg-green-500/10 border-green-500/30 text-green-600',
-    good: 'bg-blue-500/10 border-blue-500/30 text-blue-600',
-    warning: 'bg-yellow-500/10 border-yellow-500/30 text-yellow-600',
-    critical: 'bg-red-500/10 border-red-500/30 text-red-600'
-  };
-
-  const trendIcons = {
-    up: '↑',
-    down: '↓',
-    stable: '→'
-  };
-
-  return (
-    <motion.div
-      whileHover={{ scale: 1.02 }}
-      className={`p-4 rounded-xl border-2 ${statusColors[status]} transition-all`}
-    >
-      <div className="flex items-center justify-between mb-1">
-        <div className="flex items-center gap-2">
-          {icon && <span className="text-xl">{icon}</span>}
-          <p className="text-xs font-medium opacity-80">{label}</p>
-        </div>
-        {trend && <span className="text-lg">{trendIcons[trend]}</span>}
-      </div>
-      <p className="text-2xl font-bold">
-        {typeof value === 'number' ? value.toFixed(2) : value}
-        {unit && <span className="text-sm ml-1 opacity-70">{unit}</span>}
-      </p>
-    </motion.div>
-  );
-};
-
-// 3D Surface Plot Component (simplified visualization)
-const SurfacePlot: React.FC<{ data: any, title: string }> = ({ data, title }) => {
-  return (
-    <div className="bg-card rounded-xl p-4 border">
-      <h4 className="text-sm font-semibold mb-3">{title}</h4>
-      <ResponsiveContainer width="100%" height={200}>
-        <AreaChart data={data}>
-          <defs>
-            <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
-              <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.1}/>
-            </linearGradient>
-          </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-          <XAxis dataKey="x" tick={{ fontSize: 10 }} />
-          <YAxis tick={{ fontSize: 10 }} />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: 'hsl(var(--card))',
-              border: '1px solid hsl(var(--border))',
-              borderRadius: '8px'
-            }}
-          />
-          <Area
-            type="monotone"
-            dataKey="y"
-            stroke="hsl(var(--primary))"
-            fill="url(#colorGradient)"
-            strokeWidth={2}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
-    </div>
-  );
-};
-
 const PlantBalanceDashboard: React.FC = () => {
-  // Time scale state
-  const [timeScale, setTimeScale] = useState<TimeScale>('realtime');
+  // Initial state - Manual adjustment only
+  const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('real-time');
+  const [selectedBalance, setSelectedBalance] = useState<'assimilate' | 'water' | 'energy'>('assimilate');
 
-  // Simulation running state
-  const [isRunning, setIsRunning] = useState(true);
-  const [simulationTime, setSimulationTime] = useState(0);
+  const [assimilate, setAssimilate] = useState<AssimilateBalance>({
+    parLight: 400,
+    co2Level: 800,
+    humidity: 70,
+    temperature: 24,
+    leafTemperature: 25,
+    photosynthesis: 0,
+    respiration: 0,
+    netAssimilation: 0,
+  });
 
-  // Parameter states
-  const [photosynthesisParams, setPhotosynthesisParams] = useState<PhotosynthesisParams>(defaultPhotosynthesisParams);
-  const [transpirationParams, setTranspirationParams] = useState<TranspirationParams>(defaultTranspirationParams);
-  const [energyParams, setEnergyParams] = useState<EnergyBalanceParams>(defaultEnergyParams);
+  const [waterBalance, setWaterBalance] = useState<WaterBalance | null>(null);
+  const [energyBalance, setEnergyBalance] = useState<EnergyBalance | null>(null);
 
-  // Output states
-  const [photosynthesisOutputs, setPhotosynthesisOutputs] = useState<PhotosynthesisOutputs>(
-    calculatePhotosynthesis(defaultPhotosynthesisParams)
+  // Additional parameters for water and energy calculations
+  const [rootTemperature, setRootTemperature] = useState(20); // °C
+  const [irrigationRate, setIrrigationRate] = useState(2.5); // L/m²/h
+
+  // Calculate balance when parameters change
+  useEffect(() => {
+    const calculated = calculateNetAssimilation(assimilate);
+    setAssimilate(calculated);
+
+    // Calculate water balance
+    const water = calculateWaterBalance(
+      assimilate.temperature,
+      assimilate.humidity,
+      assimilate.parLight,
+      rootTemperature,
+      assimilate.co2Level,
+      irrigationRate
+    );
+    setWaterBalance(water);
+
+    // Calculate energy balance
+    const energy = calculateEnergyBalance(
+      assimilate.temperature,
+      assimilate.leafTemperature,
+      assimilate.humidity,
+      assimilate.parLight,
+      calculated.photosynthesis
+    );
+    setEnergyBalance(energy);
+  }, [assimilate.parLight, assimilate.co2Level, assimilate.humidity, assimilate.temperature, rootTemperature, irrigationRate]);
+
+  // Calculate additional values
+  const vpd = calculateVPD(assimilate.temperature, assimilate.humidity) / 1000; // kPa
+  const transpiration = calculateTranspiration(
+    assimilate.temperature,
+    assimilate.parLight * 0.5, // Convert PAR to radiation estimate
+    assimilate.humidity
   );
-  const [transpirationOutputs, setTranspirationOutputs] = useState<TranspirationOutputs>(
-    calculateTranspiration(defaultTranspirationParams)
+  const wue = calculateWUE(assimilate.netAssimilation, transpiration);
+  const enthalpy = calculateEnthalpy(assimilate.temperature, assimilate.humidity);
+  const dli = calculateDLI(assimilate.parLight);
+  const weeklyProduction = estimateWeeklyProduction(assimilate.netAssimilation);
+
+  // Slider component for parameter input
+  const Slider: React.FC<{
+    label: string;
+    value: number;
+    onChange: (value: number) => void;
+    min: number;
+    max: number;
+    step?: number;
+    unit: string;
+    icon: string;
+  }> = ({ label, value, onChange, min, max, step = 1, unit, icon }) => (
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 rounded-lg shadow-sm">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-sm font-medium text-gray-700 dark:text-gray-200 flex items-center gap-2">
+          <span>{icon}</span>
+          {label}
+        </span>
+        <span className="text-sm font-bold text-gray-900 dark:text-white">
+          {formatValue(value)} {unit}
+        </span>
+      </div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+        style={{
+          background: `linear-gradient(to right, #10b981 ${((value - min) / (max - min)) * 100}%, #e5e7eb ${((value - min) / (max - min)) * 100}%)`
+        }}
+      />
+      <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+        <span>{min}</span>
+        <span>{max}</span>
+      </div>
+    </div>
   );
-  const [energyOutputs, setEnergyOutputs] = useState<EnergyBalanceOutputs>(
-    calculateEnergyBalance(defaultEnergyParams)
-  );
 
-  // Historical data for visualizations
-  const [historicalData, setHistoricalData] = useState<any[]>([]);
+  // Balance indicator
+  const BalanceIndicator: React.FC<{ value: number; label: string }> = ({ value, label }) => {
+    const percentage = Math.max(-100, Math.min(100, value));
+    const isPositive = percentage >= 0;
 
-  // Recalculate outputs when parameters change
-  useEffect(() => {
-    const outputs = calculatePhotosynthesis(photosynthesisParams);
-    setPhotosynthesisOutputs(outputs);
-  }, [photosynthesisParams]);
+    return (
+      <div className="mt-4">
+        <div className="text-sm text-gray-700 dark:text-gray-300 font-semibold mb-2">{label}</div>
+        <div className="w-full h-8 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden relative">
+          <div
+            className={`h-full transition-all duration-300 ${
+              isPositive ? 'bg-green-500' : 'bg-red-500'
+            }`}
+            style={{ width: `${Math.abs(percentage)}%` }}
+          />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-xs font-bold text-gray-900 dark:text-white drop-shadow-sm">
+              {isPositive ? 'Production > Consumption' : 'Consumption > Production'}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
-  useEffect(() => {
-    const outputs = calculateTranspiration(transpirationParams);
-    setTranspirationOutputs(outputs);
-  }, [transpirationParams]);
+  // Time period information and calculations
+  const renderTimePeriodInfo = () => {
+    const periodInfo = {
+      'long-term': {
+        title: 'Long-term Planning (Weeks/Months)',
+        description: 'Align sink size with available light integral throughout the growing season.',
+        icon: '📈',
+        calculations: [
+          { label: 'Weekly Light Sum', value: `${(dli * 7).toFixed(1)} mol/m²/week`, color: 'blue' },
+          { label: 'Expected Production', value: `${weeklyProduction.toFixed(2)} kg/m²/week`, color: 'green' },
+          { label: 'Water Use Efficiency', value: `${wue.toFixed(0)} g/L (standard)`, color: 'cyan' }
+        ],
+      },
+      'short-term': {
+        title: 'Short-term Monitoring (24 Hours)',
+        description: 'Daily balance management using RTR (Ratio Temperature to Radiation).',
+        icon: '📅',
+        calculations: [
+          { label: 'Daily Light Integral', value: `${dli.toFixed(1)} mol/m²/day`, color: 'blue' },
+          { label: 'RTR Value', value: `${calculateRTR(assimilate.temperature, assimilate.parLight * 0.5).toFixed(2)} °C/(100 W/m²)`, color: 'purple' },
+          { label: 'VPD', value: `${vpd.toFixed(2)} kPa`, color: 'orange' }
+        ],
+      },
+      'real-time': {
+        title: 'Real-time Monitoring (Momentaneous)',
+        description: 'Current climate factors for maximum photosynthesis using psychrometric principles.',
+        icon: '⚡',
+        calculations: [
+          { label: 'Photosynthesis', value: `${formatValue(assimilate.photosynthesis)} μmol/m²/s`, color: 'green' },
+          { label: 'Transpiration', value: `${formatValue(transpiration)} L/m²/h`, color: 'blue' },
+          { label: 'Enthalpy', value: `${formatValue(enthalpy)} kJ/kg`, color: 'yellow' }
+        ],
+      },
+    };
 
-  useEffect(() => {
-    const outputs = calculateEnergyBalance(energyParams);
-    setEnergyOutputs(outputs);
-  }, [energyParams]);
+    const info = periodInfo[selectedPeriod];
 
-  // Simulation loop
-  useEffect(() => {
-    if (!isRunning) return;
+    return (
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 rounded-lg mb-6 shadow-sm">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-2xl">{info.icon}</span>
+          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">{info.title}</h4>
+        </div>
+        <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">{info.description}</p>
 
-    const interval = setInterval(() => {
-      setSimulationTime(prev => prev + 1);
-
-      // Update historical data
-      setHistoricalData(prev => {
-        const newPoint = {
-          time: simulationTime,
-          timeLabel: timeScale === 'realtime' ? `${simulationTime % 24}:00` :
-                    timeScale === 'daily' ? `Day ${Math.floor(simulationTime / 24)}` :
-                    `Month ${Math.floor(simulationTime / (24 * 30))}`,
-          photosynthesis: photosynthesisOutputs.netPhotosynthesis,
-          transpiration: transpirationOutputs.transpirationRate,
-          netRadiation: energyOutputs.netRadiation,
-          waterUse: transpirationOutputs.dailyWaterUse,
-          carbonGain: photosynthesisOutputs.carbonGain
-        };
-
-        const maxPoints = timeScale === 'realtime' ? 24 : timeScale === 'daily' ? 30 : 12;
-        const updated = [...prev, newPoint].slice(-maxPoints);
-        return updated;
-      });
-    }, timeScale === 'realtime' ? 1000 : timeScale === 'daily' ? 2000 : 5000);
-
-    return () => clearInterval(interval);
-  }, [isRunning, simulationTime, timeScale, photosynthesisOutputs, transpirationOutputs, energyOutputs]);
-
-  // Generate data for 3D surface plots
-  const generateSurfaceData = useCallback((param1: string, param2: string) => {
-    const data = [];
-    for (let i = 0; i <= 10; i++) {
-      data.push({
-        x: i * 10,
-        y: Math.sin(i * 0.5) * 20 + 30 + Math.random() * 10
-      });
-    }
-    return data;
-  }, []);
-
-  // Generate energy partition data for pie chart
-  const energyPartitionData = useMemo(() => [
-    { name: 'Sensible Heat', value: Math.abs(energyOutputs.sensibleHeatFlux), color: '#ef4444' },
-    { name: 'Latent Heat', value: Math.abs(energyOutputs.latentHeatFlux), color: '#3b82f6' },
-    { name: 'Soil Heat', value: Math.abs(energyOutputs.soilHeatFlux), color: '#f59e0b' },
-    { name: 'Photosynthesis', value: Math.abs(energyOutputs.photosynthesisEnergy), color: '#10b981' }
-  ], [energyOutputs]);
-
-  // Reset to defaults
-  const resetToDefaults = useCallback(() => {
-    setPhotosynthesisParams(defaultPhotosynthesisParams);
-    setTranspirationParams(defaultTranspirationParams);
-    setEnergyParams(defaultEnergyParams);
-  }, []);
-
-  // Sidebar content
-  const sidebarContent = (
-    <div className="space-y-6">
-      {/* Time Scale Selector */}
-      <div>
-        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-          Time Scale
-        </h3>
-        <div className="space-y-2">
-          {[
-            { value: 'realtime', label: 'Real-time', icon: '⚡', desc: 'Instantaneous (1-5 min)' },
-            { value: 'daily', label: 'Daily', icon: '📅', desc: '24-hour patterns' },
-            { value: 'seasonal', label: 'Seasonal', icon: '📈', desc: 'Long-term trends' }
-          ].map((scale) => (
-            <button
-              key={scale.value}
-              onClick={() => setTimeScale(scale.value as TimeScale)}
-              className={`w-full text-left p-3 rounded-lg border transition-all ${
-                timeScale === scale.value
-                  ? 'bg-primary/10 border-primary text-primary'
-                  : 'bg-card border-border hover:bg-secondary'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <span className="text-lg">{scale.icon}</span>
-                <div>
-                  <p className="font-medium text-sm">{scale.label}</p>
-                  <p className="text-xs text-muted-foreground">{scale.desc}</p>
-                </div>
+        {/* Period-specific calculations */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {info.calculations.map((calc, idx) => (
+            <div key={idx} className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-3 rounded">
+              <div className="text-xs text-gray-600 dark:text-gray-400 font-medium">{calc.label}</div>
+              <div className={`text-sm font-bold ${
+                calc.color === 'blue' ? 'text-blue-600 dark:text-blue-400' :
+                calc.color === 'green' ? 'text-green-600 dark:text-green-400' :
+                calc.color === 'purple' ? 'text-purple-600 dark:text-purple-400' :
+                calc.color === 'orange' ? 'text-orange-600 dark:text-orange-400' :
+                calc.color === 'cyan' ? 'text-cyan-600 dark:text-cyan-400' :
+                calc.color === 'yellow' ? 'text-yellow-600 dark:text-yellow-400' :
+                'text-gray-600 dark:text-gray-400'
+              }`}>
+                {calc.value}
               </div>
-            </button>
+            </div>
           ))}
         </div>
       </div>
+    );
+  };
 
-      {/* Simulation Controls */}
-      <div>
-        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-          Simulation
-        </h3>
-        <div className="space-y-3">
-          <button
-            onClick={() => setIsRunning(!isRunning)}
-            className={`w-full p-3 rounded-lg font-medium text-sm transition-all ${
-              isRunning
-                ? 'bg-red-500/10 border border-red-500/30 text-red-600 hover:bg-red-500/20'
-                : 'bg-green-500/10 border border-green-500/30 text-green-600 hover:bg-green-500/20'
-            }`}
-          >
-            {isRunning ? '⏸ Pause Simulation' : '▶ Start Simulation'}
-          </button>
-          <button
-            onClick={resetToDefaults}
-            className="w-full p-3 rounded-lg border border-border bg-card hover:bg-secondary transition-all text-sm font-medium"
-          >
-            🔄 Reset to Defaults
-          </button>
-        </div>
-      </div>
-
-      {/* Learning Mode */}
-      <div>
-        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-          Learning Mode
-        </h3>
-        <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
-          <p className="text-xs text-muted-foreground mb-2">
-            Adjust parameters to see how they affect plant balances in real-time.
+  // Sidebar content for Plant Balance Dashboard
+  const sidebarContent = (
+    <div className="p-4">
+      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+        Balance Information
+      </h3>
+      <div className="space-y-3">
+        <div className="bg-card rounded-lg p-3 border">
+          <p className="text-xs text-muted-foreground font-medium mb-1">Current Mode:</p>
+          <p className="text-sm font-bold text-foreground">
+            {selectedPeriod === 'long-term' && '📈 Long-term Planning'}
+            {selectedPeriod === 'short-term' && '📅 24-Hour Monitoring'}
+            {selectedPeriod === 'real-time' && '⚡ Real-time Analysis'}
           </p>
-          <div className="flex items-center gap-2 text-xs">
-            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-            <span>Optimal</span>
-            <span className="w-2 h-2 bg-yellow-500 rounded-full ml-2"></span>
-            <span>Warning</span>
-            <span className="w-2 h-2 bg-red-500 rounded-full ml-2"></span>
-            <span>Critical</span>
-          </div>
         </div>
-      </div>
 
-      {/* Key Metrics */}
-      <div>
-        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-          Key Metrics
-        </h3>
-        <div className="space-y-2">
-          <div className="p-3 rounded-lg bg-card border">
-            <p className="text-xs text-muted-foreground">Net Photosynthesis</p>
-            <p className="text-lg font-bold text-primary">
-              {photosynthesisOutputs.netPhotosynthesis} <span className="text-xs">μmol/m²/s</span>
-            </p>
-          </div>
-          <div className="p-3 rounded-lg bg-card border">
-            <p className="text-xs text-muted-foreground">Water Use Efficiency</p>
-            <p className="text-lg font-bold text-blue-500">
-              {transpirationOutputs.waterUseEfficiency} <span className="text-xs">μmol/mmol</span>
-            </p>
-          </div>
-          <div className="p-3 rounded-lg bg-card border">
-            <p className="text-xs text-muted-foreground">Energy Balance</p>
-            <p className="text-lg font-bold text-orange-500">
-              {energyOutputs.energyBalance} <span className="text-xs">W/m²</span>
-            </p>
-          </div>
+        <div className="bg-card rounded-lg p-3 border">
+          <p className="text-xs text-muted-foreground font-medium mb-1">Net Assimilation:</p>
+          <p className="text-sm font-bold text-foreground">
+            {formatValue(assimilate.netAssimilation)} μmol/m²/s
+          </p>
+        </div>
+
+        <div className="bg-card rounded-lg p-3 border">
+          <p className="text-xs text-muted-foreground font-medium mb-1">VPD Status:</p>
+          <p className="text-sm font-bold text-foreground">
+            {vpd.toFixed(2)} kPa
+            <span className="text-xs text-muted-foreground block mt-1">
+              {vpd > 2.5 ? '⚠️ Too high' : vpd < 0.5 ? '⚠️ Too low' : '✅ Optimal'}
+            </span>
+          </p>
+        </div>
+
+        <div className="bg-card rounded-lg p-3 border">
+          <p className="text-xs text-muted-foreground font-medium mb-1">Production Rate:</p>
+          <p className="text-sm font-bold text-foreground">
+            {weeklyProduction.toFixed(2)} kg/m²/week
+          </p>
+        </div>
+
+        <Separator className="my-3" />
+
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+          <p className="text-xs font-medium text-blue-600 dark:text-blue-400 mb-2">
+            💡 Quick Tips
+          </p>
+          <ul className="text-xs text-muted-foreground space-y-1">
+            <li>• Optimal VPD: 0.8-1.2 kPa</li>
+            <li>• Optimal CO₂: 800-1000 ppm</li>
+            <li>• Optimal temperature: 24-26°C</li>
+            <li>• Target DLI: 15-30 mol/m²/day</li>
+          </ul>
         </div>
       </div>
     </div>
@@ -371,577 +272,621 @@ const PlantBalanceDashboard: React.FC = () => {
 
   return (
     <Layout sidebarContent={sidebarContent}>
-      <div className="min-h-screen bg-background">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-green-500/10 to-blue-500/10 border-b">
-          <div className="max-w-7xl mx-auto px-6 py-8">
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              <h1 className="text-4xl font-bold text-foreground mb-2">
-                🌱 Educational Plant Balance Dashboard
-              </h1>
-              <p className="text-lg text-muted-foreground">
-                Interactive learning platform for greenhouse climate control - Adjust algorithms to understand plant-environment interactions
-              </p>
-              <div className="flex items-center gap-4 mt-4">
-                <div className="flex items-center gap-2 text-sm">
-                  <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                  <span>Simulation {isRunning ? 'Running' : 'Paused'}</span>
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  Time Scale: <span className="font-semibold text-foreground">{timeScale}</span>
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  Simulation Time: <span className="font-semibold text-foreground">{simulationTime}h</span>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        </div>
+      <div className="p-6 max-w-7xl mx-auto">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          Plant Assimilate Balance Calculator
+        </h1>
+        <p className="text-gray-600 dark:text-gray-300">
+          Based on Plant Empowerment principles and greenhouse cultivation methods
+        </p>
+      </div>
 
-        {/* Main Content */}
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          {/* Overview Charts */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
-          >
-            <div className="bg-card rounded-xl shadow-lg border p-6">
-              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <span>📊</span> Real-time Plant Balance Overview
-              </h2>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={historicalData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="timeLabel" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
-                    }}
-                  />
-                  <Legend />
-                  <Line
-                    type="monotone"
-                    dataKey="photosynthesis"
-                    stroke="#10b981"
-                    name="Photosynthesis (μmol/m²/s)"
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="transpiration"
-                    stroke="#3b82f6"
-                    name="Transpiration (mmol/m²/s)"
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="netRadiation"
-                    stroke="#f59e0b"
-                    name="Net Radiation (W/m²)"
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </motion.div>
-
-          {/* Balance Modules */}
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
-            {/* ASSIMILATE BALANCE */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1 }}
-              className="bg-card rounded-xl shadow-lg border overflow-hidden"
-            >
-              <div className="bg-gradient-to-r from-green-500/20 to-green-600/10 p-6 border-b">
-                <h3 className="text-xl font-bold flex items-center gap-2">
-                  <span>🌿</span> Assimilate Balance
-                </h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Carbon/Photosynthesis dynamics
-                </p>
-              </div>
-
-              <div className="p-6">
-                {/* Light Response Parameters */}
-                <div className="mb-6">
-                  <h4 className="text-sm font-semibold mb-3 text-muted-foreground">LIGHT RESPONSE</h4>
-                  <ParamSlider
-                    label="Quantum Yield"
-                    value={photosynthesisParams.quantumYield}
-                    min={0.04}
-                    max={0.08}
-                    step={0.001}
-                    unit="mol CO₂/mol photons"
-                    onChange={(v) => setPhotosynthesisParams(p => ({ ...p, quantumYield: v }))}
-                    description="Photosynthetic efficiency at low light"
-                    colorClass="green-500"
-                  />
-                  <ParamSlider
-                    label="Light Saturation"
-                    value={photosynthesisParams.lightSaturationPoint}
-                    min={800}
-                    max={2000}
-                    step={50}
-                    unit="μmol/m²/s"
-                    onChange={(v) => setPhotosynthesisParams(p => ({ ...p, lightSaturationPoint: v }))}
-                    colorClass="green-500"
-                  />
-                  <ParamSlider
-                    label="Light Intensity (PAR)"
-                    value={photosynthesisParams.lightIntensity}
-                    min={0}
-                    max={2000}
-                    step={50}
-                    unit="μmol/m²/s"
-                    onChange={(v) => setPhotosynthesisParams(p => ({ ...p, lightIntensity: v }))}
-                    description="Current light level"
-                    colorClass="yellow-500"
-                  />
-                </div>
-
-                {/* CO2 Response Parameters */}
-                <div className="mb-6">
-                  <h4 className="text-sm font-semibold mb-3 text-muted-foreground">CO₂ RESPONSE</h4>
-                  <ParamSlider
-                    label="CO₂ Concentration"
-                    value={photosynthesisParams.co2Concentration}
-                    min={200}
-                    max={1500}
-                    step={50}
-                    unit="ppm"
-                    onChange={(v) => setPhotosynthesisParams(p => ({ ...p, co2Concentration: v }))}
-                    colorClass="green-500"
-                  />
-                  <ParamSlider
-                    label="Carboxylation Efficiency"
-                    value={photosynthesisParams.carboxylationEfficiency}
-                    min={0.05}
-                    max={0.12}
-                    step={0.005}
-                    unit=""
-                    onChange={(v) => setPhotosynthesisParams(p => ({ ...p, carboxylationEfficiency: v }))}
-                    colorClass="green-500"
-                  />
-                </div>
-
-                {/* Temperature Response */}
-                <div className="mb-6">
-                  <h4 className="text-sm font-semibold mb-3 text-muted-foreground">TEMPERATURE</h4>
-                  <ParamSlider
-                    label="Current Temperature"
-                    value={photosynthesisParams.temperature}
-                    min={5}
-                    max={40}
-                    step={0.5}
-                    unit="°C"
-                    onChange={(v) => setPhotosynthesisParams(p => ({ ...p, temperature: v }))}
-                    colorClass="orange-500"
-                  />
-                </div>
-
-                {/* Outputs */}
-                <div className="mb-6">
-                  <h4 className="text-sm font-semibold mb-3 text-muted-foreground">OUTPUTS</h4>
-                  <div className="grid grid-cols-2 gap-3">
-                    <OutputCard
-                      label="Gross Photosynthesis"
-                      value={photosynthesisOutputs.grossPhotosynthesis}
-                      unit="μmol/m²/s"
-                      icon="☀️"
-                      status="good"
-                    />
-                    <OutputCard
-                      label="Net Photosynthesis"
-                      value={photosynthesisOutputs.netPhotosynthesis}
-                      unit="μmol/m²/s"
-                      icon="🌱"
-                      status={photosynthesisOutputs.netPhotosynthesis > 15 ? 'optimal' : 'warning'}
-                    />
-                    <OutputCard
-                      label="Daily Assimilates"
-                      value={photosynthesisOutputs.dailyAssimilates}
-                      unit="g CH₂O/m²"
-                      icon="🍬"
-                      status="good"
-                    />
-                    <OutputCard
-                      label="Efficiency"
-                      value={photosynthesisOutputs.efficiency}
-                      unit="%"
-                      icon="📈"
-                      status={photosynthesisOutputs.efficiency > 70 ? 'optimal' : 'warning'}
-                    />
-                  </div>
-                </div>
-
-                {/* Interactive 3D Surface */}
-                <SurfacePlot
-                  data={generateSurfaceData('light', 'co2')}
-                  title="Photosynthesis Response Surface (Light × CO₂)"
-                />
-              </div>
-            </motion.div>
-
-            {/* WATER BALANCE */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="bg-card rounded-xl shadow-lg border overflow-hidden"
-            >
-              <div className="bg-gradient-to-r from-blue-500/20 to-blue-600/10 p-6 border-b">
-                <h3 className="text-xl font-bold flex items-center gap-2">
-                  <span>💧</span> Water Balance
-                </h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Transpiration & water dynamics
-                </p>
-              </div>
-
-              <div className="p-6">
-                {/* Stomatal Control */}
-                <div className="mb-6">
-                  <h4 className="text-sm font-semibold mb-3 text-muted-foreground">STOMATAL CONTROL</h4>
-                  <ParamSlider
-                    label="Max Stomatal Conductance"
-                    value={transpirationParams.maxStomatalConductance}
-                    min={0.1}
-                    max={1.0}
-                    step={0.05}
-                    unit="mol/m²/s"
-                    onChange={(v) => setTranspirationParams(p => ({ ...p, maxStomatalConductance: v }))}
-                    colorClass="blue-500"
-                  />
-                  <ParamSlider
-                    label="VPD Air"
-                    value={transpirationParams.vpdAir}
-                    min={0.2}
-                    max={3.0}
-                    step={0.1}
-                    unit="kPa"
-                    onChange={(v) => setTranspirationParams(p => ({ ...p, vpdAir: v }))}
-                    description="Vapor pressure deficit"
-                    colorClass="blue-500"
-                  />
-                  <ParamSlider
-                    label="VPD Threshold Low"
-                    value={transpirationParams.vpdThresholdLow}
-                    min={0.3}
-                    max={0.8}
-                    step={0.05}
-                    unit="kPa"
-                    onChange={(v) => setTranspirationParams(p => ({ ...p, vpdThresholdLow: v }))}
-                    colorClass="blue-500"
-                  />
-                  <ParamSlider
-                    label="VPD Threshold High"
-                    value={transpirationParams.vpdThresholdHigh}
-                    min={1.5}
-                    max={3.0}
-                    step={0.1}
-                    unit="kPa"
-                    onChange={(v) => setTranspirationParams(p => ({ ...p, vpdThresholdHigh: v }))}
-                    colorClass="blue-500"
-                  />
-                </div>
-
-                {/* Boundary Layer */}
-                <div className="mb-6">
-                  <h4 className="text-sm font-semibold mb-3 text-muted-foreground">BOUNDARY LAYER</h4>
-                  <ParamSlider
-                    label="Wind Speed"
-                    value={transpirationParams.windSpeed}
-                    min={0.1}
-                    max={2.0}
-                    step={0.1}
-                    unit="m/s"
-                    onChange={(v) => setTranspirationParams(p => ({ ...p, windSpeed: v }))}
-                    colorClass="cyan-500"
-                  />
-                  <ParamSlider
-                    label="Leaf Size"
-                    value={transpirationParams.leafCharacteristicLength}
-                    min={0.01}
-                    max={0.2}
-                    step={0.01}
-                    unit="m"
-                    onChange={(v) => setTranspirationParams(p => ({ ...p, leafCharacteristicLength: v }))}
-                    colorClass="cyan-500"
-                  />
-                </div>
-
-                {/* Outputs */}
-                <div className="mb-6">
-                  <h4 className="text-sm font-semibold mb-3 text-muted-foreground">OUTPUTS</h4>
-                  <div className="grid grid-cols-2 gap-3">
-                    <OutputCard
-                      label="Transpiration Rate"
-                      value={transpirationOutputs.transpirationRate}
-                      unit="mmol/m²/s"
-                      icon="💨"
-                      status="good"
-                    />
-                    <OutputCard
-                      label="Daily Water Use"
-                      value={transpirationOutputs.dailyWaterUse}
-                      unit="L/m²"
-                      icon="🌊"
-                      status={transpirationOutputs.dailyWaterUse > 2 && transpirationOutputs.dailyWaterUse < 6 ? 'optimal' : 'warning'}
-                    />
-                    <OutputCard
-                      label="WUE"
-                      value={transpirationOutputs.waterUseEfficiency}
-                      unit="μmol/mmol"
-                      icon="⚖️"
-                      status={transpirationOutputs.waterUseEfficiency > 3 ? 'optimal' : 'warning'}
-                    />
-                    <OutputCard
-                      label="VPD Status"
-                      value={transpirationOutputs.vpdCategory}
-                      icon="🌡️"
-                      status={transpirationOutputs.vpdCategory.includes('Healthy') ? 'optimal' : 'warning'}
-                    />
-                  </div>
-                </div>
-
-                {/* VPD Gauge */}
-                <div className="bg-secondary/30 rounded-lg p-4">
-                  <h4 className="text-sm font-semibold mb-3">VPD Status Indicator</h4>
-                  <div className="relative h-8 bg-gradient-to-r from-blue-500 via-green-500 to-red-500 rounded-full">
-                    <div
-                      className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-lg border-2 border-gray-800"
-                      style={{ left: `${Math.min(100, Math.max(0, (transpirationParams.vpdAir / 3) * 100))}%` }}
-                    />
-                  </div>
-                  <div className="flex justify-between text-xs mt-2">
-                    <span>Under</span>
-                    <span>Healthy</span>
-                    <span>Over</span>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* ENERGY BALANCE */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
-              className="bg-card rounded-xl shadow-lg border overflow-hidden"
-            >
-              <div className="bg-gradient-to-r from-orange-500/20 to-orange-600/10 p-6 border-b">
-                <h3 className="text-xl font-bold flex items-center gap-2">
-                  <span>⚡</span> Energy Balance
-                </h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Radiation & heat exchange
-                </p>
-              </div>
-
-              <div className="p-6">
-                {/* Radiation Parameters */}
-                <div className="mb-6">
-                  <h4 className="text-sm font-semibold mb-3 text-muted-foreground">RADIATION</h4>
-                  <ParamSlider
-                    label="Solar Radiation"
-                    value={energyParams.solarRadiation}
-                    min={0}
-                    max={1000}
-                    step={50}
-                    unit="W/m²"
-                    onChange={(v) => setEnergyParams(p => ({ ...p, solarRadiation: v }))}
-                    colorClass="orange-500"
-                  />
-                  <ParamSlider
-                    label="Leaf Absorptance"
-                    value={energyParams.leafAbsorptance}
-                    min={0.7}
-                    max={0.95}
-                    step={0.01}
-                    unit=""
-                    onChange={(v) => setEnergyParams(p => ({ ...p, leafAbsorptance: v }))}
-                    colorClass="orange-500"
-                  />
-                  <ParamSlider
-                    label="Canopy Extinction"
-                    value={energyParams.canopyExtinctionCoeff}
-                    min={0.5}
-                    max={1.0}
-                    step={0.05}
-                    unit=""
-                    onChange={(v) => setEnergyParams(p => ({ ...p, canopyExtinctionCoeff: v }))}
-                    colorClass="orange-500"
-                  />
-                </div>
-
-                {/* Temperature */}
-                <div className="mb-6">
-                  <h4 className="text-sm font-semibold mb-3 text-muted-foreground">TEMPERATURE</h4>
-                  <ParamSlider
-                    label="Leaf Temperature"
-                    value={energyParams.leafTemperature}
-                    min={15}
-                    max={40}
-                    step={0.5}
-                    unit="°C"
-                    onChange={(v) => setEnergyParams(p => ({ ...p, leafTemperature: v }))}
-                    colorClass="red-500"
-                  />
-                  <ParamSlider
-                    label="Air Temperature"
-                    value={energyParams.airTemperature}
-                    min={15}
-                    max={40}
-                    step={0.5}
-                    unit="°C"
-                    onChange={(v) => setEnergyParams(p => ({ ...p, airTemperature: v }))}
-                    colorClass="red-500"
-                  />
-                </div>
-
-                {/* Energy Partitioning */}
-                <div className="mb-6">
-                  <h4 className="text-sm font-semibold mb-3 text-muted-foreground">PARTITIONING</h4>
-                  <ParamSlider
-                    label="Latent Heat Ratio"
-                    value={energyParams.latentHeatRatio}
-                    min={0.5}
-                    max={0.9}
-                    step={0.05}
-                    unit=""
-                    onChange={(v) => setEnergyParams(p => ({ ...p, latentHeatRatio: v }))}
-                    colorClass="blue-500"
-                  />
-                  <ParamSlider
-                    label="Sensible Heat Ratio"
-                    value={energyParams.sensibleHeatRatio}
-                    min={0.1}
-                    max={0.4}
-                    step={0.05}
-                    unit=""
-                    onChange={(v) => setEnergyParams(p => ({ ...p, sensibleHeatRatio: v }))}
-                    colorClass="red-500"
-                  />
-                </div>
-
-                {/* Outputs */}
-                <div className="mb-6">
-                  <h4 className="text-sm font-semibold mb-3 text-muted-foreground">OUTPUTS</h4>
-                  <div className="grid grid-cols-2 gap-3">
-                    <OutputCard
-                      label="Net Radiation"
-                      value={energyOutputs.netRadiation}
-                      unit="W/m²"
-                      icon="☀️"
-                      status="good"
-                    />
-                    <OutputCard
-                      label="Sensible Heat"
-                      value={energyOutputs.sensibleHeatFlux}
-                      unit="W/m²"
-                      icon="🌡️"
-                      status="good"
-                    />
-                    <OutputCard
-                      label="Latent Heat"
-                      value={energyOutputs.latentHeatFlux}
-                      unit="W/m²"
-                      icon="💨"
-                      status="good"
-                    />
-                    <OutputCard
-                      label="Leaf-Air ΔT"
-                      value={energyOutputs.leafAirTempDiff}
-                      unit="°C"
-                      icon="🌡️"
-                      status={Math.abs(energyOutputs.leafAirTempDiff) < 3 ? 'optimal' : 'warning'}
-                    />
-                  </div>
-                </div>
-
-                {/* Energy Partition Pie Chart */}
-                <div className="bg-secondary/30 rounded-lg p-4">
-                  <h4 className="text-sm font-semibold mb-3">Energy Partition</h4>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <PieChart>
-                      <Pie
-                        data={energyPartitionData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={40}
-                        outerRadius={70}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        {energyPartitionData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-
-          {/* Learning Outcomes Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="bg-card rounded-xl shadow-lg border p-6"
-          >
-            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-              <span>🎓</span> Learning Outcomes & Insights
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <h3 className="font-semibold text-green-600 mb-2">Photosynthesis Insights</h3>
-                <ul className="space-y-1 text-sm text-muted-foreground">
-                  <li>• Light saturation at {photosynthesisParams.lightSaturationPoint} μmol/m²/s</li>
-                  <li>• CO₂ fertilization effect: {((photosynthesisParams.co2Concentration / 400 - 1) * 100).toFixed(0)}% boost</li>
-                  <li>• Temperature optimum: {photosynthesisParams.optimalTempPhoto}°C</li>
-                  <li>• Current efficiency: {photosynthesisOutputs.efficiency}% of maximum</li>
-                </ul>
-              </div>
-              <div>
-                <h3 className="font-semibold text-blue-600 mb-2">Water Balance Insights</h3>
-                <ul className="space-y-1 text-sm text-muted-foreground">
-                  <li>• VPD Status: {transpirationOutputs.vpdCategory}</li>
-                  <li>• Water stress: {transpirationOutputs.waterStressLevel}</li>
-                  <li>• Stomatal opening: {((transpirationOutputs.stomatalConductance / transpirationParams.maxStomatalConductance) * 100).toFixed(0)}%</li>
-                  <li>• Daily water need: {transpirationOutputs.dailyWaterUse} L/m²</li>
-                </ul>
-              </div>
-              <div>
-                <h3 className="font-semibold text-orange-600 mb-2">Energy Balance Insights</h3>
-                <ul className="space-y-1 text-sm text-muted-foreground">
-                  <li>• Energy captured: {energyOutputs.absorbedRadiation} W/m²</li>
-                  <li>• Bowen ratio: {energyOutputs.bowenRatio}</li>
-                  <li>• Leaf cooling: {energyOutputs.leafAirTempDiff}°C</li>
-                  <li>• Balance check: {Math.abs(energyOutputs.energyBalance) < 10 ? '✓ Balanced' : '⚠ Imbalanced'}</li>
-                </ul>
-              </div>
-            </div>
-          </motion.div>
+      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+        <div className="flex items-start gap-2">
+          <span className="text-blue-500">ℹ️</span>
+          <p className="text-sm text-gray-700 dark:text-gray-300">
+            Calculations based on scientific methodology: WUE = 34 g/L, VPD effects on stomatal conductance,
+            enthalpy calculations, and 2,500 kJ to evaporate 1 liter water. Adjust parameters to see
+            the effects across different time periods.
+          </p>
         </div>
       </div>
+
+      {/* Balance Type Selector */}
+      <div className="flex flex-wrap gap-2 justify-center mb-4">
+        <Button
+          variant={selectedBalance === 'assimilate' ? 'default' : 'outline'}
+          onClick={() => setSelectedBalance('assimilate')}
+          className="flex items-center gap-2"
+        >
+          🌿 Assimilate Balance
+        </Button>
+        <Button
+          variant={selectedBalance === 'water' ? 'default' : 'outline'}
+          onClick={() => setSelectedBalance('water')}
+          className="flex items-center gap-2"
+        >
+          💧 Water Balance
+        </Button>
+        <Button
+          variant={selectedBalance === 'energy' ? 'default' : 'outline'}
+          onClick={() => setSelectedBalance('energy')}
+          className="flex items-center gap-2"
+        >
+          ☀️ Energy Balance
+        </Button>
+      </div>
+
+      {/* Time Period Selector */}
+      <div className="flex flex-wrap gap-2 justify-center mb-6">
+        {(['long-term', 'short-term', 'real-time'] as TimePeriod[]).map((period) => (
+          <Button
+            key={period}
+            variant={selectedPeriod === period ? 'default' : 'outline'}
+            onClick={() => setSelectedPeriod(period)}
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            {period === 'long-term' && '📈 Long-term'}
+            {period === 'short-term' && '📅 Short-term (24h)'}
+            {period === 'real-time' && '⚡ Real-time'}
+          </Button>
+        ))}
+      </div>
+
+      {/* Main Content - Manual Parameter Adjustment */}
+      <Card className="bg-gradient-to-br from-slate-50 to-gray-50 dark:from-gray-900 dark:to-slate-900 border-slate-200 dark:border-gray-700 shadow-xl">
+        <CardContent className="p-6">
+          {renderTimePeriodInfo()}
+
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
+            🌱 Input Parameters
+          </h3>
+
+          {/* Parameter Controls - Manual adjustment only */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <Slider
+              label="PAR Light"
+              value={assimilate.parLight}
+              onChange={(v) => setAssimilate({
+                ...assimilate,
+                parLight: v
+              })}
+              min={0}
+              max={1500}
+              unit="μmol/m²/s"
+              icon="☀️"
+            />
+
+            <Slider
+              label="CO₂ Level (Ca)"
+              value={assimilate.co2Level}
+              onChange={(v) => setAssimilate({
+                ...assimilate,
+                co2Level: v
+              })}
+              min={200}
+              max={1500}
+              unit="ppm"
+              icon="💨"
+            />
+
+            <Slider
+              label="Temperature"
+              value={assimilate.temperature}
+              onChange={(v) => setAssimilate({
+                ...assimilate,
+                temperature: v,
+                leafTemperature: v + 1 // Leaf temperature slightly higher
+              })}
+              min={10}
+              max={40}
+              unit="°C"
+              icon="🌡️"
+            />
+
+            <Slider
+              label="Relative Humidity"
+              value={assimilate.humidity}
+              onChange={(v) => setAssimilate({
+                ...assimilate,
+                humidity: v
+              })}
+              min={30}
+              max={95}
+              unit="%"
+              icon="💧"
+            />
+          </div>
+
+          {/* Add extra input controls for water balance */}
+          {selectedBalance === 'water' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <Slider
+                label="Root Zone Temperature"
+                value={rootTemperature}
+                onChange={(v) => setRootTemperature(v)}
+                min={15}
+                max={30}
+                unit="°C"
+                icon="🌱"
+              />
+              <Slider
+                label="Irrigation Rate"
+                value={irrigationRate}
+                onChange={(v) => setIrrigationRate(v)}
+                min={0}
+                max={10}
+                step={0.5}
+                unit="L/m²/h"
+                icon="💦"
+              />
+            </div>
+          )}
+
+          <Separator className="bg-gray-300 dark:bg-gray-600 my-6" />
+
+          {/* Show different content based on selected balance */}
+          {selectedBalance === 'assimilate' && (
+            <>
+              {/* Psychrometric Values */}
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+                📊 Psychrometric Calculations
+              </h3>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+            <div className="bg-purple-100 dark:bg-purple-900/30 border border-purple-300 dark:border-purple-700 p-3 rounded-lg">
+              <div className="text-xs text-purple-700 dark:text-purple-300 font-semibold">VPD</div>
+              <div className="text-lg font-bold text-purple-900 dark:text-purple-200">
+                {vpd.toFixed(2)} kPa
+              </div>
+            </div>
+
+            <div className="bg-cyan-100 dark:bg-cyan-900/30 border border-cyan-300 dark:border-cyan-700 p-3 rounded-lg">
+              <div className="text-xs text-cyan-700 dark:text-cyan-300 font-semibold">Enthalpy</div>
+              <div className="text-lg font-bold text-cyan-900 dark:text-cyan-200">
+                {enthalpy.toFixed(1)} kJ/kg
+              </div>
+            </div>
+
+            <div className="bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700 p-3 rounded-lg">
+              <div className="text-xs text-blue-700 dark:text-blue-300 font-semibold">Transpiration</div>
+              <div className="text-lg font-bold text-blue-900 dark:text-blue-200">
+                {transpiration.toFixed(2)} L/m²/h
+              </div>
+            </div>
+
+            <div className="bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 p-3 rounded-lg">
+              <div className="text-xs text-amber-700 dark:text-amber-300 font-semibold">WUE</div>
+              <div className="text-lg font-bold text-amber-900 dark:text-amber-200">
+                {wue.toFixed(0)} g/L
+              </div>
+            </div>
+          </div>
+
+          {/* Main Results */}
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+            🌿 Assimilate Balance Results
+          </h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-300 dark:border-green-700">
+              <div className="text-sm text-green-700 dark:text-green-300 font-semibold">Photosynthesis Rate</div>
+              <div className="text-2xl font-bold text-green-900 dark:text-green-200">
+                {formatValue(assimilate.photosynthesis)}
+              </div>
+              <div className="text-xs text-green-600 dark:text-green-400 mt-1">
+                μmol/m²/s (Ca-Ci gradient)
+              </div>
+            </div>
+
+            <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-300 dark:border-red-700">
+              <div className="text-sm text-red-700 dark:text-red-300 font-semibold">Respiration Rate</div>
+              <div className="text-2xl font-bold text-red-900 dark:text-red-200">
+                {formatValue(assimilate.respiration)}
+              </div>
+              <div className="text-xs text-red-600 dark:text-red-400 mt-1">
+                μmol/m²/s (Q10 model)
+              </div>
+            </div>
+
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-300 dark:border-blue-700">
+              <div className="text-sm text-blue-700 dark:text-blue-300 font-semibold">Net Assimilation</div>
+              <div className="text-2xl font-bold text-blue-900 dark:text-blue-200">
+                {formatValue(assimilate.netAssimilation)}
+              </div>
+              <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                μmol/m²/s (Available)
+              </div>
+            </div>
+          </div>
+
+          <BalanceIndicator
+            value={(assimilate.netAssimilation / 20) * 100}
+            label="Assimilate Balance Status"
+          />
+
+          {/* Time Period Specific Insights */}
+          <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+            <h4 className="text-gray-900 dark:text-white font-semibold mb-3">
+              {selectedPeriod === 'long-term' && '📈 Long-term Planning (production model):'}
+              {selectedPeriod === 'short-term' && '📅 24-Hour RTR Strategy:'}
+              {selectedPeriod === 'real-time' && '⚡ Momentaneous Optimization (VPD control):'}
+            </h4>
+            <ul className="text-sm text-gray-700 dark:text-gray-300 space-y-2">
+              {selectedPeriod === 'long-term' && (
+                <>
+                  <li className="flex items-start"><span className="text-green-600 dark:text-green-400 mr-2">•</span> Weekly production: <span className="font-semibold ml-1">{weeklyProduction.toFixed(2)} kg/m²</span> (based on light integral)</li>
+                  <li className="flex items-start"><span className="text-green-600 dark:text-green-400 mr-2">•</span> Annual yield estimate: <span className="font-semibold ml-1">{(weeklyProduction * 40).toFixed(1)} kg/m²/year</span> (40 productive weeks)</li>
+                  <li className="flex items-start"><span className="text-green-600 dark:text-green-400 mr-2">•</span> Water Use Efficiency: <span className="font-semibold ml-1">{wue} g biomass/L water</span> (standard greenhouse value)</li>
+                  <li className="flex items-start"><span className="text-green-600 dark:text-green-400 mr-2">•</span> Light use efficiency: <span className="font-semibold ml-1">{((assimilate.netAssimilation / assimilate.parLight) * 100).toFixed(1)}%</span></li>
+                </>
+              )}
+              {selectedPeriod === 'short-term' && (
+                <>
+                  <li className="flex items-start"><span className="text-blue-600 dark:text-blue-400 mr-2">•</span> RTR of <span className="font-semibold ml-1">{calculateRTR(assimilate.temperature, assimilate.parLight * 0.5).toFixed(2)}</span> (optimal: 4-5)</li>
+                  <li className="flex items-start"><span className="text-blue-600 dark:text-blue-400 mr-2">•</span> Daily Light Integral: <span className="font-semibold ml-1">{dli.toFixed(1)} mol/m²/day</span> (target: 15-30 for tomatoes)</li>
+                  <li className="flex items-start"><span className="text-blue-600 dark:text-blue-400 mr-2">•</span> VPD: <span className="font-semibold ml-1">{vpd.toFixed(2)} kPa</span> (optimal: 0.8-1.2 kPa)</li>
+                  <li className="flex items-start">
+                    <span className={`mr-2 ${vpd > 2.5 || vpd < 0.5 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>•</span>
+                    {vpd > 2.5 ? '⚠️ VPD too high - stomata closing!' : vpd < 0.5 ? '⚠️ VPD too low - disease risk!' : '✅ VPD in good range'}
+                  </li>
+                </>
+              )}
+              {selectedPeriod === 'real-time' && (
+                <>
+                  <li className="flex items-start"><span className="text-purple-600 dark:text-purple-400 mr-2">•</span> CO₂ gradient (Ca-Ci): <span className="font-semibold ml-1">{(assimilate.co2Level * 0.34).toFixed(0)} ppm</span> (34% of ambient)</li>
+                  <li className="flex items-start"><span className="text-purple-600 dark:text-purple-400 mr-2">•</span> Stomatal limitation: <span className="font-semibold ml-1">{vpd > 2.5 ? 'High VPD limiting' : vpd > 1.5 ? 'Partial limitation' : 'No limitation'}</span></li>
+                  <li className="flex items-start"><span className="text-purple-600 dark:text-purple-400 mr-2">•</span> Energy for evaporation: <span className="font-semibold ml-1">{(transpiration * ENERGY_PER_LITER).toFixed(0)} kJ/m²/h</span></li>
+                  <li className="flex items-start"><span className="text-purple-600 dark:text-purple-400 mr-2">•</span> Leaf-air temperature diff: <span className="font-semibold ml-1">{(assimilate.leafTemperature - assimilate.temperature).toFixed(1)}°C</span></li>
+                </>
+              )}
+            </ul>
+          </div>
+            </>
+          )}
+
+          {/* Water Balance Content */}
+          {selectedBalance === 'water' && waterBalance && (
+            <>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+                💧 Water Balance Results
+              </h3>
+
+              {/* Water Input/Output Display */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                {/* Water Input */}
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-300 dark:border-blue-700">
+                  <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-3">WATER INPUT</h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-blue-700 dark:text-blue-300">Root Uptake:</span>
+                      <span className="font-semibold text-blue-900 dark:text-blue-100">{formatValue(waterBalance.rootUptake, 2)} L/m²/h</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-blue-700 dark:text-blue-300">Irrigation:</span>
+                      <span className="font-semibold text-blue-900 dark:text-blue-100">{formatValue(waterBalance.irrigationSupply, 2)} L/m²/h</span>
+                    </div>
+                    <Separator className="bg-blue-300 dark:bg-blue-700" />
+                    <div className="flex justify-between text-lg">
+                      <span className="font-semibold text-blue-900 dark:text-blue-200">Total Input:</span>
+                      <span className="font-bold text-blue-900 dark:text-blue-100">
+                        {formatValue(waterBalance.rootUptake + waterBalance.irrigationSupply, 2)} L/m²/h
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Water Output */}
+                <div className="bg-cyan-50 dark:bg-cyan-900/20 p-4 rounded-lg border border-cyan-300 dark:border-cyan-700">
+                  <h4 className="text-sm font-semibold text-cyan-900 dark:text-cyan-200 mb-3">WATER OUTPUT</h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-cyan-700 dark:text-cyan-300">Transpiration:</span>
+                      <span className="font-semibold text-cyan-900 dark:text-cyan-100">{formatValue(waterBalance.transpiration, 2)} L/m²/h</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-cyan-700 dark:text-cyan-300">Growth Water:</span>
+                      <span className="font-semibold text-cyan-900 dark:text-cyan-100">{formatValue(waterBalance.growthWater, 2)} L/m²/h</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-cyan-700 dark:text-cyan-300">Drainage:</span>
+                      <span className="font-semibold text-cyan-900 dark:text-cyan-100">{formatValue(waterBalance.drainage, 2)} L/m²/h</span>
+                    </div>
+                    <Separator className="bg-cyan-300 dark:bg-cyan-700" />
+                    <div className="flex justify-between text-lg">
+                      <span className="font-semibold text-cyan-900 dark:text-cyan-200">Total Output:</span>
+                      <span className="font-bold text-cyan-900 dark:text-cyan-100">
+                        {formatValue(waterBalance.transpiration + waterBalance.growthWater + waterBalance.drainage, 2)} L/m²/h
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Water Balance Status */}
+              <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-300 dark:border-gray-700 mb-6">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-lg font-semibold text-gray-900 dark:text-white">Net Water Balance:</span>
+                  <span className={`text-2xl font-bold ${
+                    waterBalance.waterStatus === 'surplus' ? 'text-blue-600 dark:text-blue-400' :
+                    waterBalance.waterStatus === 'deficit' ? 'text-red-600 dark:text-red-400' :
+                    'text-green-600 dark:text-green-400'
+                  }`}>
+                    {formatValue(waterBalance.netWaterBalance, 2)} L/m²/h
+                  </span>
+                </div>
+                <div className={`text-sm font-semibold ${
+                  waterBalance.waterStatus === 'surplus' ? 'text-blue-600 dark:text-blue-400' :
+                  waterBalance.waterStatus === 'deficit' ? 'text-red-600 dark:text-red-400' :
+                  'text-green-600 dark:text-green-400'
+                }`}>
+                  Status: {waterBalance.waterStatus === 'surplus' ? '💧 Water Surplus' :
+                          waterBalance.waterStatus === 'deficit' ? '⚠️ Water Deficit' :
+                          '✅ Balanced'}
+                </div>
+              </div>
+
+              {/* Environmental Indicators */}
+              <div className="grid grid-cols-3 gap-3 mb-6">
+                <div className="bg-purple-100 dark:bg-purple-900/30 border border-purple-300 dark:border-purple-700 p-3 rounded-lg">
+                  <div className="text-xs text-purple-700 dark:text-purple-300 font-semibold">VPD</div>
+                  <div className="text-lg font-bold text-purple-900 dark:text-purple-200">
+                    {formatValue(waterBalance.vpd, 2)} kPa
+                  </div>
+                </div>
+                <div className="bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 p-3 rounded-lg">
+                  <div className="text-xs text-green-700 dark:text-green-300 font-semibold">Stomatal Conductance</div>
+                  <div className="text-lg font-bold text-green-900 dark:text-green-200">
+                    {formatValue(waterBalance.stomatalConductance, 0)} mmol/m²/s
+                  </div>
+                </div>
+                <div className="bg-orange-100 dark:bg-orange-900/30 border border-orange-300 dark:border-orange-700 p-3 rounded-lg">
+                  <div className="text-xs text-orange-700 dark:text-orange-300 font-semibold">Root Temp</div>
+                  <div className="text-lg font-bold text-orange-900 dark:text-orange-200">
+                    {formatValue(waterBalance.rootTemperature, 1)}°C
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Energy Balance Content */}
+          {selectedBalance === 'energy' && energyBalance && (
+            <>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+                ☀️ Energy Balance Results
+              </h3>
+
+              {/* Energy Input/Output Display */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                {/* Energy Input */}
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-300 dark:border-yellow-700">
+                  <h4 className="text-sm font-semibold text-yellow-900 dark:text-yellow-200 mb-3">ENERGY INPUT</h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-yellow-700 dark:text-yellow-300">Net Radiation:</span>
+                      <span className="font-semibold text-yellow-900 dark:text-yellow-100">{formatValue(energyBalance.netRadiation, 0)} W/m²</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-yellow-700 dark:text-yellow-300">PAR Absorption:</span>
+                      <span className="font-semibold text-yellow-900 dark:text-yellow-100">{formatValue(energyBalance.parAbsorption, 0)} W/m²</span>
+                    </div>
+                    <Separator className="bg-yellow-300 dark:bg-yellow-700" />
+                    <div className="flex justify-between text-lg">
+                      <span className="font-semibold text-yellow-900 dark:text-yellow-200">Total Input:</span>
+                      <span className="font-bold text-yellow-900 dark:text-yellow-100">
+                        {formatValue(energyBalance.netRadiation + energyBalance.parAbsorption, 0)} W/m²
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Energy Output */}
+                <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg border border-orange-300 dark:border-orange-700">
+                  <h4 className="text-sm font-semibold text-orange-900 dark:text-orange-200 mb-3">ENERGY OUTPUT</h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-orange-700 dark:text-orange-300">Sensible Heat:</span>
+                      <span className="font-semibold text-orange-900 dark:text-orange-100">{formatValue(energyBalance.sensibleHeat, 0)} W/m²</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-orange-700 dark:text-orange-300">Latent Heat:</span>
+                      <span className="font-semibold text-orange-900 dark:text-orange-100">{formatValue(energyBalance.latentHeat, 0)} W/m²</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-orange-700 dark:text-orange-300">Photochemical:</span>
+                      <span className="font-semibold text-orange-900 dark:text-orange-100">{formatValue(energyBalance.photochemical, 1)} W/m²</span>
+                    </div>
+                    <Separator className="bg-orange-300 dark:bg-orange-700" />
+                    <div className="flex justify-between text-lg">
+                      <span className="font-semibold text-orange-900 dark:text-orange-200">Total Output:</span>
+                      <span className="font-bold text-orange-900 dark:text-orange-100">
+                        {formatValue(energyBalance.sensibleHeat + energyBalance.latentHeat + energyBalance.photochemical, 0)} W/m²
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Energy Balance Status */}
+              <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-300 dark:border-gray-700 mb-6">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-lg font-semibold text-gray-900 dark:text-white">Net Energy Balance:</span>
+                  <span className={`text-2xl font-bold ${
+                    energyBalance.energyStatus === 'heating' ? 'text-red-600 dark:text-red-400' :
+                    energyBalance.energyStatus === 'cooling' ? 'text-blue-600 dark:text-blue-400' :
+                    'text-green-600 dark:text-green-400'
+                  }`}>
+                    {formatValue(energyBalance.netEnergyBalance, 0)} W/m²
+                  </span>
+                </div>
+                <div className={`text-sm font-semibold ${
+                  energyBalance.energyStatus === 'heating' ? 'text-red-600 dark:text-red-400' :
+                  energyBalance.energyStatus === 'cooling' ? 'text-blue-600 dark:text-blue-400' :
+                  'text-green-600 dark:text-green-400'
+                }`}>
+                  Status: {energyBalance.energyStatus === 'heating' ? '🔥 Net Heating' :
+                          energyBalance.energyStatus === 'cooling' ? '❄️ Net Cooling' :
+                          '✅ Balanced'}
+                </div>
+              </div>
+
+              {/* Energy Indicators */}
+              <div className="grid grid-cols-3 gap-3 mb-6">
+                <div className="bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 p-3 rounded-lg">
+                  <div className="text-xs text-red-700 dark:text-red-300 font-semibold">Leaf-Air ΔT</div>
+                  <div className="text-lg font-bold text-red-900 dark:text-red-200">
+                    {formatValue(energyBalance.leafAirTempDiff, 1)}°C
+                  </div>
+                </div>
+                <div className="bg-purple-100 dark:bg-purple-900/30 border border-purple-300 dark:border-purple-700 p-3 rounded-lg">
+                  <div className="text-xs text-purple-700 dark:text-purple-300 font-semibold">Bowen Ratio</div>
+                  <div className="text-lg font-bold text-purple-900 dark:text-purple-200">
+                    {formatValue(energyBalance.bowenRatio, 2)}
+                  </div>
+                </div>
+                <div className="bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 p-3 rounded-lg">
+                  <div className="text-xs text-green-700 dark:text-green-300 font-semibold">Boundary Layer</div>
+                  <div className="text-lg font-bold text-green-900 dark:text-green-200">
+                    {formatValue(energyBalance.boundaryLayerConductance, 0)} mmol/m²/s
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Educational Notes */}
+      <Card className="mt-6">
+        <CardHeader>
+          <h3 className="text-xl font-bold">Calculation Methods</h3>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {/* Assimilate Balance */}
+            <div>
+              <h4 className="font-semibold text-green-600 dark:text-green-400 mb-2">
+                🌿 Assimilate Balance Calculations:
+              </h4>
+              <ul className="text-sm text-gray-600 dark:text-gray-300 ml-4 space-y-1">
+                <li>• <strong>Photosynthesis:</strong> Max rate 25 μmol/m²/s, f(PAR, CO₂, VPD, T)</li>
+                <li>• <strong>Respiration:</strong> Q10 model, doubles every 10°C</li>
+                <li>• <strong>CO₂ gradient:</strong> Ci = 0.66 × Ca (internal = 66% of ambient)</li>
+                <li>• <strong>Net Assimilation:</strong> Photosynthesis - Respiration</li>
+              </ul>
+            </div>
+
+            {/* Water Balance */}
+            <div>
+              <h4 className="font-semibold text-blue-600 dark:text-blue-400 mb-2">
+                💧 Water Balance Calculations:
+              </h4>
+              <ul className="text-sm text-gray-600 dark:text-gray-300 ml-4 space-y-1">
+                <li>• <strong>Root Uptake:</strong> f(root temp, VPD), optimal at 20-22°C</li>
+                <li>• <strong>Transpiration:</strong> VPD-driven, energy limited (2,500 kJ/L)</li>
+                <li>• <strong>Stomatal Conductance:</strong> Ball-Berry model, max 800 mmol/m²/s</li>
+                <li>• <strong>Water Use Efficiency:</strong> Fixed at 34 g/L (greenhouse standard)</li>
+                <li>• <strong>Growth Water:</strong> ~5% of transpiration</li>
+              </ul>
+            </div>
+
+            {/* Energy Balance */}
+            <div>
+              <h4 className="font-semibold text-orange-600 dark:text-orange-400 mb-2">
+                ☀️ Energy Balance Calculations:
+              </h4>
+              <ul className="text-sm text-gray-600 dark:text-gray-300 ml-4 space-y-1">
+                <li>• <strong>Net Radiation:</strong> PAR × 0.5 × 4.6 W/m²</li>
+                <li>• <strong>Sensible Heat:</strong> ΔT × Cp × boundary layer conductance</li>
+                <li>• <strong>Latent Heat:</strong> Transpiration × 2,450 kJ/kg</li>
+                <li>• <strong>Photochemical:</strong> 469 kJ/mol glucose formed</li>
+                <li>• <strong>Bowen Ratio:</strong> Sensible/Latent heat</li>
+              </ul>
+            </div>
+
+            <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded">
+              <h4 className="font-semibold mb-2">Key Formulas:</h4>
+              <div className="font-mono text-xs space-y-1">
+                <div className="text-green-700 dark:text-green-400">
+                  Photosynthesis = 25 × f(light) × f(CO₂) × f(T) × f(VPD)
+                </div>
+                <div className="text-blue-700 dark:text-blue-400">
+                  Water Balance = (Uptake + Irrigation) - (Transpiration + Growth + Drainage)
+                </div>
+                <div className="text-orange-700 dark:text-orange-400">
+                  Energy Balance = (Radiation + PAR) - (Sensible + Latent + Photochemical)
+                </div>
+                <div className="text-purple-700 dark:text-purple-400">
+                  VPD = 0.611 × exp(17.27T/(T+237.3)) × (1 - RH/100)
+                </div>
+                <div className="text-cyan-700 dark:text-cyan-400">
+                  RTR = (T - 18°C) / (Radiation/100)
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg">
+              <h4 className="font-semibold text-yellow-700 dark:text-yellow-400 mb-1">
+                💡 Test Scenarios:
+              </h4>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                1. Optimal: PAR=800, CO₂=1000, T=25°C, RH=70%
+                <br />2. Low VPD risk: PAR=400, CO₂=800, T=20°C, RH=85%
+                <br />3. High VPD stress: PAR=1200, CO₂=800, T=30°C, RH=40%
+                <br />Compare how VPD affects stomatal conductance!
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Add custom styles for the range slider */}
+      <style>{`
+        .slider::-webkit-slider-thumb {
+          appearance: none;
+          width: 20px;
+          height: 20px;
+          background: #10b981;
+          border: 2px solid white;
+          border-radius: 50%;
+          cursor: pointer;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+          transition: transform 0.2s;
+        }
+        .slider::-webkit-slider-thumb:hover {
+          transform: scale(1.1);
+        }
+        .slider::-moz-range-thumb {
+          width: 20px;
+          height: 20px;
+          background: #10b981;
+          border: 2px solid white;
+          border-radius: 50%;
+          cursor: pointer;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+          transition: transform 0.2s;
+        }
+        .slider::-moz-range-thumb:hover {
+          transform: scale(1.1);
+        }
+        @media (prefers-color-scheme: dark) {
+          .slider::-webkit-slider-thumb {
+            border-color: #1f2937;
+          }
+          .slider::-moz-range-thumb {
+            border-color: #1f2937;
+          }
+        }
+      `}</style>
+    </div>
     </Layout>
   );
 };
+
+// Export the ENERGY_PER_LITER constant for display in insights
+const ENERGY_PER_LITER = 2500;
 
 export default PlantBalanceDashboard;

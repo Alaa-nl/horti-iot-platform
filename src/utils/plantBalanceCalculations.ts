@@ -1,246 +1,379 @@
-import {
-  PhotosynthesisParams,
-  PhotosynthesisOutputs,
-  TranspirationParams,
-  TranspirationOutputs,
-  EnergyBalanceParams,
-  EnergyBalanceOutputs
-} from '../types/plantBalance';
+// Plant Assimilate Balance Calculation Utilities
+// Based on Plant Empowerment book methodology
+import { AssimilateBalance, WaterBalance, EnergyBalance } from '../types/plantBalance';
 
-// ============== ASSIMILATE BALANCE CALCULATIONS ==============
+// Constants from scientific calculations
+const ENERGY_PER_LITER = 2500; // KJ to evaporate 1 liter water
+const MOLECULAR_WEIGHT_H2O = 18; // g/mol
+const MOLECULAR_WEIGHT_CO2 = 44; // g/mol
+const DIFFUSION_RATIO = 1.6; // CO2 to H2O diffusion ratio
 
-export function calculatePhotosynthesis(params: PhotosynthesisParams): PhotosynthesisOutputs {
-  const {
-    quantumYield, lightSaturationPoint, darkRespirationRate,
-    co2CompensationPoint, co2SaturationPoint, carboxylationEfficiency,
-    optimalTempPhoto, minTempPhoto, maxTempPhoto, q10Respiration,
-    leafAreaIndex, specificLeafArea, carbonUseEfficiency,
-    lightIntensity, co2Concentration, temperature
-  } = params;
+// Psychrometric calculations
+export const calculateVPD = (temperature: number, humidity: number): number => {
+  // Calculate Saturated Vapor Pressure (Magnus formula)
+  // From psychrometric principles
+  const saturatedVP = 0.611 * Math.exp((17.27 * temperature) / (temperature + 237.3));
+  const actualVP = saturatedVP * (humidity / 100);
+  return (saturatedVP - actualVP) * 1000; // Convert to Pa
+};
 
-  // Temperature response function (0-1)
-  const tempResponse = calculateTemperatureResponse(temperature, minTempPhoto, optimalTempPhoto, maxTempPhoto);
+// Calculate enthalpy
+export const calculateEnthalpy = (temperature: number, humidity: number): number => {
+  // Enthalpy = (1 kJ × 1°C × T) + (g_water × 2500)
+  const waterContent = humidity * 0.01 * 12.91; // g/kg at saturation
+  return temperature + (waterContent * ENERGY_PER_LITER / 1000);
+};
 
-  // Light-limited photosynthesis (Michaelis-Menten)
-  const lightLimitedRate = (quantumYield * lightIntensity * lightSaturationPoint) /
-                           (lightSaturationPoint + lightIntensity) * tempResponse;
+// Water Use Efficiency calculation
+// WUE = 34 gram/liter (standard greenhouse value)
+export const calculateWUE = (co2Uptake: number, transpiration: number): number => {
+  if (transpiration === 0) return 0;
 
-  // CO2-limited photosynthesis (Michaelis-Menten)
-  const co2LimitedRate = (carboxylationEfficiency * (co2Concentration - co2CompensationPoint) * co2SaturationPoint) /
-                         (co2SaturationPoint + (co2Concentration - co2CompensationPoint)) * tempResponse;
+  // Based on: (Ca - Ci) × gCO2 / (Hi - Ha) × gH2O
+  // Using the standard ratio: 0.2176 / 6.4 = 0.034 kg/L = 34 g/L
+  return 34; // Fixed value from greenhouse studies
+};
 
-  // Take minimum (Liebig's law)
-  const grossPhotosynthesis = Math.min(lightLimitedRate, co2LimitedRate) * leafAreaIndex;
+// Photosynthesis calculation based on Plant Empowerment methodology
+export const calculatePhotosynthesis = (
+  parLight: number,
+  co2Level: number,
+  temperature: number,
+  humidity: number
+): number => {
+  // Calculate VPD effect on stomatal conductance
+  const vpd = calculateVPD(temperature, humidity) / 1000; // kPa
 
-  // Dark respiration increases with temperature (Q10 response)
-  const tempDiff = (temperature - 20) / 10;
-  const darkRespiration = darkRespirationRate * Math.pow(q10Respiration, tempDiff) * leafAreaIndex;
+  // Stomatal conductance factor (VPD affects stomata)
+  // Stomata close when VPD > 2.5 kPa
+  const vpdFactor = vpd > 2.5 ? 0.5 : vpd > 1.5 ? (2.5 - vpd) : 1;
 
-  // Net photosynthesis
-  const netPhotosynthesis = Math.max(0, grossPhotosynthesis - darkRespiration);
+  // CO2 gradient approach
+  // Ca (ambient) - Ci (internal) = gradient for CO2 uptake
+  const ca = co2Level; // ppm ambient
+  const ci = ca * 0.66; // internal is typically 66% of ambient
+  const co2Gradient = (ca - ci) / 1000; // Convert to relative factor
 
-  // Daily calculations (assuming photoperiod from sunrise to sunset)
-  const photoperiodHours = calculatePhotoperiod();
-  const dailyAssimilates = netPhotosynthesis * 3600 * photoperiodHours * 30 / 1000000; // Convert to g CH2O/m²/day
+  // Light response (using more realistic curve)
+  // Maximum rate around 25-30 μmol/m²/s for most crops
+  const lightSaturation = 800; // μmol/m²/s typical saturation point
+  const lightFactor = parLight / (parLight + lightSaturation / 2);
 
-  // Carbon gain (44% of CH2O is carbon)
-  const carbonGain = dailyAssimilates * 0.44 * carbonUseEfficiency;
+  // Temperature response (optimal around 25°C)
+  const tempOptimal = 25;
+  const tempFactor = Math.exp(-Math.pow((temperature - tempOptimal) / 10, 2));
 
-  // Efficiency relative to maximum theoretical
-  const maxTheoretical = quantumYield * lightSaturationPoint * leafAreaIndex;
-  const efficiency = (grossPhotosynthesis / maxTheoretical) * 100;
+  // Maximum photosynthesis rate (realistic for tomatoes)
+  const maxPhotoRate = 25; // μmol/m²/s
 
-  return {
-    grossPhotosynthesis: parseFloat(grossPhotosynthesis.toFixed(2)),
-    darkRespiration: parseFloat(darkRespiration.toFixed(2)),
-    netPhotosynthesis: parseFloat(netPhotosynthesis.toFixed(2)),
-    lightLimitedRate: parseFloat(lightLimitedRate.toFixed(2)),
-    co2LimitedRate: parseFloat(co2LimitedRate.toFixed(2)),
-    dailyAssimilates: parseFloat(dailyAssimilates.toFixed(2)),
-    carbonGain: parseFloat(carbonGain.toFixed(2)),
-    efficiency: parseFloat(efficiency.toFixed(1))
-  };
-}
+  // Combined calculation
+  return maxPhotoRate * lightFactor * co2Gradient * tempFactor * vpdFactor;
+};
 
-// ============== WATER BALANCE CALCULATIONS ==============
+// Respiration calculation (Q10 model from Plant Empowerment)
+export const calculateRespiration = (
+  temperature: number,
+  leafTemperature: number
+): number => {
+  // Maintenance respiration increases with temperature
+  // Q10 = 2 means doubles every 10°C
+  const Q10 = 2;
+  const baseRespiration = 1.5; // μmol/m²/s at 20°C (higher base rate)
+  const avgTemp = (temperature + leafTemperature) / 2;
 
-export function calculateTranspiration(params: TranspirationParams): TranspirationOutputs {
-  const {
-    maxStomatalConductance, vpdThresholdLow, vpdThresholdHigh, stomatalSensitivity,
-    leafCharacteristicLength, windSpeedEffect, rootHydraulicConductivity,
-    rootZoneDepth, criticalWaterPotential, plantCapacitance, xylemConductance,
-    vpdAir, windSpeed, soilWaterPotential
-  } = params;
+  // Dark respiration is typically 5-10% of max photosynthesis
+  return baseRespiration * Math.pow(Q10, (avgTemp - 20) / 10);
+};
 
-  // VPD effect on stomatal conductance
-  let stomatalConductance: number;
-  if (vpdAir < vpdThresholdLow) {
-    stomatalConductance = maxStomatalConductance;
-  } else if (vpdAir > vpdThresholdHigh) {
-    stomatalConductance = maxStomatalConductance * 0.2; // Severe reduction
-  } else {
-    // Linear reduction between thresholds
-    const vpdEffect = 1 - stomatalSensitivity * (vpdAir - vpdThresholdLow) / (vpdThresholdHigh - vpdThresholdLow);
-    stomatalConductance = maxStomatalConductance * vpdEffect;
-  }
+// Net assimilation calculation
+export const calculateNetAssimilation = (assimilate: AssimilateBalance): AssimilateBalance => {
+  const photosynthesis = calculatePhotosynthesis(
+    assimilate.parLight,
+    assimilate.co2Level,
+    assimilate.temperature,
+    assimilate.humidity
+  );
 
-  // Boundary layer resistance (m²s/mol)
-  const boundaryLayerResistance = calculateBoundaryLayerResistance(leafCharacteristicLength, windSpeed * windSpeedEffect);
-
-  // Water potential gradient
-  const waterPotentialGradient = soilWaterPotential - criticalWaterPotential;
-  const waterStressFactor = Math.max(0, Math.min(1, waterPotentialGradient / 2));
-
-  // Transpiration rate (mmol H2O/m²/s) - simplified Penman-Monteith
-  const transpirationRate = (vpdAir * 1000 * stomatalConductance * waterStressFactor) /
-                           (1 + stomatalConductance * boundaryLayerResistance);
-
-  // Daily water use (L/m²/day)
-  const dailyWaterUse = transpirationRate * 0.018 * 86400 / 1000; // Convert mmol to L
-
-  // Leaf water potential
-  const leafWaterPotential = soilWaterPotential - (transpirationRate / (rootHydraulicConductivity * 1000));
-
-  // Water use efficiency (assuming net photosynthesis of 20 μmol CO2/m²/s at optimal conditions)
-  const assumedPhotosynthesis = 20 * stomatalConductance / maxStomatalConductance;
-  const waterUseEfficiency = assumedPhotosynthesis / (transpirationRate / 1000); // μmol CO2/mmol H2O
-
-  // VPD category
-  let vpdCategory: string;
-  if (vpdAir < 0.4) vpdCategory = 'Under transpiration';
-  else if (vpdAir < 0.6) vpdCategory = 'Low transpiration';
-  else if (vpdAir < 1.2) vpdCategory = 'Healthy transpiration';
-  else if (vpdAir < 1.8) vpdCategory = 'High transpiration';
-  else vpdCategory = 'Over transpiration';
-
-  // Water stress level
-  let waterStressLevel: string;
-  if (leafWaterPotential > -0.5) waterStressLevel = 'None';
-  else if (leafWaterPotential > -1.0) waterStressLevel = 'Mild';
-  else if (leafWaterPotential > -1.5) waterStressLevel = 'Moderate';
-  else waterStressLevel = 'Severe';
+  const respiration = calculateRespiration(
+    assimilate.temperature,
+    assimilate.leafTemperature
+  );
 
   return {
-    transpirationRate: parseFloat(transpirationRate.toFixed(2)),
-    dailyWaterUse: parseFloat(dailyWaterUse.toFixed(2)),
-    stomatalConductance: parseFloat(stomatalConductance.toFixed(3)),
-    boundaryLayerResistance: parseFloat(boundaryLayerResistance.toFixed(2)),
-    leafWaterPotential: parseFloat(leafWaterPotential.toFixed(2)),
-    waterUseEfficiency: parseFloat(waterUseEfficiency.toFixed(2)),
-    vpdCategory,
-    waterStressLevel
+    ...assimilate,
+    photosynthesis,
+    respiration,
+    netAssimilation: photosynthesis - respiration
   };
-}
+};
 
-// ============== ENERGY BALANCE CALCULATIONS ==============
+// Transpiration calculation
+export const calculateTranspiration = (
+  temperature: number,
+  radiation: number,
+  humidity: number,
+  leafSize: number = 0.05 // m, typical leaf size
+): number => {
+  // VPD drives transpiration
+  const vpd = calculateVPD(temperature, humidity) / 1000; // kPa
 
-export function calculateEnergyBalance(params: EnergyBalanceParams): EnergyBalanceOutputs {
-  const {
-    leafAbsorptance, leafTransmittance, leafReflectance,
-    canopyExtinctionCoeff, convectiveCoefficient, leafEmissivity,
-    leafSpecificHeat, latentHeatRatio, sensibleHeatRatio,
-    soilHeatFluxRatio, thermalTimeConstant, leafThermalMass,
-    solarRadiation, airTemperature, leafTemperature
-  } = params;
+  // Energy available for evaporation
+  // 2500 KJ to evaporate 1 liter water
+  const radiationW = radiation * 0.5; // PAR to total radiation
+  const energyAvailable = radiationW / ENERGY_PER_LITER;
 
-  // Absorbed radiation (W/m²)
-  const interceptedRadiation = solarRadiation * (1 - Math.exp(-canopyExtinctionCoeff));
-  const absorbedRadiation = interceptedRadiation * leafAbsorptance;
+  // Transpiration rate (L/m²/h)
+  // Based on VPD and available energy
+  return energyAvailable * vpd * 10; // Simplified formula
+};
 
-  // Net radiation (absorbed - emitted)
-  const stefanBoltzmann = 5.67e-8;
-  const emittedRadiation = leafEmissivity * stefanBoltzmann * Math.pow(leafTemperature + 273.15, 4);
-  const netRadiation = absorbedRadiation - (emittedRadiation - leafEmissivity * stefanBoltzmann * Math.pow(airTemperature + 273.15, 4));
+// RTR (Ratio Temperature to Radiation) for short-term monitoring
+// From Plant Empowerment book
+export const calculateRTR = (
+  temperature: number,
+  radiation: number // W/m²
+): number => {
+  if (radiation === 0) return 0;
 
-  // Temperature difference
-  const leafAirTempDiff = leafTemperature - airTemperature;
+  // RTR = Temperature difference / (Radiation/100)
+  // Use temperature above base (typically 18°C for tomatoes)
+  const baseTemp = 18;
+  const tempDiff = temperature - baseTemp;
+  return tempDiff / (radiation / 100);
+};
 
-  // Sensible heat flux (convective heat transfer)
-  const sensibleHeatFlux = convectiveCoefficient * leafAirTempDiff;
+// Production estimation based on light integral
+// From greenhouse production models
+export const estimateWeeklyProduction = (
+  netAssimilation: number,
+  lightHours: number = 12
+): number => {
+  // Convert μmol/m²/s to mol/m²/day
+  const dailyAssimilation = netAssimilation * lightHours * 3600 / 1000000;
 
-  // Latent heat flux (evapotranspiration)
-  const latentHeatFlux = netRadiation * latentHeatRatio;
+  // Carbon to dry matter conversion
+  // 1 mol CO2 = 44g CO2 = 12g C
+  // Dry matter is about 45% carbon
+  const carbonToDryMatter = 1 / 0.45;
 
-  // Soil heat flux
-  const soilHeatFlux = netRadiation * soilHeatFluxRatio;
+  // Weekly dry matter production (g/m²/week)
+  const weeklyDryMatter = dailyAssimilation * 12 * carbonToDryMatter * 7;
 
-  // Energy for photosynthesis (about 5% of absorbed PAR)
-  const photosynthesisEnergy = absorbedRadiation * 0.45 * 0.05; // 45% is PAR, 5% used in photosynthesis
+  // Fresh weight (assuming 95% water content for tomatoes)
+  const freshWeight = weeklyDryMatter / 0.05;
 
-  // Energy balance check (should be close to 0)
-  const energyBalance = netRadiation - sensibleHeatFlux - latentHeatFlux - soilHeatFlux - photosynthesisEnergy;
+  // Convert g to kg
+  return freshWeight / 1000;
+};
+
+// Daily Light Integral calculation (mol/m²/day)
+export const calculateDLI = (parLight: number, hours: number = 12): number => {
+  // PAR μmol/m²/s × seconds × hours / 1,000,000 = mol/m²/day
+  return parLight * 3600 * hours / 1000000;
+};
+
+// Helper function to get balance status
+export const getBalanceStatus = (value: number, optimal: number, tolerance: number = 0.2): string => {
+  const ratio = value / optimal;
+  if (Math.abs(ratio - 1) < tolerance) return 'optimal';
+  if (ratio < 1 - tolerance) return 'low';
+  return 'high';
+};
+
+// Format values for display
+export const formatValue = (value: number, decimals: number = 1): string => {
+  return value.toFixed(decimals);
+};
+
+// ==================== WATER BALANCE CALCULATIONS ====================
+
+// Calculate stomatal conductance (simplified model)
+export const calculateStomatalConductance = (
+  vpd: number, // kPa
+  light: number, // μmol/m²/s
+  co2: number // ppm
+): number => {
+  // Stomatal conductance in mmol/m²/s
+  // Based on Ball-Berry model simplified
+  const lightFactor = light / (light + 200);
+  const co2Factor = co2 / 400; // normalized to 400 ppm
+  const vpdFactor = Math.max(0.3, 1 - vpd / 3); // Reduces with high VPD
+
+  const maxConductance = 800; // mmol/m²/s maximum
+  return maxConductance * lightFactor * co2Factor * vpdFactor;
+};
+
+// Calculate root water uptake
+export const calculateRootUptake = (
+  rootTemp: number, // °C
+  vpd: number, // kPa
+  radiation: number // W/m²
+): number => {
+  // Root uptake in L/m²/h
+  // Temperature effect (optimal around 20-22°C)
+  const tempFactor = Math.exp(-Math.pow((rootTemp - 21) / 8, 2));
+
+  // Demand driven by transpiration
+  const transpirationDemand = calculateTranspiration(rootTemp + 4, radiation, 65); // Estimate air conditions
+
+  // Root uptake capacity
+  const maxUptake = 6; // L/m²/h maximum for mature plants
+  return Math.min(maxUptake * tempFactor, transpirationDemand * 1.1); // 10% safety margin
+};
+
+// Calculate water for growth
+export const calculateGrowthWater = (
+  netAssimilation: number // μmol/m²/s
+): number => {
+  // Water incorporated into biomass
+  // About 5% of transpiration typically
+  const dryMatterProduction = netAssimilation * 0.03; // g/m²/h simplified
+  const waterContent = 0.95; // 95% water in fresh weight
+
+  return dryMatterProduction * (waterContent / (1 - waterContent)) / 1000; // L/m²/h
+};
+
+// Complete water balance calculation
+export const calculateWaterBalance = (
+  temperature: number,
+  humidity: number,
+  parLight: number,
+  rootTemperature: number,
+  co2Level: number,
+  irrigation: number = 2.5 // Default irrigation L/m²/h
+): WaterBalance => {
+  const vpd = calculateVPD(temperature, humidity) / 1000; // kPa
+  const radiation = parLight * 0.5; // Estimate total radiation from PAR
+
+  const stomatalConductance = calculateStomatalConductance(vpd, parLight, co2Level);
+  const transpiration = calculateTranspiration(temperature, radiation, humidity);
+  const rootUptake = calculateRootUptake(rootTemperature, vpd, radiation);
+  const growthWater = calculateGrowthWater(15); // Assuming moderate assimilation
+
+  // Calculate net balance
+  const totalInput = rootUptake + irrigation;
+  const totalOutput = transpiration + growthWater + 0.5; // 0.5 L/m²/h typical drainage
+  const netWaterBalance = totalInput - totalOutput;
+
+  let waterStatus: 'deficit' | 'balanced' | 'surplus';
+  if (netWaterBalance < -0.5) waterStatus = 'deficit';
+  else if (netWaterBalance > 0.5) waterStatus = 'surplus';
+  else waterStatus = 'balanced';
+
+  return {
+    rootUptake,
+    irrigationSupply: irrigation,
+    transpiration,
+    growthWater,
+    drainage: 0.5,
+    vpd,
+    rootTemperature,
+    stomatalConductance,
+    netWaterBalance,
+    waterStatus
+  };
+};
+
+// ==================== ENERGY BALANCE CALCULATIONS ====================
+
+// Calculate sensible heat transfer
+export const calculateSensibleHeat = (
+  leafTemp: number,
+  airTemp: number,
+  boundaryLayerConductance: number
+): number => {
+  // Sensible heat in W/m²
+  const tempDiff = leafTemp - airTemp;
+  const cp = 29.3; // Heat capacity of air J/mol/K
+
+  // Convert conductance from mmol/m²/s to mol/m²/s
+  const conductanceMol = boundaryLayerConductance / 1000;
+
+  return tempDiff * cp * conductanceMol;
+};
+
+// Calculate latent heat (evaporation energy)
+export const calculateLatentHeat = (
+  transpiration: number // L/m²/h
+): number => {
+  // Convert transpiration to W/m²
+  // 2.45 MJ/kg water evaporation energy
+  const evaporationEnergy = 2450; // kJ/kg
+  const transpirationKgPerS = transpiration / 3600; // Convert to kg/m²/s
+
+  return transpirationKgPerS * evaporationEnergy * 1000 / 1000; // W/m²
+};
+
+// Calculate photochemical energy use
+export const calculatePhotochemicalEnergy = (
+  photosynthesis: number // μmol/m²/s
+): number => {
+  // Energy used in photosynthesis
+  // About 469 kJ/mol glucose formed
+  const energyPerMol = 469; // kJ/mol
+  const photosynthesisMol = photosynthesis / 1000000; // Convert to mol/m²/s
+
+  return photosynthesisMol * energyPerMol * 1000; // W/m²
+};
+
+// Calculate boundary layer conductance
+export const calculateBoundaryLayerConductance = (
+  windSpeed: number = 0.5 // m/s, typical greenhouse
+): number => {
+  // Simplified model for boundary layer conductance
+  // Based on leaf size and wind speed
+  const leafWidth = 0.1; // m, typical leaf width
+  const d = 0.7 * leafWidth; // Characteristic dimension
+
+  // Empirical formula
+  return 360 * Math.sqrt(windSpeed / d); // mmol/m²/s
+};
+
+// Complete energy balance calculation
+export const calculateEnergyBalance = (
+  temperature: number,
+  leafTemperature: number,
+  humidity: number,
+  parLight: number,
+  photosynthesis: number
+): EnergyBalance => {
+  // Calculate radiation components
+  const netRadiation = parLight * 0.5 * 4.6; // Convert PAR to total radiation W/m²
+  const parAbsorption = parLight * 0.85 * 4.6; // 85% absorption, convert to W/m²
+
+  // Calculate heat transfer components
+  const boundaryLayerConductance = calculateBoundaryLayerConductance();
+  const leafAirTempDiff = leafTemperature - temperature;
+
+  const transpiration = calculateTranspiration(temperature, netRadiation, humidity);
+  const sensibleHeat = calculateSensibleHeat(leafTemperature, temperature, boundaryLayerConductance);
+  const latentHeat = calculateLatentHeat(transpiration);
+  const photochemical = calculatePhotochemicalEnergy(photosynthesis);
+
+  // Calculate net balance
+  const totalInput = netRadiation + parAbsorption;
+  const totalOutput = sensibleHeat + latentHeat + photochemical;
+  const netEnergyBalance = totalInput - totalOutput;
 
   // Bowen ratio
-  const bowenRatio = sensibleHeatFlux / latentHeatFlux;
+  const bowenRatio = Math.abs(sensibleHeat / (latentHeat || 1));
+
+  let energyStatus: 'cooling' | 'balanced' | 'heating';
+  if (netEnergyBalance < -50) energyStatus = 'cooling';
+  else if (netEnergyBalance > 50) energyStatus = 'heating';
+  else energyStatus = 'balanced';
 
   return {
-    netRadiation: parseFloat(netRadiation.toFixed(2)),
-    absorbedRadiation: parseFloat(absorbedRadiation.toFixed(2)),
-    sensibleHeatFlux: parseFloat(sensibleHeatFlux.toFixed(2)),
-    latentHeatFlux: parseFloat(latentHeatFlux.toFixed(2)),
-    soilHeatFlux: parseFloat(soilHeatFlux.toFixed(2)),
-    photosynthesisEnergy: parseFloat(photosynthesisEnergy.toFixed(2)),
-    leafAirTempDiff: parseFloat(leafAirTempDiff.toFixed(2)),
-    energyBalance: parseFloat(energyBalance.toFixed(2)),
-    bowenRatio: parseFloat(bowenRatio.toFixed(3))
+    netRadiation,
+    parAbsorption,
+    heating: 0, // Not actively calculated, user adjustable
+    sensibleHeat,
+    latentHeat,
+    photochemical,
+    leafAirTempDiff,
+    boundaryLayerConductance,
+    netEnergyBalance,
+    bowenRatio,
+    energyStatus
   };
-}
-
-// ============== HELPER FUNCTIONS ==============
-
-function calculateTemperatureResponse(temp: number, min: number, opt: number, max: number): number {
-  if (temp < min || temp > max) return 0;
-
-  const alpha = Math.log(2) / Math.log((max - min) / (opt - min));
-  const relativeTemp = (temp - min) / (opt - min);
-  const response = Math.pow(relativeTemp, alpha) * Math.exp(alpha * (1 - relativeTemp));
-
-  return Math.max(0, Math.min(1, response));
-}
-
-function calculateBoundaryLayerResistance(leafLength: number, windSpeed: number): number {
-  // Simplified boundary layer resistance calculation
-  const diffusivity = 2.4e-5; // Diffusivity of water vapor in air (m²/s)
-  const kinematicViscosity = 1.5e-5; // Kinematic viscosity of air (m²/s)
-
-  const reynolds = (windSpeed * leafLength) / kinematicViscosity;
-  const schmidt = kinematicViscosity / diffusivity;
-
-  // Forced convection
-  const nusselt = 0.664 * Math.pow(reynolds, 0.5) * Math.pow(schmidt, 0.33);
-  const resistance = leafLength / (nusselt * diffusivity);
-
-  return resistance;
-}
-
-function calculatePhotoperiod(): number {
-  // Simplified photoperiod calculation (would normally depend on latitude and day of year)
-  // For now, return a typical value
-  return 12; // 12 hours of daylight
-}
-
-// ============== TIME-SCALE AGGREGATION ==============
-
-export function aggregateToTimeScale(
-  instantValues: any,
-  timeScale: 'realtime' | 'daily' | 'seasonal'
-): any {
-  // This function would aggregate instantaneous values to different time scales
-  // For now, return multiplied values as a simple example
-
-  const multipliers = {
-    realtime: 1,
-    daily: 24,
-    seasonal: 24 * 90 // 90 days
-  };
-
-  const multiplier = multipliers[timeScale];
-
-  return {
-    ...instantValues,
-    // Scale appropriate values by time
-    dailyAssimilates: instantValues.dailyAssimilates * (timeScale === 'realtime' ? 1/24 : timeScale === 'seasonal' ? 90 : 1),
-    dailyWaterUse: instantValues.dailyWaterUse * (timeScale === 'realtime' ? 1/24 : timeScale === 'seasonal' ? 90 : 1),
-    carbonGain: instantValues.carbonGain * (timeScale === 'realtime' ? 1/24 : timeScale === 'seasonal' ? 90 : 1)
-  };
-}
+};
