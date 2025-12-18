@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import Login from './pages/Login';
+import FeedbackWidget from './components/FeedbackWidget';
 import ResearcherDashboard from './pages/ResearcherDashboard';
 import GrowerDashboard from './pages/GrowerDashboard';
 import StatisticsPage from './pages/StatisticsPage';
@@ -125,6 +126,8 @@ function App() {
       <ThemeProvider>
         <AuthProvider>
           <AppRoutes />
+          {/* Client Feedback Widget - Remove after testing */}
+          <FeedbackWidget />
         </AuthProvider>
       </ThemeProvider>
     </Router>
