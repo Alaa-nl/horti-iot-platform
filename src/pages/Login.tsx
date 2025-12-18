@@ -2,6 +2,8 @@ import React, { useState, useCallback } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
+import LanguageSelector from '../components/LanguageSelector';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -12,6 +14,7 @@ const Login: React.FC = () => {
 
   const { login, user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   // Clear error when form inputs change
   const handleInputChange = useCallback(() => {
@@ -36,7 +39,7 @@ const Login: React.FC = () => {
       // Navigation will happen automatically via the redirect above
     } catch (err: any) {
       console.error('Login error:', err);
-      setError(err.message || 'Login failed. Please try again.');
+      setError(err.message || t('auth.loginError'));
     } finally {
       setIsLoading(false);
     }
@@ -44,6 +47,11 @@ const Login: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      {/* Language Selector - Top Right */}
+      <div className="absolute top-4 right-4 z-20">
+        <LanguageSelector />
+      </div>
+
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
         <motion.div
@@ -93,14 +101,14 @@ const Login: React.FC = () => {
               </svg>
             </motion.div>
             <h2 className="text-3xl font-bold text-foreground mb-2">HORTI-IOT</h2>
-            <p className="text-muted-foreground">Smart Greenhouse Management Platform</p>
+            <p className="text-muted-foreground">{t('auth.smartGreenhousePlatform')}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email Input */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-foreground mb-1">
-                Email address
+                {t('auth.email')}
               </label>
               <input
                 id="email"
@@ -114,7 +122,7 @@ const Login: React.FC = () => {
                   handleInputChange();
                 }}
                 className="w-full px-4 py-3 border bg-background text-foreground rounded-xl shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all duration-200"
-                placeholder="Enter your email"
+                placeholder={t('auth.email')}
                 disabled={isLoading}
               />
             </div>
@@ -122,7 +130,7 @@ const Login: React.FC = () => {
             {/* Password Input */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-foreground mb-1">
-                Password
+                {t('auth.password')}
               </label>
               <div className="relative">
                 <input
@@ -137,7 +145,7 @@ const Login: React.FC = () => {
                     handleInputChange();
                   }}
                   className="w-full px-4 py-3 pr-12 border bg-background text-foreground rounded-xl shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all duration-200"
-                  placeholder="Enter your password"
+                  placeholder={t('auth.password')}
                   disabled={isLoading}
                 />
                 <button
@@ -185,10 +193,10 @@ const Login: React.FC = () => {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Signing in...
+                  {t('common.loading')}
                 </div>
               ) : (
-                'Sign in'
+                t('auth.signIn')
               )}
             </motion.button>
 

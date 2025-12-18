@@ -1,8 +1,10 @@
 import React from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import ThemeToggle from '../common/ThemeToggle';
 import { Button } from '../ui/button';
+import LanguageSelector from '../LanguageSelector';
 
 interface HeaderProps {
   onToggleSidebar?: () => void;
@@ -10,14 +12,15 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
   const { user, logout } = useAuth();
+  const { t } = useTranslation();
 
   const getDashboardTitle = () => {
     switch (user?.role) {
-      case 'admin': return 'Admin Dashboard';
-      case 'researcher': return 'Research Dashboard';
-      case 'grower': return 'Business Dashboard';
-      case 'farmer': return 'Farm Dashboard';
-      default: return 'Dashboard';
+      case 'admin': return t('navigation.admin') + ' ' + t('navigation.dashboard');
+      case 'researcher': return t('navigation.researcher') + ' ' + t('navigation.dashboard');
+      case 'grower': return t('navigation.grower') + ' ' + t('navigation.dashboard');
+      case 'farmer': return t('navigation.farmer') + ' ' + t('navigation.dashboard');
+      default: return t('navigation.dashboard');
     }
   };
 
@@ -66,6 +69,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
         </div>
 
         <div className="flex items-center space-x-3">
+          <LanguageSelector />
           <ThemeToggle />
 
           <Button
@@ -76,7 +80,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
             <svg className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
-            Logout
+            {t('common.logout')}
           </Button>
         </div>
       </div>

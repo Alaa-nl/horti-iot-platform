@@ -4,6 +4,7 @@ import { Button } from '../components/ui/button';
 import { Separator } from '../components/ui/separator';
 import { TimePeriod, AssimilateBalance, WaterBalance, EnergyBalance } from '../types/plantBalance';
 import Layout from '../components/layout/Layout';
+import { useTranslation } from 'react-i18next';
 import {
   calculateNetAssimilation,
   formatValue,
@@ -19,6 +20,8 @@ import {
 } from '../utils/plantBalanceCalculations';
 
 const PlantBalanceDashboard: React.FC = () => {
+  const { t } = useTranslation();
+
   // Initial state - Manual adjustment only
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('real-time');
   const [selectedBalance, setSelectedBalance] = useState<'assimilate' | 'water' | 'energy'>('assimilate');
@@ -137,7 +140,7 @@ const PlantBalanceDashboard: React.FC = () => {
           />
           <div className="absolute inset-0 flex items-center justify-center">
             <span className="text-xs font-bold text-gray-900 dark:text-white drop-shadow-sm">
-              {isPositive ? 'Production > Consumption' : 'Consumption > Production'}
+              {isPositive ? t('plantBalance.productionGreaterThanConsumption') : t('plantBalance.consumptionGreaterThanProduction')}
             </span>
           </div>
         </div>
@@ -149,33 +152,33 @@ const PlantBalanceDashboard: React.FC = () => {
   const renderTimePeriodInfo = () => {
     const periodInfo = {
       'long-term': {
-        title: 'Long-term Planning (Weeks/Months)',
-        description: 'Align sink size with available light integral throughout the growing season.',
+        title: t('plantBalance.longTermInfo.title'),
+        description: t('plantBalance.longTermInfo.description'),
         icon: '📈',
         calculations: [
-          { label: 'Weekly Light Sum', value: `${(dli * 7).toFixed(1)} mol/m²/week`, color: 'blue' },
-          { label: 'Expected Production', value: `${weeklyProduction.toFixed(2)} kg/m²/week`, color: 'green' },
-          { label: 'Water Use Efficiency', value: `${wue.toFixed(0)} g/L (standard)`, color: 'cyan' }
+          { label: t('plantBalance.longTermInfo.weeklyLightSum'), value: `${(dli * 7).toFixed(1)} ${t('plantBalance.units.weeklyProduction').split('/')[1]}`, color: 'blue' },
+          { label: t('plantBalance.longTermInfo.expectedProduction'), value: `${weeklyProduction.toFixed(2)} ${t('plantBalance.units.weeklyProduction')}`, color: 'green' },
+          { label: t('plantBalance.waterUseEfficiency'), value: `${wue.toFixed(0)} ${t('plantBalance.units.wue')} (standard)`, color: 'cyan' }
         ],
       },
       'short-term': {
-        title: 'Short-term Monitoring (24 Hours)',
-        description: 'Daily balance management using RTR (Ratio Temperature to Radiation).',
+        title: t('plantBalance.shortTermInfo.title'),
+        description: t('plantBalance.shortTermInfo.description'),
         icon: '📅',
         calculations: [
-          { label: 'Daily Light Integral', value: `${dli.toFixed(1)} mol/m²/day`, color: 'blue' },
-          { label: 'RTR Value', value: `${calculateRTR(assimilate.temperature, assimilate.parLight * 0.5).toFixed(2)} °C/(100 W/m²)`, color: 'purple' },
-          { label: 'VPD', value: `${vpd.toFixed(2)} kPa`, color: 'orange' }
+          { label: t('plantBalance.shortTermInfo.dailyLightIntegral'), value: `${dli.toFixed(1)} ${t('plantBalance.units.dli')}`, color: 'blue' },
+          { label: t('plantBalance.shortTermInfo.rtrValue'), value: `${calculateRTR(assimilate.temperature, assimilate.parLight * 0.5).toFixed(2)} ${t('plantBalance.units.rtr')}`, color: 'purple' },
+          { label: t('plantBalance.vpd'), value: `${vpd.toFixed(2)} ${t('plantBalance.units.vpd')}`, color: 'orange' }
         ],
       },
       'real-time': {
-        title: 'Real-time Monitoring (Momentaneous)',
-        description: 'Current climate factors for maximum photosynthesis using psychrometric principles.',
+        title: t('plantBalance.realTimeInfo.title'),
+        description: t('plantBalance.realTimeInfo.description'),
         icon: '⚡',
         calculations: [
-          { label: 'Photosynthesis', value: `${formatValue(assimilate.photosynthesis)} μmol/m²/s`, color: 'green' },
-          { label: 'Transpiration', value: `${formatValue(transpiration)} L/m²/h`, color: 'blue' },
-          { label: 'Enthalpy', value: `${formatValue(enthalpy)} kJ/kg`, color: 'yellow' }
+          { label: t('plantBalance.photosynthesis'), value: `${formatValue(assimilate.photosynthesis)} ${t('plantBalance.units.photosynthesis')}`, color: 'green' },
+          { label: t('plantBalance.transpiration'), value: `${formatValue(transpiration)} ${t('plantBalance.units.transpiration')}`, color: 'blue' },
+          { label: t('plantBalance.enthalpy'), value: `${formatValue(enthalpy)} ${t('plantBalance.units.enthalpy')}`, color: 'yellow' }
         ],
       },
     };
@@ -275,10 +278,10 @@ const PlantBalanceDashboard: React.FC = () => {
       <div className="p-6 max-w-7xl mx-auto">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          Plant Assimilate Balance Calculator
+          {t('plantBalance.title')}
         </h1>
         <p className="text-gray-600 dark:text-gray-300">
-          Based on Plant Empowerment principles and greenhouse cultivation methods
+          {t('plantBalance.subtitle')}
         </p>
       </div>
 
@@ -286,9 +289,7 @@ const PlantBalanceDashboard: React.FC = () => {
         <div className="flex items-start gap-2">
           <span className="text-blue-500">ℹ️</span>
           <p className="text-sm text-gray-700 dark:text-gray-300">
-            Calculations based on scientific methodology: WUE = 34 g/L, VPD effects on stomatal conductance,
-            enthalpy calculations, and 2,500 kJ to evaporate 1 liter water. Adjust parameters to see
-            the effects across different time periods.
+            {t('plantBalance.infoMessage')}
           </p>
         </div>
       </div>
@@ -300,21 +301,21 @@ const PlantBalanceDashboard: React.FC = () => {
           onClick={() => setSelectedBalance('assimilate')}
           className="flex items-center gap-2"
         >
-          🌿 Assimilate Balance
+          🌿 {t('plantBalance.assimilateBalance')}
         </Button>
         <Button
           variant={selectedBalance === 'water' ? 'default' : 'outline'}
           onClick={() => setSelectedBalance('water')}
           className="flex items-center gap-2"
         >
-          💧 Water Balance
+          💧 {t('plantBalance.waterBalance')}
         </Button>
         <Button
           variant={selectedBalance === 'energy' ? 'default' : 'outline'}
           onClick={() => setSelectedBalance('energy')}
           className="flex items-center gap-2"
         >
-          ☀️ Energy Balance
+          ☀️ {t('plantBalance.energyBalance')}
         </Button>
       </div>
 
@@ -328,9 +329,9 @@ const PlantBalanceDashboard: React.FC = () => {
             size="sm"
             className="flex items-center gap-2"
           >
-            {period === 'long-term' && '📈 Long-term'}
-            {period === 'short-term' && '📅 Short-term (24h)'}
-            {period === 'real-time' && '⚡ Real-time'}
+            {period === 'long-term' && `📈 ${t('plantBalance.timePeriods.longTerm')}`}
+            {period === 'short-term' && `📅 ${t('plantBalance.timePeriods.shortTerm')}`}
+            {period === 'real-time' && `⚡ ${t('plantBalance.timePeriods.realTime')}`}
           </Button>
         ))}
       </div>
@@ -341,13 +342,13 @@ const PlantBalanceDashboard: React.FC = () => {
           {renderTimePeriodInfo()}
 
           <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
-            🌱 Input Parameters
+            🌱 {t('plantBalance.inputParameters')}
           </h3>
 
           {/* Parameter Controls - Manual adjustment only */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <Slider
-              label="PAR Light"
+              label={t('plantBalance.parLight')}
               value={assimilate.parLight}
               onChange={(v) => setAssimilate({
                 ...assimilate,
@@ -355,12 +356,12 @@ const PlantBalanceDashboard: React.FC = () => {
               })}
               min={0}
               max={1500}
-              unit="μmol/m²/s"
+              unit={t('plantBalance.units.parLight')}
               icon="☀️"
             />
 
             <Slider
-              label="CO₂ Level (Ca)"
+              label={t('plantBalance.co2Level')}
               value={assimilate.co2Level}
               onChange={(v) => setAssimilate({
                 ...assimilate,
@@ -368,12 +369,12 @@ const PlantBalanceDashboard: React.FC = () => {
               })}
               min={200}
               max={1500}
-              unit="ppm"
+              unit={t('plantBalance.units.co2')}
               icon="💨"
             />
 
             <Slider
-              label="Temperature"
+              label={t('plantBalance.temperature')}
               value={assimilate.temperature}
               onChange={(v) => setAssimilate({
                 ...assimilate,
@@ -382,12 +383,12 @@ const PlantBalanceDashboard: React.FC = () => {
               })}
               min={10}
               max={40}
-              unit="°C"
+              unit={t('plantBalance.units.temperature')}
               icon="🌡️"
             />
 
             <Slider
-              label="Relative Humidity"
+              label={t('plantBalance.humidity')}
               value={assimilate.humidity}
               onChange={(v) => setAssimilate({
                 ...assimilate,
@@ -395,7 +396,7 @@ const PlantBalanceDashboard: React.FC = () => {
               })}
               min={30}
               max={95}
-              unit="%"
+              unit={t('plantBalance.units.humidity')}
               icon="💧"
             />
           </div>
@@ -432,87 +433,87 @@ const PlantBalanceDashboard: React.FC = () => {
             <>
               {/* Psychrometric Values */}
               <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-                📊 Psychrometric Calculations
+                📊 {t('plantBalance.psychrometricCalculations')}
               </h3>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
             <div className="bg-purple-100 dark:bg-purple-900/30 border border-purple-300 dark:border-purple-700 p-3 rounded-lg">
-              <div className="text-xs text-purple-700 dark:text-purple-300 font-semibold">VPD</div>
+              <div className="text-xs text-purple-700 dark:text-purple-300 font-semibold">{t('plantBalance.vpd')}</div>
               <div className="text-lg font-bold text-purple-900 dark:text-purple-200">
-                {vpd.toFixed(2)} kPa
+                {vpd.toFixed(2)} {t('plantBalance.units.vpd')}
               </div>
             </div>
 
             <div className="bg-cyan-100 dark:bg-cyan-900/30 border border-cyan-300 dark:border-cyan-700 p-3 rounded-lg">
-              <div className="text-xs text-cyan-700 dark:text-cyan-300 font-semibold">Enthalpy</div>
+              <div className="text-xs text-cyan-700 dark:text-cyan-300 font-semibold">{t('plantBalance.enthalpy')}</div>
               <div className="text-lg font-bold text-cyan-900 dark:text-cyan-200">
-                {enthalpy.toFixed(1)} kJ/kg
+                {enthalpy.toFixed(1)} {t('plantBalance.units.enthalpy')}
               </div>
             </div>
 
             <div className="bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700 p-3 rounded-lg">
-              <div className="text-xs text-blue-700 dark:text-blue-300 font-semibold">Transpiration</div>
+              <div className="text-xs text-blue-700 dark:text-blue-300 font-semibold">{t('plantBalance.transpiration')}</div>
               <div className="text-lg font-bold text-blue-900 dark:text-blue-200">
-                {transpiration.toFixed(2)} L/m²/h
+                {transpiration.toFixed(2)} {t('plantBalance.units.transpiration')}
               </div>
             </div>
 
             <div className="bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 p-3 rounded-lg">
-              <div className="text-xs text-amber-700 dark:text-amber-300 font-semibold">WUE</div>
+              <div className="text-xs text-amber-700 dark:text-amber-300 font-semibold">{t('plantBalance.waterUseEfficiency')}</div>
               <div className="text-lg font-bold text-amber-900 dark:text-amber-200">
-                {wue.toFixed(0)} g/L
+                {wue.toFixed(0)} {t('plantBalance.units.wue')}
               </div>
             </div>
           </div>
 
           {/* Main Results */}
           <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-            🌿 Assimilate Balance Results
+            🌿 {t('plantBalance.assimilateBalanceResults')}
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-300 dark:border-green-700">
-              <div className="text-sm text-green-700 dark:text-green-300 font-semibold">Photosynthesis Rate</div>
+              <div className="text-sm text-green-700 dark:text-green-300 font-semibold">{t('plantBalance.photosynthesisRate')}</div>
               <div className="text-2xl font-bold text-green-900 dark:text-green-200">
                 {formatValue(assimilate.photosynthesis)}
               </div>
               <div className="text-xs text-green-600 dark:text-green-400 mt-1">
-                μmol/m²/s (Ca-Ci gradient)
+                {t('plantBalance.units.photosynthesis')} ({t('plantBalance.caciGradient')})
               </div>
             </div>
 
             <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-300 dark:border-red-700">
-              <div className="text-sm text-red-700 dark:text-red-300 font-semibold">Respiration Rate</div>
+              <div className="text-sm text-red-700 dark:text-red-300 font-semibold">{t('plantBalance.respirationRate')}</div>
               <div className="text-2xl font-bold text-red-900 dark:text-red-200">
                 {formatValue(assimilate.respiration)}
               </div>
               <div className="text-xs text-red-600 dark:text-red-400 mt-1">
-                μmol/m²/s (Q10 model)
+                {t('plantBalance.units.respiration')} (Q10 model)
               </div>
             </div>
 
             <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-300 dark:border-blue-700">
-              <div className="text-sm text-blue-700 dark:text-blue-300 font-semibold">Net Assimilation</div>
+              <div className="text-sm text-blue-700 dark:text-blue-300 font-semibold">{t('plantBalance.netAssimilationRate')}</div>
               <div className="text-2xl font-bold text-blue-900 dark:text-blue-200">
                 {formatValue(assimilate.netAssimilation)}
               </div>
               <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                μmol/m²/s (Available)
+                {t('plantBalance.units.assimilation')} ({t('plantBalance.available')})
               </div>
             </div>
           </div>
 
           <BalanceIndicator
             value={(assimilate.netAssimilation / 20) * 100}
-            label="Assimilate Balance Status"
+            label={t('plantBalance.assimilateBalanceStatus')}
           />
 
           {/* Time Period Specific Insights */}
           <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
             <h4 className="text-gray-900 dark:text-white font-semibold mb-3">
-              {selectedPeriod === 'long-term' && '📈 Long-term Planning (production model):'}
-              {selectedPeriod === 'short-term' && '📅 24-Hour RTR Strategy:'}
-              {selectedPeriod === 'real-time' && '⚡ Momentaneous Optimization (VPD control):'}
+              {selectedPeriod === 'long-term' && `📈 ${t('plantBalance.longTermInfo.title')}:`}
+              {selectedPeriod === 'short-term' && `📅 ${t('plantBalance.shortTermInfo.title')}:`}
+              {selectedPeriod === 'real-time' && `⚡ ${t('plantBalance.momentaneousOptimization')}:`}
             </h4>
             <ul className="text-sm text-gray-700 dark:text-gray-300 space-y-2">
               {selectedPeriod === 'long-term' && (
@@ -536,10 +537,10 @@ const PlantBalanceDashboard: React.FC = () => {
               )}
               {selectedPeriod === 'real-time' && (
                 <>
-                  <li className="flex items-start"><span className="text-purple-600 dark:text-purple-400 mr-2">•</span> CO₂ gradient (Ca-Ci): <span className="font-semibold ml-1">{(assimilate.co2Level * 0.34).toFixed(0)} ppm</span> (34% of ambient)</li>
-                  <li className="flex items-start"><span className="text-purple-600 dark:text-purple-400 mr-2">•</span> Stomatal limitation: <span className="font-semibold ml-1">{vpd > 2.5 ? 'High VPD limiting' : vpd > 1.5 ? 'Partial limitation' : 'No limitation'}</span></li>
-                  <li className="flex items-start"><span className="text-purple-600 dark:text-purple-400 mr-2">•</span> Energy for evaporation: <span className="font-semibold ml-1">{(transpiration * ENERGY_PER_LITER).toFixed(0)} kJ/m²/h</span></li>
-                  <li className="flex items-start"><span className="text-purple-600 dark:text-purple-400 mr-2">•</span> Leaf-air temperature diff: <span className="font-semibold ml-1">{(assimilate.leafTemperature - assimilate.temperature).toFixed(1)}°C</span></li>
+                  <li className="flex items-start"><span className="text-purple-600 dark:text-purple-400 mr-2">•</span> {t('plantBalance.co2Gradient')}: <span className="font-semibold ml-1">{(assimilate.co2Level * 0.34).toFixed(0)} {t('plantBalance.units.co2')}</span> (34% {t('plantBalance.ofAmbient')})</li>
+                  <li className="flex items-start"><span className="text-purple-600 dark:text-purple-400 mr-2">•</span> {t('plantBalance.stomatalLimitation')}: <span className="font-semibold ml-1">{vpd > 2.5 ? 'High VPD limiting' : vpd > 1.5 ? 'Partial limitation' : t('plantBalance.noLimitation')}</span></li>
+                  <li className="flex items-start"><span className="text-purple-600 dark:text-purple-400 mr-2">•</span> {t('plantBalance.energyForEvaporation')}: <span className="font-semibold ml-1">{(transpiration * ENERGY_PER_LITER).toFixed(0)} kJ/m²/h</span></li>
+                  <li className="flex items-start"><span className="text-purple-600 dark:text-purple-400 mr-2">•</span> {t('plantBalance.leafAirTempDiff')}: <span className="font-semibold ml-1">{(assimilate.leafTemperature - assimilate.temperature).toFixed(1)}°C</span></li>
                 </>
               )}
             </ul>
@@ -762,34 +763,34 @@ const PlantBalanceDashboard: React.FC = () => {
       {/* Educational Notes */}
       <Card className="mt-6">
         <CardHeader>
-          <h3 className="text-xl font-bold">Calculation Methods</h3>
+          <h3 className="text-xl font-bold">{t('plantBalance.calculationMethods')}</h3>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {/* Assimilate Balance */}
             <div>
               <h4 className="font-semibold text-green-600 dark:text-green-400 mb-2">
-                🌿 Assimilate Balance Calculations:
+                🌿 {t('plantBalance.assimilateBalanceCalculations')}:
               </h4>
               <ul className="text-sm text-gray-600 dark:text-gray-300 ml-4 space-y-1">
-                <li>• <strong>Photosynthesis:</strong> Max rate 25 μmol/m²/s, f(PAR, CO₂, VPD, T)</li>
-                <li>• <strong>Respiration:</strong> Q10 model, doubles every 10°C</li>
-                <li>• <strong>CO₂ gradient:</strong> Ci = 0.66 × Ca (internal = 66% of ambient)</li>
-                <li>• <strong>Net Assimilation:</strong> Photosynthesis - Respiration</li>
+                <li>• {t('plantBalance.methodDescriptions.photosynthesis')}</li>
+                <li>• {t('plantBalance.methodDescriptions.respiration')}</li>
+                <li>• {t('plantBalance.methodDescriptions.co2Gradient')}</li>
+                <li>• {t('plantBalance.methodDescriptions.netAssimilation')}</li>
               </ul>
             </div>
 
             {/* Water Balance */}
             <div>
               <h4 className="font-semibold text-blue-600 dark:text-blue-400 mb-2">
-                💧 Water Balance Calculations:
+                💧 {t('plantBalance.waterBalanceCalculations')}:
               </h4>
               <ul className="text-sm text-gray-600 dark:text-gray-300 ml-4 space-y-1">
-                <li>• <strong>Root Uptake:</strong> f(root temp, VPD), optimal at 20-22°C</li>
-                <li>• <strong>Transpiration:</strong> VPD-driven, energy limited (2,500 kJ/L)</li>
-                <li>• <strong>Stomatal Conductance:</strong> Ball-Berry model, max 800 mmol/m²/s</li>
-                <li>• <strong>Water Use Efficiency:</strong> Fixed at 34 g/L (greenhouse standard)</li>
-                <li>• <strong>Growth Water:</strong> ~5% of transpiration</li>
+                <li>• {t('plantBalance.methodDescriptions.rootUptake')}</li>
+                <li>• {t('plantBalance.methodDescriptions.transpiration')}</li>
+                <li>• {t('plantBalance.methodDescriptions.stomatalConductance')}</li>
+                <li>• {t('plantBalance.methodDescriptions.wue')}</li>
+                <li>• {t('plantBalance.methodDescriptions.growthWater')}</li>
               </ul>
             </div>
 
