@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: horti-iot-backend
+    runtime: node
+    repo: https://github.com/Alaa-nl/horti-iot-platform
+    branch: Researcher-Dashboard
+    buildCommand: cd backend && npm install && npm run build
+    startCommand: cd backend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
