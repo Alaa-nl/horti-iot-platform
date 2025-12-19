@@ -14,6 +14,7 @@ import phytosenseRoutes from './routes/phytosense.routes';
 import sensorDataRoutes from './routes/sensorData.routes';
 import phytosenseProxyRoutes from './routes/phytosenseProxy.routes';
 import aiRoutes from './routes/ai.routes';
+import feedbackRoutes from './routes/feedback.routes';
 
 // Import database
 import database from './utils/database';
@@ -133,6 +134,7 @@ class App {
     this.app.use('/api/sensors', sensorDataRoutes);
     this.app.use('/api/phytosense-proxy', phytosenseProxyRoutes);
     this.app.use('/api/ai', aiRoutes);
+    this.app.use('/api/feedback', feedbackRoutes);
 
     // 404 handler for API routes
     this.app.use('/api/*', (req: Request, res: Response) => {

@@ -5,6 +5,7 @@ import { Separator } from '../components/ui/separator';
 import { TimePeriod, AssimilateBalance, WaterBalance, EnergyBalance } from '../types/plantBalance';
 import Layout from '../components/layout/Layout';
 import { useTranslation } from 'react-i18next';
+import FeedbackNote from '../components/feedback/FeedbackNote';
 import {
   calculateNetAssimilation,
   formatValue,
@@ -21,6 +22,15 @@ import {
 
 const PlantBalanceDashboard: React.FC = () => {
   const { t } = useTranslation();
+
+  // Generate or retrieve session ID for feedback tracking
+  const [sessionId] = useState(() => {
+    const stored = sessionStorage.getItem('feedback-session-id');
+    if (stored) return stored;
+    const newId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    sessionStorage.setItem('feedback-session-id', newId);
+    return newId;
+  });
 
   // Initial state - Manual adjustment only
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('real-time');
@@ -187,9 +197,20 @@ const PlantBalanceDashboard: React.FC = () => {
 
     return (
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 rounded-lg mb-6 shadow-sm">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-2xl">{info.icon}</span>
-          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">{info.title}</h4>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">{info.icon}</span>
+            <h4 className="text-lg font-semibold text-gray-900 dark:text-white">{info.title}</h4>
+          </div>
+          <FeedbackNote
+            sectionName={`Time Period: ${info.title}`}
+            sessionId={sessionId}
+            placeholder={`Add feedback about the ${selectedPeriod} monitoring view...`}
+            context={{
+              balanceType: selectedBalance,
+              timePeriod: selectedPeriod
+            }}
+          />
         </div>
         <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">{info.description}</p>
 
@@ -277,9 +298,20 @@ const PlantBalanceDashboard: React.FC = () => {
     <Layout sidebarContent={sidebarContent}>
       <div className="p-6 max-w-7xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          {t('plantBalance.title')}
-        </h1>
+        <div className="flex items-center justify-between mb-2">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            {t('plantBalance.title')}
+          </h1>
+          <FeedbackNote
+            sectionName="Plant Balance Calculator - General"
+            sessionId={sessionId}
+            placeholder="Add general feedback about the Plant Balance Calculator..."
+            context={{
+              balanceType: selectedBalance,
+              timePeriod: selectedPeriod
+            }}
+          />
+        </div>
         <p className="text-gray-600 dark:text-gray-300">
           {t('plantBalance.subtitle')}
         </p>
@@ -341,9 +373,20 @@ const PlantBalanceDashboard: React.FC = () => {
         <CardContent className="p-6">
           {renderTimePeriodInfo()}
 
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
-            🌱 {t('plantBalance.inputParameters')}
-          </h3>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+              🌱 {t('plantBalance.inputParameters')}
+            </h3>
+            <FeedbackNote
+              sectionName="Input Parameters"
+              sessionId={sessionId}
+              placeholder="Add feedback about the parameter controls and ranges..."
+              context={{
+                balanceType: selectedBalance,
+                timePeriod: selectedPeriod
+              }}
+            />
+          </div>
 
           {/* Parameter Controls - Manual adjustment only */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -432,9 +475,20 @@ const PlantBalanceDashboard: React.FC = () => {
           {selectedBalance === 'assimilate' && (
             <>
               {/* Psychrometric Values */}
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-                📊 {t('plantBalance.psychrometricCalculations')}
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                  📊 {t('plantBalance.psychrometricCalculations')}
+                </h3>
+                <FeedbackNote
+                  sectionName="Psychrometric Calculations"
+                  sessionId={sessionId}
+                  placeholder="Add feedback about the psychrometric values and their calculations..."
+                  context={{
+                    balanceType: selectedBalance,
+                    timePeriod: selectedPeriod
+                  }}
+                />
+              </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
             <div className="bg-purple-100 dark:bg-purple-900/30 border border-purple-300 dark:border-purple-700 p-3 rounded-lg">
@@ -467,9 +521,20 @@ const PlantBalanceDashboard: React.FC = () => {
           </div>
 
           {/* Main Results */}
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-            🌿 {t('plantBalance.assimilateBalanceResults')}
-          </h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+              🌿 {t('plantBalance.assimilateBalanceResults')}
+            </h3>
+            <FeedbackNote
+              sectionName="Assimilate Balance Results"
+              sessionId={sessionId}
+              placeholder="Add feedback about the assimilate balance calculations and results..."
+              context={{
+                balanceType: selectedBalance,
+                timePeriod: selectedPeriod
+              }}
+            />
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-300 dark:border-green-700">
@@ -551,9 +616,20 @@ const PlantBalanceDashboard: React.FC = () => {
           {/* Water Balance Content */}
           {selectedBalance === 'water' && waterBalance && (
             <>
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-                💧 Water Balance Results
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                  💧 Water Balance Results
+                </h3>
+                <FeedbackNote
+                  sectionName="Water Balance Results"
+                  sessionId={sessionId}
+                  placeholder="Add feedback about the water balance calculations and results..."
+                  context={{
+                    balanceType: selectedBalance,
+                    timePeriod: selectedPeriod
+                  }}
+                />
+              </div>
 
               {/* Water Input/Output Display */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -656,9 +732,20 @@ const PlantBalanceDashboard: React.FC = () => {
           {/* Energy Balance Content */}
           {selectedBalance === 'energy' && energyBalance && (
             <>
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-                ☀️ Energy Balance Results
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                  ☀️ Energy Balance Results
+                </h3>
+                <FeedbackNote
+                  sectionName="Energy Balance Results"
+                  sessionId={sessionId}
+                  placeholder="Add feedback about the energy balance calculations and results..."
+                  context={{
+                    balanceType: selectedBalance,
+                    timePeriod: selectedPeriod
+                  }}
+                />
+              </div>
 
               {/* Energy Input/Output Display */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">

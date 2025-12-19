@@ -10,6 +10,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import ProfilePage from './pages/ProfilePage';
 import RawSensorDisplay from './components/sensors/RawSensorDisplay';
 import PlantBalanceDashboard from './pages/PlantBalanceDashboard';
+import FeedbackAdmin from './pages/FeedbackAdmin';
 
 // Protected Route Component with multiple allowed roles
 const ProtectedRoute: React.FC<{
@@ -99,6 +100,13 @@ const AppRoutes: React.FC = () => {
       <Route path="/admin" element={
         <ProtectedRoute allowedRoles={['admin']}>
           <AdminDashboard />
+        </ProtectedRoute>
+      } />
+
+      {/* Feedback Admin - accessible by admin and researcher */}
+      <Route path="/admin/feedback" element={
+        <ProtectedRoute allowedRoles={['admin', 'researcher']}>
+          <FeedbackAdmin />
         </ProtectedRoute>
       } />
 
