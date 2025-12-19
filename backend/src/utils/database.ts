@@ -12,6 +12,7 @@ interface DatabaseConfig {
   max?: number;
   idleTimeoutMillis?: number;
   connectionTimeoutMillis?: number;
+  ssl?: any;
 }
 
 class Database {
@@ -29,6 +30,13 @@ class Database {
       idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
       connectionTimeoutMillis: 2000, // Return an error after 2 seconds if connection could not be established
     };
+
+    // Add SSL configuration for production/cloud databases
+    if (process.env.DB_SSL === 'true' || process.env.NODE_ENV === 'production') {
+      config.ssl = {
+        rejectUnauthorized: false // Required for Supabase and most cloud providers
+      };
+    }
 
     this.pool = new Pool(config);
 
