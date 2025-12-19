@@ -1,0 +1,26 @@
+CORRECT VALUES FOR RENDER ENVIRONMENT VARIABLES
+================================================
+
+Click the pencil icon next to each variable and replace "value" with these actual values:
+
+NODE_ENV → production
+DB_HOST → db.endjwhwbpgedcfsdtmhw.supabase.co
+DB_PORT → 5432
+DB_NAME → postgres
+DB_USER → postgres
+DB_PASSWORD → Amsterdam@0031
+DB_SSL → true
+JWT_SECRET → render-secret-key-change-this-12345
+JWT_REFRESH_SECRET → render-refresh-secret-change-this-67890
+JWT_EXPIRE → 24h
+CORS_ORIGIN → https://horti-iot-platform.vercel.app
+PHYTOSENSE_BASE_URL → https://www.phytosense.net/PhytoSense/v1
+PHYTOSENSE_ACCOUNT → Pebble
+PHYTOSENSE_APP_KEY → e8d9e660e023afc3bb3a03f9a59e8213
+PHYTOSENSE_USERNAME → aaldrobe
+PHYTOSENSE_PASSWORD → u4E4Zb100a8v
+RATE_LIMIT_WINDOW_MS → 900000
+RATE_LIMIT_MAX_REQUESTS → 100
+LOG_LEVEL → info
+
+DO NOT TYPE "value" - USE THE ACTUAL VALUES ABOVE!

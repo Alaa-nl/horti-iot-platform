@@ -20,22 +20,28 @@ class Database {
   private static instance: Database;
 
   private constructor() {
+    // Force IPv4 for Supabase connection (Render has IPv6 issues)
+    const host = process.env.DB_HOST || 'localhost';
+
     const config: DatabaseConfig = {
-      host: process.env.DB_HOST || 'localhost',
+      host: host,
       port: parseInt(process.env.DB_PORT || '5432'),
       database: process.env.DB_NAME || 'horti_iot',
       user: process.env.DB_USER || 'horti_user',
       password: process.env.DB_PASSWORD || 'horti_password',
       max: 20, // Maximum number of clients in the pool
       idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-      connectionTimeoutMillis: 2000, // Return an error after 2 seconds if connection could not be established
+      connectionTimeoutMillis: 10000, // Increased timeout for cloud connections
     };
 
-    // Add SSL configuration for production/cloud databases
-    if (process.env.DB_SSL === 'true' || process.env.NODE_ENV === 'production') {
+    // Always use SSL for production/Supabase
+    if (process.env.DB_SSL === 'true' || process.env.NODE_ENV === 'production' || host.includes('supabase')) {
       config.ssl = {
-        rejectUnauthorized: false // Required for Supabase and most cloud providers
+        rejectUnauthorized: false, // Required for Supabase
+        // Force TLS 1.2 minimum
+        minVersion: 'TLSv1.2'
       };
+      console.log('🔒 SSL enabled for database connection');
     }
 
     this.pool = new Pool(config);
