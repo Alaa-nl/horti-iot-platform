@@ -1,4 +1,5 @@
 import React from 'react';
+import { CircularGauge } from './CircularGauge';
 
 interface Factor {
   name: string;
@@ -22,60 +23,54 @@ export const LimitingFactorsChart: React.FC<LimitingFactorsChartProps> = ({
   );
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-      <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
+    <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+      <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
         {title}
       </h4>
 
-      {/* Visual bars for each factor */}
-      <div className="space-y-3">
+      {/* Circular gauges grid */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-6">
         {factors.map((factor, index) => (
-          <div key={index}>
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
-                {factor.name}
-              </span>
-              <span className={`text-xs font-bold ${
-                factor.status === 'limiting' ? 'text-red-600 dark:text-red-400' :
-                factor.status === 'optimal' ? 'text-green-600 dark:text-green-400' :
-                'text-yellow-600 dark:text-yellow-400'
-              }`}>
-                {factor.value}%
-              </span>
-            </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4 relative">
-              <div
-                className={`h-4 rounded-full transition-all duration-300 ${factor.color}`}
-                style={{ width: `${factor.value}%` }}
-              />
-              {/* Optimal range indicator */}
-              <div className="absolute top-0 left-[80%] w-0.5 h-4 bg-gray-400 dark:bg-gray-500" />
-              <div className="absolute top-0 left-[100%] w-0.5 h-4 bg-gray-400 dark:bg-gray-500" />
-            </div>
-          </div>
+          <CircularGauge
+            key={index}
+            label={factor.name}
+            value={factor.value}
+            size={110}
+          />
         ))}
       </div>
 
       {/* Most limiting factor indicator */}
-      <div className="mt-4 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded">
-        <p className="text-xs text-yellow-800 dark:text-yellow-200">
-          <span className="font-semibold">Most Limiting:</span> {mostLimiting.name} at {mostLimiting.value}%
-        </p>
+      <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-200 mb-1">
+              Most Limiting Factor
+            </p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">
+              {mostLimiting.name} is currently limiting growth at {mostLimiting.value}%
+            </p>
+          </div>
+          <div className="text-2xl">
+            {mostLimiting.status === 'limiting' ? '⚠️' :
+             mostLimiting.status === 'adequate' ? '🔶' : '✅'}
+          </div>
+        </div>
       </div>
 
       {/* Legend */}
-      <div className="mt-3 flex justify-around text-xs">
-        <div className="flex items-center">
-          <div className="w-3 h-3 bg-red-500 rounded-full mr-1" />
-          <span className="text-gray-600 dark:text-gray-400">Limiting (&lt;60%)</span>
+      <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
+        <div className="flex items-center justify-center p-2 bg-red-50 dark:bg-red-900/20 rounded">
+          <div className="w-3 h-3 bg-red-500 rounded-full mr-2" />
+          <span className="text-gray-700 dark:text-gray-300">Limiting &lt;60%</span>
         </div>
-        <div className="flex items-center">
-          <div className="w-3 h-3 bg-yellow-500 rounded-full mr-1" />
-          <span className="text-gray-600 dark:text-gray-400">Adequate (60-80%)</span>
+        <div className="flex items-center justify-center p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded">
+          <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2" />
+          <span className="text-gray-700 dark:text-gray-300">Adequate 60-80%</span>
         </div>
-        <div className="flex items-center">
-          <div className="w-3 h-3 bg-green-500 rounded-full mr-1" />
-          <span className="text-gray-600 dark:text-gray-400">Optimal (&gt;80%)</span>
+        <div className="flex items-center justify-center p-2 bg-green-50 dark:bg-green-900/20 rounded">
+          <div className="w-3 h-3 bg-green-500 rounded-full mr-2" />
+          <span className="text-gray-700 dark:text-gray-300">Optimal &gt;80%</span>
         </div>
       </div>
     </div>

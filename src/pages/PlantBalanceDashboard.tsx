@@ -15,6 +15,8 @@ import {
   LimitingFactorsChart,
   calculateLimitingFactors
 } from '../components/educational/LimitingFactorsChart';
+import { WaterLimitingFactors } from '../components/educational/WaterLimitingFactors';
+import { EnergyLimitingFactors } from '../components/educational/EnergyLimitingFactors';
 import {
   calculateNetAssimilation,
   formatValue,
@@ -727,6 +729,17 @@ const PlantBalanceDashboard: React.FC = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Water Limiting Factors */}
+              <div className="mt-6">
+                <WaterLimitingFactors
+                  rootZoneTemp={waterBalance.rootTemperature}
+                  vpdi={vpdi}
+                  irrigationRate={waterBalance.irrigationSupply}
+                  stomatalConductance={waterBalance.stomatalConductance}
+                  waterDemand={waterBalance.transpiration + waterBalance.growthWater}
+                />
+              </div>
             </>
           )}
 
@@ -832,6 +845,19 @@ const PlantBalanceDashboard: React.FC = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Energy Limiting Factors */}
+              <div className="mt-6">
+                <EnergyLimitingFactors
+                  netRadiation={energyBalance.netRadiation}
+                  parInput={energyBalance.parAbsorption}
+                  leafAirDeltaT={energyBalance.leafAirTempDiff}
+                  latentHeat={energyBalance.latentHeat}
+                  sensibleHeat={energyBalance.sensibleHeat}
+                  bowenRatio={energyBalance.bowenRatio}
+                  totalOutput={Math.abs(energyBalance.sensibleHeat) + Math.abs(energyBalance.latentHeat) + Math.abs(energyBalance.photochemical)}
+                />
+              </div>
             </>
           )}
         </CardContent>
@@ -879,7 +905,7 @@ const PlantBalanceDashboard: React.FC = () => {
               <ul className="text-sm text-gray-600 dark:text-gray-300 ml-4 space-y-1">
                 <li>• <strong>Net Radiation:</strong> PAR × 0.5 × 4.6 W/m²</li>
                 <li>• <strong>Sensible Heat:</strong> ΔT × Cp × boundary layer conductance</li>
-                <li>• <strong>Latent Heat:</strong> Transpiration × 2,450 kJ/kg</li>
+                <li>• <strong>Latent Heat:</strong> Transpiration × 2,500 kJ/kg</li>
                 <li>• <strong>Photochemical:</strong> 469 kJ/mol glucose formed</li>
                 <li>• <strong>Bowen Ratio:</strong> Sensible/Latent heat</li>
               </ul>
@@ -898,12 +924,31 @@ const PlantBalanceDashboard: React.FC = () => {
                   Energy Balance = (Radiation + PAR) - (Sensible + Latent + Photochemical)
                 </div>
                 <div className="text-purple-700 dark:text-purple-400">
-                  VPD = 0.611 × exp(17.27T/(T+237.3)) × (1 - RH/100)
+                  VPD = 0.611 × exp(17.27T_air/(T_air+237.3)) × (1 - RH/100)
+                </div>
+                <div className="text-pink-700 dark:text-pink-400">
+                  VPDi = VP_sat(T_plant) - VP_actual(T_air, RH)
                 </div>
                 <div className="text-cyan-700 dark:text-cyan-400">
                   RTR = DLI × 0.2°C/mol PAR
                 </div>
+                <div className="text-indigo-700 dark:text-indigo-400">
+                  Enthalpy = 1.006×T + RH×(2500 + 1.86×T) [kJ/kg]
+                </div>
               </div>
+            </div>
+
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg mb-3">
+              <h4 className="font-semibold text-blue-700 dark:text-blue-400 mb-1">
+                🌬️ Environmental Requirements:
+              </h4>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                <strong>Air Speed:</strong> Must be ≥ 1 m/s for accurate boundary layer calculations
+                <br /><strong>Example Enthalpy:</strong> At 20°C, 75% RH → 47.5 kJ/kg
+                <br />• Sensible: 1.006 × 20 = 20.1 kJ/kg
+                <br />• Latent: 0.75 × 0.0147 × 2500 = 27.4 kJ/kg
+                <br />• Total: 20.1 + 27.4 = 47.5 kJ/kg
+              </p>
             </div>
 
             <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg">
@@ -911,9 +956,9 @@ const PlantBalanceDashboard: React.FC = () => {
                 💡 Test Scenarios:
               </h4>
               <p className="text-sm text-gray-600 dark:text-gray-300">
-                1. Optimal: PAR=800, CO₂=1000, T=25°C, RH=70%
-                <br />2. Low VPD risk: PAR=400, CO₂=800, T=20°C, RH=85%
-                <br />3. High VPD stress: PAR=1200, CO₂=800, T=30°C, RH=40%
+                1. Optimal: PAR=800, CO₂=1000, T=25°C, RH=70%, Air=1.2 m/s
+                <br />2. Low VPD risk: PAR=400, CO₂=800, T=20°C, RH=85%, Air=1.0 m/s
+                <br />3. High VPD stress: PAR=1200, CO₂=800, T=30°C, RH=40%, Air=1.5 m/s
                 <br />Compare how VPD affects stomatal conductance!
               </p>
             </div>

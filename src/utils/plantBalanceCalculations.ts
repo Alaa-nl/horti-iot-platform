@@ -345,8 +345,8 @@ export const calculateLatentHeat = (
   transpiration: number // L/m²/h
 ): number => {
   // Convert transpiration to W/m²
-  // 2.45 MJ/kg water evaporation energy
-  const evaporationEnergy = 2450; // kJ/kg
+  // 2.5 MJ/kg water evaporation energy (supervisor requirement)
+  const evaporationEnergy = 2500; // kJ/kg
   const transpirationKgPerS = transpiration / 3600; // Convert to kg/m²/s
 
   return transpirationKgPerS * evaporationEnergy * 1000 / 1000; // W/m²
