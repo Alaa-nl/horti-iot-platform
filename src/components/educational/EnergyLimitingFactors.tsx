@@ -100,7 +100,7 @@ export const EnergyLimitingFactors: React.FC<EnergyLimitingFactorsProps> = ({
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
       <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
-        ☀️ Energy Limiting Factors (as requested by supervisor)
+        ☀️ Energy Limiting Factors
       </h4>
 
       {/* Circular gauges grid */}

@@ -8,7 +8,6 @@ import { useTranslation } from 'react-i18next';
 import {
   EducationalTooltip,
   EducationalIndicator,
-  LearningObjectives,
   tooltipContent
 } from '../components/educational/EducationalTooltips';
 import {
@@ -302,25 +301,6 @@ const PlantBalanceDashboard: React.FC = () => {
         </p>
       </div>
 
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
-        <div className="flex items-start gap-2">
-          <span className="text-blue-500">ℹ️</span>
-          <p className="text-sm text-gray-700 dark:text-gray-300">
-            {t('plantBalance.infoMessage')}
-          </p>
-        </div>
-      </div>
-
-      {/* Learning Objectives for Students */}
-      <LearningObjectives
-        objectives={[
-          "Understand how light, CO2, temperature, and humidity affect plant growth",
-          "Learn the balance between photosynthesis (food production) and respiration (energy use)",
-          "Explore how plants manage water through transpiration and root uptake",
-          "See how environmental factors work together to determine plant productivity"
-        ]}
-      />
-
       {/* Balance Type Selector */}
       <div className="flex flex-wrap gap-2 justify-center mb-4">
         <Button
@@ -583,7 +563,7 @@ const PlantBalanceDashboard: React.FC = () => {
                 assimilate.humidity,
                 vpdi
               )}
-              title="Growth Limiting Factors (as requested by supervisor)"
+              title="Growth Limiting Factors"
             />
           </div>
 

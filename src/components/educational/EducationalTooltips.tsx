@@ -179,16 +179,16 @@ export const LearningObjectives: React.FC<{
   objectives: string[];
 }> = ({ objectives }) => {
   return (
-    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
-      <h3 className="font-semibold text-blue-900 dark:text-blue-300 mb-2 flex items-center">
-        <span className="mr-2">🎯</span>
+    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-2">
+      <h4 className="font-semibold text-blue-900 dark:text-blue-300 text-sm mb-1.5 flex items-center">
+        <span className="mr-1 text-xs">🎯</span>
         Learning Objectives
-      </h3>
-      <ul className="space-y-1">
-        {objectives.map((objective, index) => (
-          <li key={index} className="text-sm text-blue-800 dark:text-blue-200 flex items-start">
-            <span className="mr-2">•</span>
-            <span>{objective}</span>
+      </h4>
+      <ul className="space-y-0.5">
+        {objectives.slice(0, 3).map((objective, index) => (
+          <li key={index} className="text-xs text-blue-800 dark:text-blue-200 flex items-start">
+            <span className="mr-1">•</span>
+            <span className="leading-snug">{objective}</span>
           </li>
         ))}
       </ul>

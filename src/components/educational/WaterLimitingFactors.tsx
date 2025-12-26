@@ -90,7 +90,7 @@ export const WaterLimitingFactors: React.FC<WaterLimitingFactorsProps> = ({
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
       <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
-        💧 Water Limiting Factors (as requested by supervisor)
+        💧 Water Limiting Factors
       </h4>
 
       {/* Circular gauges grid */}
