@@ -17,6 +17,24 @@ export const calculateVPD = (temperature: number, humidity: number): number => {
   return (saturatedVP - actualVP) * 1000; // Convert to Pa
 };
 
+// Calculate VPDi (Internal VPD using plant/leaf temperature)
+// As requested by supervisor: "To calculate VPDi you need to include plant temperature"
+export const calculateVPDi = (
+  leafTemperature: number, // Plant/leaf temperature
+  airTemperature: number, // Air temperature
+  humidity: number // Relative humidity
+): number => {
+  // Calculate saturated VP at leaf temperature
+  const leafSaturatedVP = 0.611 * Math.exp((17.27 * leafTemperature) / (leafTemperature + 237.3));
+
+  // Calculate actual VP in air (using air temperature and humidity)
+  const airSaturatedVP = 0.611 * Math.exp((17.27 * airTemperature) / (airTemperature + 237.3));
+  const actualVP = airSaturatedVP * (humidity / 100);
+
+  // VPDi = VP at leaf temperature - actual VP in air
+  return (leafSaturatedVP - actualVP) * 1000; // Convert to Pa
+};
+
 // Calculate enthalpy
 export const calculateEnthalpy = (temperature: number, humidity: number): number => {
   // Enthalpy = (1 kJ × 1°C × T) + (g_water × 2500)
@@ -34,55 +52,60 @@ export const calculateWUE = (co2Uptake: number, transpiration: number): number =
   return 34; // Fixed value from greenhouse studies
 };
 
-// Photosynthesis calculation based on Plant Empowerment methodology
+// Photosynthesis calculation (educational model)
 export const calculatePhotosynthesis = (
   parLight: number,
   co2Level: number,
   temperature: number,
   humidity: number
 ): number => {
-  // Calculate VPD effect on stomatal conductance
-  const vpd = calculateVPD(temperature, humidity) / 1000; // kPa
+  // EDUCATIONAL MODEL: Simple factors affecting photosynthesis
 
-  // Stomatal conductance factor (VPD affects stomata)
-  // Stomata close when VPD > 2.5 kPa
-  const vpdFactor = vpd > 2.5 ? 0.5 : vpd > 1.5 ? (2.5 - vpd) : 1;
+  // 1. LIGHT: More light = more photosynthesis (up to a point)
+  // Saturation around 600-800 μmol/m²/s for most greenhouse crops
+  const maxLight = 600;
+  const lightFactor = Math.min(1, parLight / maxLight);
 
-  // CO2 gradient approach
-  // Ca (ambient) - Ci (internal) = gradient for CO2 uptake
-  const ca = co2Level; // ppm ambient
-  const ci = ca * 0.66; // internal is typically 66% of ambient
-  const co2Gradient = (ca - ci) / 1000; // Convert to relative factor
+  // 2. CO2: More CO2 = more photosynthesis
+  // Normal air = 400 ppm, greenhouse enrichment = 800-1000 ppm
+  const normalCO2 = 400;
+  const co2Factor = Math.min(2, co2Level / normalCO2);
 
-  // Light response (using more realistic curve)
-  // Maximum rate around 25-30 μmol/m²/s for most crops
-  const lightSaturation = 800; // μmol/m²/s typical saturation point
-  const lightFactor = parLight / (parLight + lightSaturation / 2);
+  // 3. TEMPERATURE: Best around 20-25°C
+  let tempFactor;
+  if (temperature < 15) tempFactor = 0.5;
+  else if (temperature > 30) tempFactor = 0.6;
+  else if (temperature >= 20 && temperature <= 25) tempFactor = 1;
+  else tempFactor = 0.8;
 
-  // Temperature response (optimal around 25°C)
-  const tempOptimal = 25;
-  const tempFactor = Math.exp(-Math.pow((temperature - tempOptimal) / 10, 2));
+  // 4. HUMIDITY: Too dry = stomata close = less photosynthesis
+  const humidityFactor = humidity < 40 ? 0.7 : humidity > 80 ? 0.9 : 1;
 
-  // Maximum photosynthesis rate (realistic for tomatoes)
-  const maxPhotoRate = 25; // μmol/m²/s
+  // Basic photosynthesis rate (μmol/m²/s)
+  const baseRate = 15; // Typical for greenhouse vegetables
 
-  // Combined calculation
-  return maxPhotoRate * lightFactor * co2Gradient * tempFactor * vpdFactor;
+  // Combined effect
+  return baseRate * lightFactor * co2Factor * tempFactor * humidityFactor;
 };
 
-// Respiration calculation (Q10 model from Plant Empowerment)
+// Respiration calculation (educational model)
 export const calculateRespiration = (
   temperature: number,
   leafTemperature: number
 ): number => {
-  // Maintenance respiration increases with temperature
-  // Q10 = 2 means doubles every 10°C
-  const Q10 = 2;
-  const baseRespiration = 1.5; // μmol/m²/s at 20°C (higher base rate)
+  // EDUCATIONAL MODEL: Plants "breathe" and use energy
+  // Higher temperature = more respiration (energy use)
+
   const avgTemp = (temperature + leafTemperature) / 2;
 
-  // Dark respiration is typically 5-10% of max photosynthesis
-  return baseRespiration * Math.pow(Q10, (avgTemp - 20) / 10);
+  // Simple respiration based on temperature
+  let respiration;
+  if (avgTemp < 15) respiration = 0.8; // Low respiration when cold
+  else if (avgTemp > 30) respiration = 3.0; // High respiration when hot
+  else if (avgTemp >= 20 && avgTemp <= 25) respiration = 1.5; // Normal respiration
+  else respiration = 1.2;
+
+  return respiration; // μmol/m²/s
 };
 
 // Net assimilation calculation
@@ -107,39 +130,54 @@ export const calculateNetAssimilation = (assimilate: AssimilateBalance): Assimil
   };
 };
 
-// Transpiration calculation
+// Transpiration calculation (educational model)
 export const calculateTranspiration = (
   temperature: number,
   radiation: number,
   humidity: number,
   leafSize: number = 0.05 // m, typical leaf size
 ): number => {
-  // VPD drives transpiration
-  const vpd = calculateVPD(temperature, humidity) / 1000; // kPa
+  // EDUCATIONAL MODEL: How much water plants lose through leaves
+  // Factors: Temperature, Light, and Humidity
 
-  // Energy available for evaporation
-  // 2500 KJ to evaporate 1 liter water
-  const radiationW = radiation * 0.5; // PAR to total radiation
-  const energyAvailable = radiationW / ENERGY_PER_LITER;
+  // 1. Temperature effect (warmer = more water loss)
+  const tempEffect = temperature < 15 ? 0.5 : temperature > 30 ? 1.5 : 1;
 
-  // Transpiration rate (L/m²/h)
-  // Based on VPD and available energy
-  return energyAvailable * vpd * 10; // Simplified formula
+  // 2. Light effect (more light = stomata open = more water loss)
+  const lightEffect = Math.min(1.5, radiation / 200);
+
+  // 3. Humidity effect (dry air = more water loss)
+  const humidityEffect = humidity < 40 ? 1.5 : humidity > 70 ? 0.7 : 1;
+
+  // Basic transpiration rate
+  const baseTranspiration = 2; // L/m²/h typical
+
+  // Combined transpiration
+  return baseTranspiration * tempEffect * lightEffect * humidityEffect;
 };
 
-// RTR (Ratio Temperature to Radiation) for short-term monitoring
-// From Plant Empowerment book
+// RTR (Expected Temperature Increase from Radiation)
+// Based on supervisor's formula: 0.2°C per mol PAR
 export const calculateRTR = (
-  temperature: number,
-  radiation: number // W/m²
+  temperature: number, // Not used in calculation, kept for compatibility
+  parLight: number // μmol/m²/s PAR light
 ): number => {
-  if (radiation === 0) return 0;
+  // EDUCATIONAL NOTE:
+  // RTR tells us how much warmer the greenhouse should be based on light level
+  // Formula from supervisor: RTR = DLI × 0.2°C/mol
+  // Example: 400 μmol/m²/s → 17.3 mol/m²/day → 3.5°C expected increase
 
-  // RTR = Temperature difference / (Radiation/100)
-  // Use temperature above base (typically 18°C for tomatoes)
-  const baseTemp = 18;
-  const tempDiff = temperature - baseTemp;
-  return tempDiff / (radiation / 100);
+  // Convert PAR to Daily Light Integral (DLI)
+  // DLI = PAR (μmol/m²/s) × hours × 3600 / 1,000,000 = mol/m²/day
+  const hoursOfLight = 12; // Typical photoperiod
+  const dli = (parLight * hoursOfLight * 3600) / 1000000; // mol/m²/day
+
+  // RTR = DLI × 0.2°C/mol
+  // This gives the expected temperature increase in °C
+  // The greenhouse temperature should rise by this amount due to solar radiation
+  const rtr = dli * 0.2;
+
+  return rtr;
 };
 
 // Production estimation based on light integral
@@ -187,38 +225,48 @@ export const formatValue = (value: number, decimals: number = 1): string => {
 
 // ==================== WATER BALANCE CALCULATIONS ====================
 
-// Calculate stomatal conductance (simplified model)
+// Calculate stomatal conductance (educational model)
 export const calculateStomatalConductance = (
   vpd: number, // kPa
   light: number, // μmol/m²/s
   co2: number // ppm
 ): number => {
-  // Stomatal conductance in mmol/m²/s
-  // Based on Ball-Berry model simplified
-  const lightFactor = light / (light + 200);
-  const co2Factor = co2 / 400; // normalized to 400 ppm
-  const vpdFactor = Math.max(0.3, 1 - vpd / 3); // Reduces with high VPD
+  // EDUCATIONAL SIMPLIFICATION:
+  // Stomata open/close based on light and humidity
+  // High light = stomata open more
+  // Low humidity (high VPD) = stomata close to save water
 
-  const maxConductance = 800; // mmol/m²/s maximum
-  return maxConductance * lightFactor * co2Factor * vpdFactor;
+  // Simple light response (0 to 1)
+  const lightResponse = Math.min(1, light / 600);
+
+  // Simple VPD response (optimal around 1 kPa)
+  const vpdResponse = vpd < 0.5 ? 0.7 : vpd > 2 ? 0.3 : 1;
+
+  // Basic conductance calculation
+  const baseConductance = 400; // mmol/m²/s baseline
+  return baseConductance * lightResponse * vpdResponse;
 };
 
-// Calculate root water uptake
+// Calculate root water uptake (educational model)
 export const calculateRootUptake = (
   rootTemp: number, // °C
   vpd: number, // kPa
-  radiation: number // W/m²
+  radiation: number // W/m² - kept for compatibility, not used in simplified model
 ): number => {
-  // Root uptake in L/m²/h
-  // Temperature effect (optimal around 20-22°C)
-  const tempFactor = Math.exp(-Math.pow((rootTemp - 21) / 8, 2));
+  // EDUCATIONAL MODEL: How much water roots can take up
+  // Best root temperature: 18-22°C
+  // Note: radiation parameter kept for compatibility but not used in this simplified version
 
-  // Demand driven by transpiration
-  const transpirationDemand = calculateTranspiration(rootTemp + 4, radiation, 65); // Estimate air conditions
+  let uptakeRate;
+  if (rootTemp < 15) uptakeRate = 2; // Cold roots = slow uptake
+  else if (rootTemp > 25) uptakeRate = 3; // Warm roots = reduced uptake
+  else if (rootTemp >= 18 && rootTemp <= 22) uptakeRate = 4; // Optimal uptake
+  else uptakeRate = 3.5;
 
-  // Root uptake capacity
-  const maxUptake = 6; // L/m²/h maximum for mature plants
-  return Math.min(maxUptake * tempFactor, transpirationDemand * 1.1); // 10% safety margin
+  // Increase uptake when plant needs more water (high VPD)
+  const demandFactor = vpd > 2 ? 1.2 : 1;
+
+  return uptakeRate * demandFactor; // L/m²/h
 };
 
 // Calculate water for growth

@@ -200,7 +200,7 @@
       "netAssimilation": "Net Assimilation: Photosynthesis - Respiration",
       "rootUptake": "Root Uptake: f(root temp, VPD), optimal at 20-22°C",
       "transpiration": "Transpiration: VPD-driven, energy limited (2,500 kJ/L)",
-      "stomatalConductance": "Stomatal Conductance: Ball-Berry model, max 800 mmol/m²/s",
+      "stomatalConductance": "Stomatal Conductance: Simplified educational model",
       "wue": "Water Use Efficiency: Fixed at 34 g/L (greenhouse standard)",
       "growthWater": "Growth Water: ~5% of transpiration"
     },

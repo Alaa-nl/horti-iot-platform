@@ -200,7 +200,7 @@
       "netAssimilation": "Netto Assimilatie: Fotosynthese - Ademhaling",
       "rootUptake": "Wortelopname: f(worteltemp, VPD), optimaal bij 20-22°C",
       "transpiration": "Transpiratie: VPD-gestuurd, energie gelimiteerd (2.500 kJ/L)",
-      "stomatalConductance": "Huidmondjesgeleidbaarheid: Ball-Berry model, max 800 mmol/m²/s",
+      "stomatalConductance": "Huidmondjesgeleidbaarheid: Vereenvoudigd onderwijsmodel",
       "wue": "Watergebruiksefficiëntie: Vast op 34 g/L (kas standaard)",
       "growthWater": "Groeiwater: ~5% van transpiratie"
     },

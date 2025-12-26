@@ -6,10 +6,21 @@ import { TimePeriod, AssimilateBalance, WaterBalance, EnergyBalance } from '../t
 import Layout from '../components/layout/Layout';
 import { useTranslation } from 'react-i18next';
 import {
+  EducationalTooltip,
+  EducationalIndicator,
+  LearningObjectives,
+  tooltipContent
+} from '../components/educational/EducationalTooltips';
+import {
+  LimitingFactorsChart,
+  calculateLimitingFactors
+} from '../components/educational/LimitingFactorsChart';
+import {
   calculateNetAssimilation,
   formatValue,
   calculateRTR,
   calculateVPD,
+  calculateVPDi,
   calculateDLI,
   estimateWeeklyProduction,
   calculateTranspiration,
@@ -43,6 +54,7 @@ const PlantBalanceDashboard: React.FC = () => {
   // Additional parameters for water and energy calculations
   const [rootTemperature, setRootTemperature] = useState(20); // °C
   const [irrigationRate, setIrrigationRate] = useState(2.5); // L/m²/h
+  const [airSpeed, setAirSpeed] = useState(1.0); // m/s - Air speed near stomata
 
   // Calculate balance when parameters change
   useEffect(() => {
@@ -73,6 +85,7 @@ const PlantBalanceDashboard: React.FC = () => {
 
   // Calculate additional values
   const vpd = calculateVPD(assimilate.temperature, assimilate.humidity) / 1000; // kPa
+  const vpdi = calculateVPDi(assimilate.leafTemperature, assimilate.temperature, assimilate.humidity) / 1000; // kPa
   const transpiration = calculateTranspiration(
     assimilate.temperature,
     assimilate.parLight * 0.5, // Convert PAR to radiation estimate
@@ -83,7 +96,7 @@ const PlantBalanceDashboard: React.FC = () => {
   const dli = calculateDLI(assimilate.parLight);
   const weeklyProduction = estimateWeeklyProduction(assimilate.netAssimilation);
 
-  // Slider component for parameter input
+  // Slider component for parameter input with tooltips
   const Slider: React.FC<{
     label: string;
     value: number;
@@ -93,12 +106,14 @@ const PlantBalanceDashboard: React.FC = () => {
     step?: number;
     unit: string;
     icon: string;
-  }> = ({ label, value, onChange, min, max, step = 1, unit, icon }) => (
+    tooltipKey?: keyof typeof tooltipContent;
+  }> = ({ label, value, onChange, min, max, step = 1, unit, icon, tooltipKey }) => (
     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 rounded-lg shadow-sm">
       <div className="flex items-center justify-between mb-2">
         <span className="text-sm font-medium text-gray-700 dark:text-gray-200 flex items-center gap-2">
           <span>{icon}</span>
           {label}
+          {tooltipKey && <EducationalTooltip {...tooltipContent[tooltipKey]} />}
         </span>
         <span className="text-sm font-bold text-gray-900 dark:text-white">
           {formatValue(value)} {unit}
@@ -167,7 +182,7 @@ const PlantBalanceDashboard: React.FC = () => {
         icon: '📅',
         calculations: [
           { label: t('plantBalance.shortTermInfo.dailyLightIntegral'), value: `${dli.toFixed(1)} ${t('plantBalance.units.dli')}`, color: 'blue' },
-          { label: t('plantBalance.shortTermInfo.rtrValue'), value: `${calculateRTR(assimilate.temperature, assimilate.parLight * 0.5).toFixed(2)} ${t('plantBalance.units.rtr')}`, color: 'purple' },
+          { label: 'RTR (Expected Temp Rise)', value: `${calculateRTR(assimilate.temperature, assimilate.parLight).toFixed(1)} °C`, color: 'purple' },
           { label: t('plantBalance.vpd'), value: `${vpd.toFixed(2)} ${t('plantBalance.units.vpd')}`, color: 'orange' }
         ],
       },
@@ -240,11 +255,11 @@ const PlantBalanceDashboard: React.FC = () => {
         </div>
 
         <div className="bg-card rounded-lg p-3 border">
-          <p className="text-xs text-muted-foreground font-medium mb-1">VPD Status:</p>
+          <p className="text-xs text-muted-foreground font-medium mb-1">VPD / VPDi:</p>
           <p className="text-sm font-bold text-foreground">
-            {vpd.toFixed(2)} kPa
+            {vpd.toFixed(2)} / {vpdi.toFixed(2)} kPa
             <span className="text-xs text-muted-foreground block mt-1">
-              {vpd > 2.5 ? '⚠️ Too high' : vpd < 0.5 ? '⚠️ Too low' : '✅ Optimal'}
+              {vpdi > 2.5 ? '⚠️ Too high' : vpdi < 0.5 ? '⚠️ Too low' : '✅ Optimal'}
             </span>
           </p>
         </div>
@@ -293,6 +308,16 @@ const PlantBalanceDashboard: React.FC = () => {
           </p>
         </div>
       </div>
+
+      {/* Learning Objectives for Students */}
+      <LearningObjectives
+        objectives={[
+          "Understand how light, CO2, temperature, and humidity affect plant growth",
+          "Learn the balance between photosynthesis (food production) and respiration (energy use)",
+          "Explore how plants manage water through transpiration and root uptake",
+          "See how environmental factors work together to determine plant productivity"
+        ]}
+      />
 
       {/* Balance Type Selector */}
       <div className="flex flex-wrap gap-2 justify-center mb-4">
@@ -358,6 +383,7 @@ const PlantBalanceDashboard: React.FC = () => {
               max={1500}
               unit={t('plantBalance.units.parLight')}
               icon="☀️"
+              tooltipKey="parLight"
             />
 
             <Slider
@@ -371,6 +397,7 @@ const PlantBalanceDashboard: React.FC = () => {
               max={1500}
               unit={t('plantBalance.units.co2')}
               icon="💨"
+              tooltipKey="co2Level"
             />
 
             <Slider
@@ -378,13 +405,13 @@ const PlantBalanceDashboard: React.FC = () => {
               value={assimilate.temperature}
               onChange={(v) => setAssimilate({
                 ...assimilate,
-                temperature: v,
-                leafTemperature: v + 1 // Leaf temperature slightly higher
+                temperature: v
               })}
               min={10}
               max={40}
               unit={t('plantBalance.units.temperature')}
               icon="🌡️"
+              tooltipKey="temperature"
             />
 
             <Slider
@@ -398,6 +425,32 @@ const PlantBalanceDashboard: React.FC = () => {
               max={95}
               unit={t('plantBalance.units.humidity')}
               icon="💧"
+              tooltipKey="vpd"
+            />
+
+            <Slider
+              label="Plant/Leaf Temperature"
+              value={assimilate.leafTemperature}
+              onChange={(v) => setAssimilate({
+                ...assimilate,
+                leafTemperature: v
+              })}
+              min={10}
+              max={45}
+              unit="°C"
+              icon="🍃"
+              tooltipKey="temperature"
+            />
+
+            <Slider
+              label="Air Speed (near stomata)"
+              value={airSpeed}
+              onChange={(v) => setAirSpeed(v)}
+              min={0.1}
+              max={3}
+              step={0.1}
+              unit="m/s"
+              icon="💨"
             />
           </div>
 
@@ -436,11 +489,21 @@ const PlantBalanceDashboard: React.FC = () => {
                 📊 {t('plantBalance.psychrometricCalculations')}
               </h3>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
             <div className="bg-purple-100 dark:bg-purple-900/30 border border-purple-300 dark:border-purple-700 p-3 rounded-lg">
-              <div className="text-xs text-purple-700 dark:text-purple-300 font-semibold">{t('plantBalance.vpd')}</div>
+              <div className="text-xs text-purple-700 dark:text-purple-300 font-semibold">VPD (Air)</div>
               <div className="text-lg font-bold text-purple-900 dark:text-purple-200">
-                {vpd.toFixed(2)} {t('plantBalance.units.vpd')}
+                {vpd.toFixed(2)} kPa
+              </div>
+            </div>
+
+            <div className="bg-indigo-100 dark:bg-indigo-900/30 border border-indigo-300 dark:border-indigo-700 p-3 rounded-lg">
+              <div className="text-xs text-indigo-700 dark:text-indigo-300 font-semibold">VPDi (Plant)</div>
+              <div className="text-lg font-bold text-indigo-900 dark:text-indigo-200">
+                {vpdi.toFixed(2)} kPa
+              </div>
+              <div className="text-xs text-indigo-600 dark:text-indigo-400">
+                ΔT: {(assimilate.leafTemperature - assimilate.temperature).toFixed(1)}°C
               </div>
             </div>
 
@@ -478,7 +541,7 @@ const PlantBalanceDashboard: React.FC = () => {
                 {formatValue(assimilate.photosynthesis)}
               </div>
               <div className="text-xs text-green-600 dark:text-green-400 mt-1">
-                {t('plantBalance.units.photosynthesis')} ({t('plantBalance.caciGradient')})
+                {t('plantBalance.units.photosynthesis')}
               </div>
             </div>
 
@@ -488,7 +551,7 @@ const PlantBalanceDashboard: React.FC = () => {
                 {formatValue(assimilate.respiration)}
               </div>
               <div className="text-xs text-red-600 dark:text-red-400 mt-1">
-                {t('plantBalance.units.respiration')} (Q10 model)
+                {t('plantBalance.units.respiration')}
               </div>
             </div>
 
@@ -508,6 +571,20 @@ const PlantBalanceDashboard: React.FC = () => {
             label={t('plantBalance.assimilateBalanceStatus')}
           />
 
+          {/* Limiting Factors Visualization */}
+          <div className="mt-6">
+            <LimitingFactorsChart
+              factors={calculateLimitingFactors(
+                assimilate.parLight,
+                assimilate.co2Level,
+                assimilate.temperature,
+                assimilate.humidity,
+                vpdi
+              )}
+              title="Growth Limiting Factors (as requested by supervisor)"
+            />
+          </div>
+
           {/* Time Period Specific Insights */}
           <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
             <h4 className="text-gray-900 dark:text-white font-semibold mb-3">
@@ -526,7 +603,7 @@ const PlantBalanceDashboard: React.FC = () => {
               )}
               {selectedPeriod === 'short-term' && (
                 <>
-                  <li className="flex items-start"><span className="text-blue-600 dark:text-blue-400 mr-2">•</span> RTR of <span className="font-semibold ml-1">{calculateRTR(assimilate.temperature, assimilate.parLight * 0.5).toFixed(2)}</span> (optimal: 4-5)</li>
+                  <li className="flex items-start"><span className="text-blue-600 dark:text-blue-400 mr-2">•</span> RTR (expected temp increase): <span className="font-semibold ml-1">{calculateRTR(assimilate.temperature, assimilate.parLight).toFixed(1)}°C</span> (based on 0.2°C/mol PAR)</li>
                   <li className="flex items-start"><span className="text-blue-600 dark:text-blue-400 mr-2">•</span> Daily Light Integral: <span className="font-semibold ml-1">{dli.toFixed(1)} mol/m²/day</span> (target: 15-30 for tomatoes)</li>
                   <li className="flex items-start"><span className="text-blue-600 dark:text-blue-400 mr-2">•</span> VPD: <span className="font-semibold ml-1">{vpd.toFixed(2)} kPa</span> (optimal: 0.8-1.2 kPa)</li>
                   <li className="flex items-start">
@@ -824,7 +901,7 @@ const PlantBalanceDashboard: React.FC = () => {
                   VPD = 0.611 × exp(17.27T/(T+237.3)) × (1 - RH/100)
                 </div>
                 <div className="text-cyan-700 dark:text-cyan-400">
-                  RTR = (T - 18°C) / (Radiation/100)
+                  RTR = DLI × 0.2°C/mol PAR
                 </div>
               </div>
             </div>
