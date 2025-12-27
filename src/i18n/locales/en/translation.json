@@ -122,8 +122,8 @@
     "anomalyDetection": "Anomaly Detection"
   },
   "plantBalance": {
-    "title": "Plant Assimilate Balance Calculator",
-    "subtitle": "Based on Plant Empowerment principles and greenhouse cultivation methods",
+    "title": "Plant Balance Dashboard",
+    "subtitle": "",
     "infoMessage": "Calculations based on scientific methodology: WUE = 34 g/L, VPD effects on stomatal conductance, enthalpy calculations, and 2,500 kJ to evaporate 1 liter water. Adjust parameters to see the effects across different time periods.",
     "photosynthesis": "Photosynthesis",
     "respiration": "Respiration",

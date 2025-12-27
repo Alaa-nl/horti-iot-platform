@@ -122,8 +122,8 @@
     "anomalyDetection": "Anomalie detectie"
   },
   "plantBalance": {
-    "title": "Plant Assimilatiebalans Calculator",
-    "subtitle": "Gebaseerd op Plant Empowerment principes en kasteeltmethoden",
+    "title": "Plant Balans Dashboard",
+    "subtitle": "",
     "infoMessage": "Berekeningen gebaseerd op wetenschappelijke methodologie: WUE = 34 g/L, VPD effecten op huidmondjesgeleidbaarheid, enthalpie berekeningen, en 2.500 kJ om 1 liter water te verdampen. Pas parameters aan om de effecten over verschillende tijdsperioden te zien.",
     "photosynthesis": "Fotosynthese",
     "respiration": "Ademhaling",
