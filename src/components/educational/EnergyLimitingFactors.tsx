@@ -1,5 +1,6 @@
 import React from 'react';
 import { CircularGauge } from './CircularGauge';
+import { Sun, AlertTriangle, AlertCircle, CheckCircle } from 'lucide-react';
 
 interface EnergyLimitingFactorsProps {
   netRadiation: number;
@@ -90,17 +91,18 @@ export const EnergyLimitingFactors: React.FC<EnergyLimitingFactorsProps> = ({
   );
 
   const getStatus = (value: number) => {
-    if (value < 60) return { text: 'limiting', emoji: '⚠️' };
-    if (value < 80) return { text: 'adequate', emoji: '🔶' };
-    return { text: 'optimal', emoji: '✅' };
+    if (value < 60) return { text: 'limiting', icon: <AlertTriangle className="w-6 h-6 text-orange-500" /> };
+    if (value < 80) return { text: 'adequate', icon: <AlertCircle className="w-6 h-6 text-yellow-500" /> };
+    return { text: 'optimal', icon: <CheckCircle className="w-6 h-6 text-green-500" /> };
   };
 
   const limitingStatus = getStatus(mostLimiting.value);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-      <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
-        ☀️ Energy Limiting Factors
+      <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+        <Sun className="w-5 h-5 text-yellow-500" />
+        Energy Limiting Factors
       </h4>
 
       {/* Circular gauges grid */}
@@ -127,9 +129,7 @@ export const EnergyLimitingFactors: React.FC<EnergyLimitingFactorsProps> = ({
               {mostLimiting.name} is currently {limitingStatus.text} at {mostLimiting.value}% ({mostLimiting.actual})
             </p>
           </div>
-          <div className="text-2xl">
-            {limitingStatus.emoji}
-          </div>
+          {limitingStatus.icon}
         </div>
       </div>
 

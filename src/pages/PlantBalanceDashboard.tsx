@@ -6,6 +6,24 @@ import { TimePeriod, AssimilateBalance, WaterBalance, EnergyBalance } from '../t
 import Layout from '../components/layout/Layout';
 import { useTranslation } from 'react-i18next';
 import {
+  Zap,
+  Leaf,
+  Sun,
+  Wind,
+  Thermometer,
+  Droplet,
+  Droplets,
+  BarChart3,
+  TrendingUp,
+  Calendar,
+  CheckCircle,
+  Flame,
+  Snowflake,
+  AlertTriangle,
+  Lightbulb,
+  Activity
+} from 'lucide-react';
+import {
   EducationalTooltip,
   EducationalIndicator,
   tooltipContent
@@ -106,13 +124,13 @@ const PlantBalanceDashboard: React.FC = () => {
     max: number;
     step?: number;
     unit: string;
-    icon: string;
+    icon: React.ReactNode;
     tooltipKey?: keyof typeof tooltipContent;
   }> = ({ label, value, onChange, min, max, step = 1, unit, icon, tooltipKey }) => (
     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 rounded-lg shadow-sm">
       <div className="flex items-center justify-between mb-2">
         <span className="text-sm font-medium text-gray-700 dark:text-gray-200 flex items-center gap-2">
-          <span>{icon}</span>
+          {icon}
           {label}
           {tooltipKey && <EducationalTooltip {...tooltipContent[tooltipKey]} />}
         </span>
@@ -170,7 +188,7 @@ const PlantBalanceDashboard: React.FC = () => {
       'long-term': {
         title: t('plantBalance.longTermInfo.title'),
         description: t('plantBalance.longTermInfo.description'),
-        icon: '📈',
+        icon: <TrendingUp className="w-6 h-6 text-gray-600 dark:text-gray-400" />,
         calculations: [
           { label: t('plantBalance.longTermInfo.weeklyLightSum'), value: `${(dli * 7).toFixed(1)} ${t('plantBalance.units.weeklyProduction').split('/')[1]}`, color: 'blue' },
           { label: t('plantBalance.longTermInfo.expectedProduction'), value: `${weeklyProduction.toFixed(2)} ${t('plantBalance.units.weeklyProduction')}`, color: 'green' },
@@ -180,7 +198,7 @@ const PlantBalanceDashboard: React.FC = () => {
       'short-term': {
         title: t('plantBalance.shortTermInfo.title'),
         description: t('plantBalance.shortTermInfo.description'),
-        icon: '📅',
+        icon: <Calendar className="w-6 h-6 text-gray-600 dark:text-gray-400" />,
         calculations: [
           { label: t('plantBalance.shortTermInfo.dailyLightIntegral'), value: `${dli.toFixed(1)} ${t('plantBalance.units.dli')}`, color: 'blue' },
           { label: 'RTR (Expected Temp Rise)', value: `${calculateRTR(assimilate.temperature, assimilate.parLight).toFixed(1)} °C`, color: 'purple' },
@@ -190,7 +208,7 @@ const PlantBalanceDashboard: React.FC = () => {
       'real-time': {
         title: t('plantBalance.realTimeInfo.title'),
         description: t('plantBalance.realTimeInfo.description'),
-        icon: '⚡',
+        icon: <Zap className="w-6 h-6 text-emerald-500 dark:text-emerald-400" />,
         calculations: [
           { label: t('plantBalance.photosynthesis'), value: `${formatValue(assimilate.photosynthesis)} ${t('plantBalance.units.photosynthesis')}`, color: 'green' },
           { label: t('plantBalance.transpiration'), value: `${formatValue(transpiration)} ${t('plantBalance.units.transpiration')}`, color: 'blue' },
@@ -204,7 +222,7 @@ const PlantBalanceDashboard: React.FC = () => {
     return (
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 rounded-lg mb-6 shadow-sm">
         <div className="flex items-center gap-2 mb-2">
-          <span className="text-2xl">{info.icon}</span>
+          {info.icon}
           <h4 className="text-lg font-semibold text-gray-900 dark:text-white">{info.title}</h4>
         </div>
         <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">{info.description}</p>
@@ -241,10 +259,25 @@ const PlantBalanceDashboard: React.FC = () => {
       <div className="space-y-3">
         <div className="bg-card rounded-lg p-3 border">
           <p className="text-xs text-muted-foreground font-medium mb-1">Current Mode:</p>
-          <p className="text-sm font-bold text-foreground">
-            {selectedPeriod === 'long-term' && '📈 Long-term Planning'}
-            {selectedPeriod === 'short-term' && '📅 24-Hour Monitoring'}
-            {selectedPeriod === 'real-time' && '⚡ Real-time Analysis'}
+          <p className="text-sm font-bold text-foreground flex items-center gap-2">
+            {selectedPeriod === 'long-term' && (
+              <>
+                <TrendingUp className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                Long-term Planning
+              </>
+            )}
+            {selectedPeriod === 'short-term' && (
+              <>
+                <Calendar className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                24-Hour Monitoring
+              </>
+            )}
+            {selectedPeriod === 'real-time' && (
+              <>
+                <Zap className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
+                Real-time Analysis
+              </>
+            )}
           </p>
         </div>
 
@@ -259,8 +292,23 @@ const PlantBalanceDashboard: React.FC = () => {
           <p className="text-xs text-muted-foreground font-medium mb-1">VPD / VPDi:</p>
           <p className="text-sm font-bold text-foreground">
             {vpd.toFixed(2)} / {vpdi.toFixed(2)} kPa
-            <span className="text-xs text-muted-foreground block mt-1">
-              {vpdi > 2.5 ? '⚠️ Too high' : vpdi < 0.5 ? '⚠️ Too low' : '✅ Optimal'}
+            <span className="text-xs text-muted-foreground block mt-1 flex items-center gap-1">
+              {vpdi > 2.5 ? (
+                <>
+                  <AlertTriangle className="w-3 h-3 text-orange-500" />
+                  Too high
+                </>
+              ) : vpdi < 0.5 ? (
+                <>
+                  <AlertTriangle className="w-3 h-3 text-orange-500" />
+                  Too low
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-3 h-3 text-green-500" />
+                  Optimal
+                </>
+              )}
             </span>
           </p>
         </div>
@@ -275,8 +323,9 @@ const PlantBalanceDashboard: React.FC = () => {
         <Separator className="my-3" />
 
         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-          <p className="text-xs font-medium text-blue-600 dark:text-blue-400 mb-2">
-            💡 Quick Tips
+          <p className="text-xs font-medium text-blue-600 dark:text-blue-400 mb-2 flex items-center gap-1">
+            <Lightbulb className="w-3 h-3" />
+            Quick Tips
           </p>
           <ul className="text-xs text-muted-foreground space-y-1">
             <li>• Optimal VPD: 0.8-1.2 kPa</li>
@@ -308,21 +357,24 @@ const PlantBalanceDashboard: React.FC = () => {
           onClick={() => setSelectedBalance('assimilate')}
           className="flex items-center gap-2"
         >
-          🌿 {t('plantBalance.assimilateBalance')}
+          <Leaf className="w-4 h-4" />
+          {t('plantBalance.assimilateBalance')}
         </Button>
         <Button
           variant={selectedBalance === 'water' ? 'default' : 'outline'}
           onClick={() => setSelectedBalance('water')}
           className="flex items-center gap-2"
         >
-          💧 {t('plantBalance.waterBalance')}
+          <Droplet className="w-4 h-4" />
+          {t('plantBalance.waterBalance')}
         </Button>
         <Button
           variant={selectedBalance === 'energy' ? 'default' : 'outline'}
           onClick={() => setSelectedBalance('energy')}
           className="flex items-center gap-2"
         >
-          ☀️ {t('plantBalance.energyBalance')}
+          <Sun className="w-4 h-4" />
+          {t('plantBalance.energyBalance')}
         </Button>
       </div>
 
@@ -336,9 +388,24 @@ const PlantBalanceDashboard: React.FC = () => {
             size="sm"
             className="flex items-center gap-2"
           >
-            {period === 'long-term' && `📈 ${t('plantBalance.timePeriods.longTerm')}`}
-            {period === 'short-term' && `📅 ${t('plantBalance.timePeriods.shortTerm')}`}
-            {period === 'real-time' && `⚡ ${t('plantBalance.timePeriods.realTime')}`}
+            {period === 'long-term' && (
+              <>
+                <TrendingUp className="w-3 h-3" />
+                {t('plantBalance.timePeriods.longTerm')}
+              </>
+            )}
+            {period === 'short-term' && (
+              <>
+                <Calendar className="w-3 h-3" />
+                {t('plantBalance.timePeriods.shortTerm')}
+              </>
+            )}
+            {period === 'real-time' && (
+              <>
+                <Zap className="w-3 h-3" />
+                {t('plantBalance.timePeriods.realTime')}
+              </>
+            )}
           </Button>
         ))}
       </div>
@@ -348,8 +415,9 @@ const PlantBalanceDashboard: React.FC = () => {
         <CardContent className="p-6">
           {renderTimePeriodInfo()}
 
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
-            🌱 {t('plantBalance.inputParameters')}
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+            <Leaf className="w-5 h-5 text-green-600 dark:text-green-400" />
+            {t('plantBalance.inputParameters')}
           </h3>
 
           {/* Parameter Controls - Manual adjustment only */}
@@ -364,7 +432,7 @@ const PlantBalanceDashboard: React.FC = () => {
               min={0}
               max={1500}
               unit={t('plantBalance.units.parLight')}
-              icon="☀️"
+              icon={<Sun className="w-4 h-4 text-yellow-500" />}
               tooltipKey="parLight"
             />
 
@@ -378,7 +446,7 @@ const PlantBalanceDashboard: React.FC = () => {
               min={200}
               max={1500}
               unit={t('plantBalance.units.co2')}
-              icon="💨"
+              icon={<Wind className="w-4 h-4 text-gray-500" />}
               tooltipKey="co2Level"
             />
 
@@ -392,7 +460,7 @@ const PlantBalanceDashboard: React.FC = () => {
               min={10}
               max={40}
               unit={t('plantBalance.units.temperature')}
-              icon="🌡️"
+              icon={<Thermometer className="w-4 h-4 text-orange-500" />}
               tooltipKey="temperature"
             />
 
@@ -406,7 +474,7 @@ const PlantBalanceDashboard: React.FC = () => {
               min={30}
               max={95}
               unit={t('plantBalance.units.humidity')}
-              icon="💧"
+              icon={<Droplet className="w-4 h-4 text-blue-500" />}
               tooltipKey="vpd"
             />
 
@@ -420,7 +488,7 @@ const PlantBalanceDashboard: React.FC = () => {
               min={10}
               max={45}
               unit="°C"
-              icon="🍃"
+              icon={<Leaf className="w-4 h-4 text-green-500" />}
               tooltipKey="temperature"
             />
 
@@ -432,7 +500,7 @@ const PlantBalanceDashboard: React.FC = () => {
               max={3}
               step={0.1}
               unit="m/s"
-              icon="💨"
+              icon={<Wind className="w-4 h-4 text-gray-500" />}
             />
           </div>
 
@@ -446,7 +514,7 @@ const PlantBalanceDashboard: React.FC = () => {
                 min={15}
                 max={30}
                 unit="°C"
-                icon="🌱"
+                icon={<Leaf className="w-4 h-4 text-green-600" />}
               />
               <Slider
                 label="Irrigation Rate"
@@ -456,7 +524,7 @@ const PlantBalanceDashboard: React.FC = () => {
                 max={10}
                 step={0.5}
                 unit="L/m²/h"
-                icon="💦"
+                icon={<Droplets className="w-4 h-4 text-blue-600" />}
               />
             </div>
           )}
@@ -467,8 +535,9 @@ const PlantBalanceDashboard: React.FC = () => {
           {selectedBalance === 'assimilate' && (
             <>
               {/* Psychrometric Values */}
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-                📊 {t('plantBalance.psychrometricCalculations')}
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                {t('plantBalance.psychrometricCalculations')}
               </h3>
 
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
@@ -512,8 +581,9 @@ const PlantBalanceDashboard: React.FC = () => {
           </div>
 
           {/* Main Results */}
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-            🌿 {t('plantBalance.assimilateBalanceResults')}
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <Leaf className="w-5 h-5 text-green-600 dark:text-green-400" />
+            {t('plantBalance.assimilateBalanceResults')}
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -569,10 +639,25 @@ const PlantBalanceDashboard: React.FC = () => {
 
           {/* Time Period Specific Insights */}
           <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-            <h4 className="text-gray-900 dark:text-white font-semibold mb-3">
-              {selectedPeriod === 'long-term' && `📈 ${t('plantBalance.longTermInfo.title')}:`}
-              {selectedPeriod === 'short-term' && `📅 ${t('plantBalance.shortTermInfo.title')}:`}
-              {selectedPeriod === 'real-time' && `⚡ ${t('plantBalance.momentaneousOptimization')}:`}
+            <h4 className="text-gray-900 dark:text-white font-semibold mb-3 flex items-center gap-2">
+              {selectedPeriod === 'long-term' && (
+                <>
+                  <TrendingUp className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                  {t('plantBalance.longTermInfo.title')}:
+                </>
+              )}
+              {selectedPeriod === 'short-term' && (
+                <>
+                  <Calendar className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                  {t('plantBalance.shortTermInfo.title')}:
+                </>
+              )}
+              {selectedPeriod === 'real-time' && (
+                <>
+                  <Zap className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
+                  {t('plantBalance.momentaneousOptimization')}:
+                </>
+              )}
             </h4>
             <ul className="text-sm text-gray-700 dark:text-gray-300 space-y-2">
               {selectedPeriod === 'long-term' && (
@@ -590,7 +675,22 @@ const PlantBalanceDashboard: React.FC = () => {
                   <li className="flex items-start"><span className="text-blue-600 dark:text-blue-400 mr-2">•</span> VPD: <span className="font-semibold ml-1">{vpd.toFixed(2)} kPa</span> (optimal: 0.8-1.2 kPa)</li>
                   <li className="flex items-start">
                     <span className={`mr-2 ${vpd > 2.5 || vpd < 0.5 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>•</span>
-                    {vpd > 2.5 ? '⚠️ VPD too high - stomata closing!' : vpd < 0.5 ? '⚠️ VPD too low - disease risk!' : '✅ VPD in good range'}
+                    {vpd > 2.5 ? (
+                      <span className="flex items-center gap-1">
+                        <AlertTriangle className="w-4 h-4 text-orange-500 inline" />
+                        VPD too high - stomata closing!
+                      </span>
+                    ) : vpd < 0.5 ? (
+                      <span className="flex items-center gap-1">
+                        <AlertTriangle className="w-4 h-4 text-orange-500 inline" />
+                        VPD too low - disease risk!
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1">
+                        <CheckCircle className="w-4 h-4 text-green-500 inline" />
+                        VPD in good range
+                      </span>
+                    )}
                   </li>
                 </>
               )}
@@ -610,8 +710,9 @@ const PlantBalanceDashboard: React.FC = () => {
           {/* Water Balance Content */}
           {selectedBalance === 'water' && waterBalance && (
             <>
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-                💧 Water Balance Results
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <Droplet className="w-5 h-5 text-blue-500" />
+                Water Balance Results
               </h3>
 
               {/* Water Input/Output Display */}
@@ -682,9 +783,22 @@ const PlantBalanceDashboard: React.FC = () => {
                   waterBalance.waterStatus === 'deficit' ? 'text-red-600 dark:text-red-400' :
                   'text-green-600 dark:text-green-400'
                 }`}>
-                  Status: {waterBalance.waterStatus === 'surplus' ? '💧 Water Surplus' :
-                          waterBalance.waterStatus === 'deficit' ? '⚠️ Water Deficit' :
-                          '✅ Balanced'}
+                  Status: {waterBalance.waterStatus === 'surplus' ? (
+                    <span className="inline-flex items-center gap-1">
+                      <Droplet className="w-4 h-4" />
+                      Water Surplus
+                    </span>
+                  ) : waterBalance.waterStatus === 'deficit' ? (
+                    <span className="inline-flex items-center gap-1">
+                      <AlertTriangle className="w-4 h-4" />
+                      Water Deficit
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1">
+                      <CheckCircle className="w-4 h-4" />
+                      Balanced
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -726,8 +840,9 @@ const PlantBalanceDashboard: React.FC = () => {
           {/* Energy Balance Content */}
           {selectedBalance === 'energy' && energyBalance && (
             <>
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-                ☀️ Energy Balance Results
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <Sun className="w-5 h-5 text-yellow-500" />
+                Energy Balance Results
               </h3>
 
               {/* Energy Input/Output Display */}
@@ -798,9 +913,22 @@ const PlantBalanceDashboard: React.FC = () => {
                   energyBalance.energyStatus === 'cooling' ? 'text-blue-600 dark:text-blue-400' :
                   'text-green-600 dark:text-green-400'
                 }`}>
-                  Status: {energyBalance.energyStatus === 'heating' ? '🔥 Net Heating' :
-                          energyBalance.energyStatus === 'cooling' ? '❄️ Net Cooling' :
-                          '✅ Balanced'}
+                  Status: {energyBalance.energyStatus === 'heating' ? (
+                    <span className="inline-flex items-center gap-1">
+                      <Flame className="w-4 h-4" />
+                      Net Heating
+                    </span>
+                  ) : energyBalance.energyStatus === 'cooling' ? (
+                    <span className="inline-flex items-center gap-1">
+                      <Snowflake className="w-4 h-4" />
+                      Net Cooling
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1">
+                      <CheckCircle className="w-4 h-4" />
+                      Balanced
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -852,8 +980,9 @@ const PlantBalanceDashboard: React.FC = () => {
           <div className="space-y-4">
             {/* Assimilate Balance */}
             <div>
-              <h4 className="font-semibold text-green-600 dark:text-green-400 mb-2">
-                🌿 {t('plantBalance.assimilateBalanceCalculations')}:
+              <h4 className="font-semibold text-green-600 dark:text-green-400 mb-2 flex items-center gap-2">
+                <Leaf className="w-4 h-4" />
+                {t('plantBalance.assimilateBalanceCalculations')}:
               </h4>
               <ul className="text-sm text-gray-600 dark:text-gray-300 ml-4 space-y-1">
                 <li>• {t('plantBalance.methodDescriptions.photosynthesis')}</li>
@@ -865,8 +994,9 @@ const PlantBalanceDashboard: React.FC = () => {
 
             {/* Water Balance */}
             <div>
-              <h4 className="font-semibold text-blue-600 dark:text-blue-400 mb-2">
-                💧 {t('plantBalance.waterBalanceCalculations')}:
+              <h4 className="font-semibold text-blue-600 dark:text-blue-400 mb-2 flex items-center gap-2">
+                <Droplet className="w-4 h-4" />
+                {t('plantBalance.waterBalanceCalculations')}:
               </h4>
               <ul className="text-sm text-gray-600 dark:text-gray-300 ml-4 space-y-1">
                 <li>• {t('plantBalance.methodDescriptions.rootUptake')}</li>
@@ -879,8 +1009,9 @@ const PlantBalanceDashboard: React.FC = () => {
 
             {/* Energy Balance */}
             <div>
-              <h4 className="font-semibold text-orange-600 dark:text-orange-400 mb-2">
-                ☀️ Energy Balance Calculations:
+              <h4 className="font-semibold text-orange-600 dark:text-orange-400 mb-2 flex items-center gap-2">
+                <Sun className="w-4 h-4" />
+                Energy Balance Calculations:
               </h4>
               <ul className="text-sm text-gray-600 dark:text-gray-300 ml-4 space-y-1">
                 <li>• <strong>Net Radiation:</strong> PAR × 0.5 × 4.6 W/m²</li>
@@ -919,8 +1050,9 @@ const PlantBalanceDashboard: React.FC = () => {
             </div>
 
             <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg mb-3">
-              <h4 className="font-semibold text-blue-700 dark:text-blue-400 mb-1">
-                🌬️ Environmental Requirements:
+              <h4 className="font-semibold text-blue-700 dark:text-blue-400 mb-1 flex items-center gap-2">
+                <Wind className="w-4 h-4" />
+                Environmental Requirements:
               </h4>
               <p className="text-sm text-gray-600 dark:text-gray-300">
                 <strong>Air Speed:</strong> Must be ≥ 1 m/s for accurate boundary layer calculations
@@ -932,8 +1064,9 @@ const PlantBalanceDashboard: React.FC = () => {
             </div>
 
             <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg">
-              <h4 className="font-semibold text-yellow-700 dark:text-yellow-400 mb-1">
-                💡 Test Scenarios:
+              <h4 className="font-semibold text-yellow-700 dark:text-yellow-400 mb-1 flex items-center gap-2">
+                <Lightbulb className="w-4 h-4" />
+                Test Scenarios:
               </h4>
               <p className="text-sm text-gray-600 dark:text-gray-300">
                 1. Optimal: PAR=800, CO₂=1000, T=25°C, RH=70%, Air=1.2 m/s

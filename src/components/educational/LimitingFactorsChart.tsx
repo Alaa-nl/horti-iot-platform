@@ -1,5 +1,6 @@
 import React from 'react';
 import { CircularGauge } from './CircularGauge';
+import { AlertTriangle, AlertCircle, CheckCircle } from 'lucide-react';
 
 interface Factor {
   name: string;
@@ -51,10 +52,11 @@ export const LimitingFactorsChart: React.FC<LimitingFactorsChartProps> = ({
               {mostLimiting.name} is currently limiting growth at {mostLimiting.value}%
             </p>
           </div>
-          <div className="text-2xl">
-            {mostLimiting.status === 'limiting' ? '⚠️' :
-             mostLimiting.status === 'adequate' ? '🔶' : '✅'}
-          </div>
+          {mostLimiting.status === 'limiting' ?
+            <AlertTriangle className="w-6 h-6 text-orange-500" /> :
+           mostLimiting.status === 'adequate' ?
+            <AlertCircle className="w-6 h-6 text-yellow-500" /> :
+            <CheckCircle className="w-6 h-6 text-green-500" />}
         </div>
       </div>
 
