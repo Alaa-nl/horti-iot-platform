@@ -22,12 +22,10 @@ import {
   Snowflake,
   AlertTriangle,
   Lightbulb,
-  Activity,
   Trees
 } from 'lucide-react';
 import {
   EducationalTooltip,
-  EducationalIndicator,
   tooltipContent
 } from '../components/educational/EducationalTooltips';
 import {
@@ -450,7 +448,7 @@ const PlantBalanceDashboard: React.FC = () => {
             />
 
             <Slider
-              label={t('plantBalance.temperature')}
+              label="Greenhouse Temperature"
               value={assimilate.temperature}
               onChange={(v) => setAssimilate({
                 ...assimilate,
@@ -539,16 +537,9 @@ const PlantBalanceDashboard: React.FC = () => {
                 {t('plantBalance.psychrometricCalculations')}
               </h3>
 
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
-            <div className="bg-purple-100 dark:bg-purple-900/30 border border-purple-300 dark:border-purple-700 p-3 rounded-lg">
-              <div className="text-xs text-purple-700 dark:text-purple-300 font-semibold">VPD (Air)</div>
-              <div className="text-lg font-bold text-purple-900 dark:text-purple-200">
-                {vpd.toFixed(2)} kPa
-              </div>
-            </div>
-
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
             <div className="bg-indigo-100 dark:bg-indigo-900/30 border border-indigo-300 dark:border-indigo-700 p-3 rounded-lg">
-              <div className="text-xs text-indigo-700 dark:text-indigo-300 font-semibold">VPDi (Plant)</div>
+              <div className="text-xs text-indigo-700 dark:text-indigo-300 font-semibold">VPDi (plant vs greenhouse air)</div>
               <div className="text-lg font-bold text-indigo-900 dark:text-indigo-200">
                 {vpdi.toFixed(2)} kPa
               </div>
@@ -558,7 +549,7 @@ const PlantBalanceDashboard: React.FC = () => {
             </div>
 
             <div className="bg-cyan-100 dark:bg-cyan-900/30 border border-cyan-300 dark:border-cyan-700 p-3 rounded-lg">
-              <div className="text-xs text-cyan-700 dark:text-cyan-300 font-semibold">{t('plantBalance.enthalpy')}</div>
+              <div className="text-xs text-cyan-700 dark:text-cyan-300 font-semibold">{t('plantBalance.enthalpy')} (plant vs greenhouse air)</div>
               <div className="text-lg font-bold text-cyan-900 dark:text-cyan-200">
                 {enthalpy.toFixed(1)} {t('plantBalance.units.enthalpy')}
               </div>
