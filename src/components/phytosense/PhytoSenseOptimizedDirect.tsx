@@ -7,7 +7,6 @@ import * as XLSX from 'xlsx';
 import PhytoSenseChart from './PhytoSenseChart';
 import { Card } from '../ui/card';
 import { Button } from '../ui/button';
-import { Badge } from '../ui/badge';
 
 interface PhytoSenseOptimizedProps {
   className?: string;
@@ -296,14 +295,6 @@ const PhytoSenseOptimizedDirect: React.FC<PhytoSenseOptimizedProps> = ({ classNa
     }
   }, [selectedDevice, measurementType, getDateRange]);
 
-  // Test with known working date
-  const testKnownDate = () => {
-    console.log('🧪 Testing with known working date: December 31, 2023');
-    setDateRange('custom');
-    setCustomStartDate('2023-12-31T00:00');
-    setCustomEndDate('2024-01-01T00:00');
-  };
-
   // Export to Excel
   const handleExport = useCallback(() => {
     if (!chartData.length || !selectedDevice) return;
@@ -346,12 +337,7 @@ const PhytoSenseOptimizedDirect: React.FC<PhytoSenseOptimizedProps> = ({ classNa
     <Card className={`p-6 ${className}`}>
       {/* Header */}
       <div className="mb-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-foreground">PhytoSense Data (API)</h2>
-          <Badge variant="default" className="bg-green-600">
-            🔌 API via Backend Proxy
-          </Badge>
-        </div>
+        <h2 className="text-2xl font-bold text-foreground">PhytoSense Data</h2>
       </div>
 
       {/* Controls Grid */}
@@ -429,7 +415,6 @@ const PhytoSenseOptimizedDirect: React.FC<PhytoSenseOptimizedProps> = ({ classNa
           </div>
           <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">
             <p>Selected range: {customStartDate ? new Date(customStartDate).toLocaleString() : 'Not set'} to {customEndDate ? new Date(customEndDate).toLocaleString() : 'Not set'}</p>
-            <p className="text-xs mt-1">💡 Tip: Click "Test Dec 31, 2023" to use a known working date</p>
           </div>
         </div>
       )}
@@ -441,15 +426,7 @@ const PhytoSenseOptimizedDirect: React.FC<PhytoSenseOptimizedProps> = ({ classNa
           disabled={loading}
           className="bg-green-600 hover:bg-green-700"
         >
-          {loading ? 'Fetching from API...' : 'Fetch Data from API'}
-        </Button>
-        <Button
-          onClick={testKnownDate}
-          disabled={loading}
-          variant="outline"
-          className="border-blue-500 text-blue-600 hover:bg-blue-50"
-        >
-          Test Dec 31, 2023
+          {loading ? 'Fetching Data...' : 'Fetch Data'}
         </Button>
         <Button
           onClick={handleExport}
@@ -509,7 +486,7 @@ const PhytoSenseOptimizedDirect: React.FC<PhytoSenseOptimizedProps> = ({ classNa
       {/* No Data State */}
       {!loading && !error && chartData.length === 0 && (
         <div className="text-center py-20 text-gray-500">
-          <p>Click "Fetch Data from API" to load sensor data directly from PhytoSense</p>
+          <p>Click "Fetch Data" to load sensor data directly from PhytoSense</p>
         </div>
       )}
     </Card>
