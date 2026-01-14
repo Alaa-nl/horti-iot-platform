@@ -1,5 +1,5 @@
 import React from 'react';
-import { CircularGauge } from './CircularGauge';
+import { RadialBar, MultiRadialBar } from './RadialBar';
 import { Droplet, AlertTriangle, AlertCircle, CheckCircle } from 'lucide-react';
 
 interface WaterLimitingFactorsProps {
@@ -66,12 +66,12 @@ export const WaterLimitingFactors: React.FC<WaterLimitingFactorsProps> = ({
     {
       name: 'Irrigation',
       value: Math.round(irrigationPercent),
-      actual: `${irrigationRate.toFixed(1)} L/m²/h`
+      actual: `${irrigationRate.toFixed(1)} L/m²`
     },
     {
       name: 'Stomatal Flow',
       value: Math.round(stomatalPercent),
-      actual: `${Math.round(stomatalConductance)} mmol/m²/s`
+      actual: `${Math.round(stomatalConductance)} mmol`
     }
   ];
 
@@ -95,17 +95,44 @@ export const WaterLimitingFactors: React.FC<WaterLimitingFactorsProps> = ({
         Water Limiting Factors
       </h4>
 
-      {/* Circular gauges grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-6">
-        {factors.map((factor, index) => (
-          <CircularGauge
-            key={index}
-            label={factor.name}
-            value={factor.value}
-            size={110}
-            actualValue={factor.actual}
-          />
-        ))}
+      {/* Radial bar charts */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        {factors.map((factor, index) => {
+          // Define min/max ranges for water factors
+          let minValue = '';
+          let maxValue = '';
+
+          switch (factor.name) {
+            case 'Root Zone Temp':
+              minValue = '15°C';
+              maxValue = '30°C';
+              break;
+            case 'VPDi (Plant)':
+              minValue = '0';
+              maxValue = '3 kPa';
+              break;
+            case 'Irrigation':
+              minValue = '0';
+              maxValue = '10 L/m²';
+              break;
+            case 'Stomatal Flow':
+              minValue = '0';
+              maxValue = '800';
+              break;
+          }
+
+          return (
+            <RadialBar
+              key={index}
+              label={factor.name}
+              value={factor.value}
+              actualValue={factor.actual}
+              minValue={minValue}
+              maxValue={maxValue}
+              size={150}
+            />
+          );
+        })}
       </div>
 
       {/* Most limiting factor indicator */}

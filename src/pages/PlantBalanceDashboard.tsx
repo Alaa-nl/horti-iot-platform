@@ -624,6 +624,12 @@ const PlantBalanceDashboard: React.FC = () => {
                 vpdi
               )}
               title="Growth Limiting Factors"
+              actualValues={{
+                parLight: assimilate.parLight,
+                co2Level: assimilate.co2Level,
+                temperature: assimilate.temperature,
+                humidity: assimilate.humidity
+              }}
             />
           </div>
 

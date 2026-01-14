@@ -1,5 +1,5 @@
 import React from 'react';
-import { CircularGauge } from './CircularGauge';
+import { RadialBar, MultiRadialBar } from './RadialBar';
 import { AlertTriangle, AlertCircle, CheckCircle } from 'lucide-react';
 
 interface Factor {
@@ -12,16 +12,55 @@ interface Factor {
 interface LimitingFactorsChartProps {
   factors: Factor[];
   title?: string;
+  actualValues?: {
+    parLight?: number;
+    co2Level?: number;
+    temperature?: number;
+    humidity?: number;
+  };
 }
 
 export const LimitingFactorsChart: React.FC<LimitingFactorsChartProps> = ({
   factors,
-  title = "Limiting Factors Analysis"
+  title = "Limiting Factors Analysis",
+  actualValues
 }) => {
   // Find the most limiting factor
   const mostLimiting = factors.reduce((prev, current) =>
     prev.value < current.value ? prev : current
   );
+
+  // Define min/max ranges and get actual values for each factor
+  const getFactorDetails = (factorName: string) => {
+    switch (factorName) {
+      case 'Light (PAR)':
+        return {
+          minValue: '0',
+          maxValue: '1500',
+          actualValue: actualValues?.parLight ? `${actualValues.parLight} μmol` : undefined
+        };
+      case 'CO₂ Level':
+        return {
+          minValue: '200',
+          maxValue: '1500',
+          actualValue: actualValues?.co2Level ? `${actualValues.co2Level} ppm` : undefined
+        };
+      case 'Temperature':
+        return {
+          minValue: '10°C',
+          maxValue: '40°C',
+          actualValue: actualValues?.temperature ? `${actualValues.temperature}°C` : undefined
+        };
+      case 'VPDi (Water)':
+        return {
+          minValue: '0',
+          maxValue: '3 kPa',
+          actualValue: actualValues?.humidity ? `${actualValues.humidity}% RH` : undefined
+        };
+      default:
+        return {};
+    }
+  };
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
@@ -29,16 +68,22 @@ export const LimitingFactorsChart: React.FC<LimitingFactorsChartProps> = ({
         {title}
       </h4>
 
-      {/* Circular gauges grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-6">
-        {factors.map((factor, index) => (
-          <CircularGauge
-            key={index}
-            label={factor.name}
-            value={factor.value}
-            size={110}
-          />
-        ))}
+      {/* Radial bar charts */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        {factors.map((factor, index) => {
+          const details = getFactorDetails(factor.name);
+          return (
+            <RadialBar
+              key={index}
+              label={factor.name}
+              value={factor.value}
+              minValue={details.minValue}
+              maxValue={details.maxValue}
+              actualValue={details.actualValue}
+              size={150}
+            />
+          );
+        })}
       </div>
 
       {/* Most limiting factor indicator */}

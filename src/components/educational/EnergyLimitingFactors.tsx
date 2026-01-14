@@ -1,5 +1,5 @@
 import React from 'react';
-import { CircularGauge } from './CircularGauge';
+import { RadialBar, MultiRadialBar } from './RadialBar';
 import { Sun, AlertTriangle, AlertCircle, CheckCircle } from 'lucide-react';
 
 interface EnergyLimitingFactorsProps {
@@ -105,17 +105,44 @@ export const EnergyLimitingFactors: React.FC<EnergyLimitingFactorsProps> = ({
         Energy Limiting Factors
       </h4>
 
-      {/* Circular gauges grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-6">
-        {factors.map((factor, index) => (
-          <CircularGauge
-            key={index}
-            label={factor.name}
-            value={factor.value}
-            size={110}
-            actualValue={factor.actual}
-          />
-        ))}
+      {/* Radial bar charts */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        {factors.map((factor, index) => {
+          // Define min/max ranges for energy factors
+          let minValue = '';
+          let maxValue = '';
+
+          switch (factor.name) {
+            case 'Radiation Use':
+              minValue = '0';
+              maxValue = '1000';
+              break;
+            case 'Leaf-Air ΔT':
+              minValue = '-5°C';
+              maxValue = '+5°C';
+              break;
+            case 'Latent Cooling':
+              minValue = '0';
+              maxValue = '500';
+              break;
+            case 'Heat Balance':
+              minValue = '0';
+              maxValue = '3';
+              break;
+          }
+
+          return (
+            <RadialBar
+              key={index}
+              label={factor.name}
+              value={factor.value}
+              actualValue={factor.actual}
+              minValue={minValue}
+              maxValue={maxValue}
+              size={150}
+            />
+          );
+        })}
       </div>
 
       {/* Most limiting factor indicator */}
