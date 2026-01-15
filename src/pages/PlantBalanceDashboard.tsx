@@ -32,6 +32,7 @@ import { RTRLijnPAR } from '../components/educational/RTRLijnPAR';
 import { ParametersOverview } from '../components/educational/ParametersOverview';
 import { WaterLimitingFactors } from '../components/educational/WaterLimitingFactors';
 import { EnergyLimitingFactors } from '../components/educational/EnergyLimitingFactors';
+import { LimitingFactorsChart } from '../components/educational/LimitingFactorsChart';
 import {
   calculateNetAssimilation,
   formatValue,
@@ -197,7 +198,11 @@ const PlantBalanceDashboard: React.FC = () => {
         title: t('plantBalance.shortTermInfo.title'),
         description: t('plantBalance.shortTermInfo.description'),
         icon: <Calendar className="w-7 h-7 text-purple-600 dark:text-purple-400" />,
-        calculations: [
+        calculations: selectedBalance === 'water' ? [
+          { label: 'Water Flow Rate', value: `${((irrigationRate / 3600) * 1000).toFixed(3)} L/m²/s`, color: 'blue' },
+          { label: 'VPDi Plant-GH Air', value: `${vpdi.toFixed(2)} ${t('plantBalance.units.vpd')}`, color: 'purple' },
+          { label: 'Stomatal Conductance', value: `${waterBalance ? waterBalance.stomatalConductance.toFixed(0) : 0} mmol/m²/s`, color: 'green' }
+        ] : [
           { label: t('plantBalance.shortTermInfo.dailyLightIntegral'), value: `${dli.toFixed(1)} ${t('plantBalance.units.dli')}`, color: 'blue' },
           { label: 'RTR (Expected Temp Rise)', value: `${calculateRTR(assimilate.temperature, assimilate.parLight).toFixed(1)} °C`, color: 'purple' },
           { label: t('plantBalance.vpd'), value: `${vpd.toFixed(2)} ${t('plantBalance.units.vpd')}`, color: 'orange' }
@@ -207,7 +212,11 @@ const PlantBalanceDashboard: React.FC = () => {
         title: t('plantBalance.realTimeInfo.title'),
         description: t('plantBalance.realTimeInfo.description'),
         icon: <Zap className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />,
-        calculations: [
+        calculations: selectedBalance === 'water' ? [
+          { label: 'VPDi Plant-GH Air', value: `${vpdi.toFixed(2)} ${t('plantBalance.units.vpd')}`, color: 'purple' },
+          { label: t('plantBalance.transpiration'), value: `${formatValue(transpiration)} ${t('plantBalance.units.transpiration')}`, color: 'blue' },
+          { label: 'Water Flow', value: `${((irrigationRate / 3600) * 1000).toFixed(3)} L/m²/s`, color: 'cyan' }
+        ] : [
           { label: t('plantBalance.photosynthesis'), value: `${formatValue(assimilate.photosynthesis)} ${t('plantBalance.units.photosynthesis')}`, color: 'green' },
           { label: t('plantBalance.transpiration'), value: `${formatValue(transpiration)} ${t('plantBalance.units.transpiration')}`, color: 'blue' },
           { label: t('plantBalance.enthalpy'), value: `${formatValue(enthalpy)} ${t('plantBalance.units.enthalpy')}`, color: 'yellow' }
@@ -413,7 +422,7 @@ const PlantBalanceDashboard: React.FC = () => {
           {/* Parameters Overview - Show different parameters based on time period */}
           {(selectedPeriod === 'short-term' || selectedPeriod === 'long-term') && (
             <div className="mb-6">
-              <ParametersOverview period={selectedPeriod} />
+              <ParametersOverview period={selectedPeriod} selectedBalance={selectedBalance} />
             </div>
           )}
 
@@ -427,33 +436,61 @@ const PlantBalanceDashboard: React.FC = () => {
 
               {/* Parameter Controls - Manual adjustment only */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <Slider
-                  label={t('plantBalance.parLight')}
-                  value={assimilate.parLight}
-                  onChange={(v) => setAssimilate({
-                    ...assimilate,
-                    parLight: v
-                  })}
-                  min={0}
-                  max={1500}
-                  unit={t('plantBalance.units.parLight')}
-                  icon={<Sun className="w-5 h-5 text-amber-500 dark:text-amber-400" />}
-                  tooltipKey="parLight"
-                />
+                {/* First parameter - varies by balance type */}
+                {selectedBalance === 'energy' || selectedBalance === 'water' ? (
+                  <Slider
+                    label="Water Flow Rate"
+                    value={waterBalance?.irrigationSupply || 2.5}
+                    onChange={(v) => {/* Water flow update handled separately */}}
+                    min={0}
+                    max={10}
+                    unit="cm²/s"
+                    icon={<Droplet className="w-5 h-5 text-blue-500 dark:text-blue-400" />}
+                    tooltipKey="waterBalance"
+                  />
+                ) : (
+                  <Slider
+                    label={t('plantBalance.parLight')}
+                    value={assimilate.parLight}
+                    onChange={(v) => setAssimilate({
+                      ...assimilate,
+                      parLight: v
+                    })}
+                    min={0}
+                    max={1500}
+                    unit={t('plantBalance.units.parLight')}
+                    icon={<Sun className="w-5 h-5 text-amber-500 dark:text-amber-400" />}
+                    tooltipKey="parLight"
+                  />
+                )}
 
-                <Slider
-                  label={t('plantBalance.co2Level')}
-                  value={assimilate.co2Level}
-                  onChange={(v) => setAssimilate({
-                    ...assimilate,
-                    co2Level: v
-                  })}
-                  min={200}
-                  max={1500}
-                  unit={t('plantBalance.units.co2')}
-                  icon={<Cloud className="w-5 h-5 text-slate-600 dark:text-slate-400" />}
-                  tooltipKey="co2Level"
-                />
+                {/* Second parameter - varies by balance type */}
+                {selectedBalance === 'energy' || selectedBalance === 'water' ? (
+                  <Slider
+                    label="VPDi (Plant-GH Air) - Calculated"
+                    value={vpdi}
+                    onChange={(v) => {/* VPDi is calculated, not directly adjustable */}}
+                    min={0}
+                    max={3}
+                    unit="kPa"
+                    icon={<Cloud className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />}
+                    tooltipKey="vpd"
+                  />
+                ) : (
+                  <Slider
+                    label={t('plantBalance.co2Level')}
+                    value={assimilate.co2Level}
+                    onChange={(v) => setAssimilate({
+                      ...assimilate,
+                      co2Level: v
+                    })}
+                    min={200}
+                    max={1500}
+                    unit={t('plantBalance.units.co2')}
+                    icon={<Cloud className="w-5 h-5 text-slate-600 dark:text-slate-400" />}
+                    tooltipKey="co2Level"
+                  />
+                )}
 
                 <Slider
                   label="Greenhouse Temperature"
@@ -491,7 +528,7 @@ const PlantBalanceDashboard: React.FC = () => {
                     leafTemperature: v
                   })}
                   min={10}
-                  max={45}
+                  max={40}
                   unit="°C"
                   icon={<Leaf className="w-5 h-5 text-green-600 dark:text-green-500" />}
                   tooltipKey="temperature"
@@ -507,6 +544,31 @@ const PlantBalanceDashboard: React.FC = () => {
                   unit="m/s"
                   icon={<Wind className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />}
                 />
+
+                {/* Energy balance specific parameters */}
+                {selectedBalance === 'energy' && (
+                  <>
+                    <Slider
+                      label="Enthalpy Plant (Calculated)"
+                      value={calculateEnthalpy(assimilate.leafTemperature, assimilate.humidity)}
+                      onChange={(v) => {/* Calculated value, not directly adjustable */}}
+                      min={30}
+                      max={80}
+                      unit="kJ/kg"
+                      icon={<Thermometer className="w-5 h-5 text-orange-500 dark:text-orange-400" />}
+                    />
+
+                    <Slider
+                      label="Enthalpy GH Air (Calculated)"
+                      value={enthalpy}
+                      onChange={(v) => {/* Calculated value, not directly adjustable */}}
+                      min={30}
+                      max={80}
+                      unit="kJ/kg"
+                      icon={<Thermometer className="w-5 h-5 text-cyan-500 dark:text-cyan-400" />}
+                    />
+                  </>
+                )}
               </div>
             </>
           )}
@@ -623,6 +685,63 @@ const PlantBalanceDashboard: React.FC = () => {
             label={t('plantBalance.assimilateBalanceStatus')}
           />
 
+          {/* Limiting Factors for real-time view */}
+          {selectedPeriod === 'real-time' && (
+            <div className="mt-6">
+              <LimitingFactorsChart
+                factors={[
+                  {
+                    name: 'Light (PAR)',
+                    value: Math.min(100, (assimilate.parLight / 800) * 100),
+                    color: '#fbbf24',
+                    status: assimilate.parLight < 400 ? 'limiting' : assimilate.parLight < 600 ? 'adequate' : 'optimal'
+                  },
+                  {
+                    name: 'CO₂ Level',
+                    value: Math.min(100, (assimilate.co2Level / 1000) * 100),
+                    color: '#10b981',
+                    status: assimilate.co2Level < 600 ? 'limiting' : assimilate.co2Level < 800 ? 'adequate' : 'optimal'
+                  },
+                  {
+                    name: 'Temperature',
+                    value: assimilate.temperature < 18 || assimilate.temperature > 30
+                      ? 50
+                      : assimilate.temperature >= 22 && assimilate.temperature <= 26
+                        ? 100
+                        : 75,
+                    color: '#ef4444',
+                    status: assimilate.temperature < 18 || assimilate.temperature > 30
+                      ? 'limiting'
+                      : assimilate.temperature >= 22 && assimilate.temperature <= 26
+                        ? 'optimal'
+                        : 'adequate'
+                  },
+                  {
+                    name: 'Humidity',
+                    value: assimilate.humidity < 50 || assimilate.humidity > 85
+                      ? 50
+                      : assimilate.humidity >= 60 && assimilate.humidity <= 75
+                        ? 100
+                        : 75,
+                    color: '#3b82f6',
+                    status: assimilate.humidity < 50 || assimilate.humidity > 85
+                      ? 'limiting'
+                      : assimilate.humidity >= 60 && assimilate.humidity <= 75
+                        ? 'optimal'
+                        : 'adequate'
+                  }
+                ]}
+                title="Assimilate Balance Limiting Factors"
+                actualValues={{
+                  parLight: assimilate.parLight,
+                  co2Level: assimilate.co2Level,
+                  temperature: assimilate.temperature,
+                  humidity: assimilate.humidity
+                }}
+              />
+            </div>
+          )}
+
           {/* RTR lijn PAR Visualization - Show for short-term and long-term views */}
           {(selectedPeriod === 'short-term' || selectedPeriod === 'long-term') && (
             <div className="mt-6">
@@ -663,31 +782,85 @@ const PlantBalanceDashboard: React.FC = () => {
               )}
               {selectedPeriod === 'short-term' && (
                 <>
-                  <li className="flex items-start"><span className="text-blue-600 dark:text-blue-400 mr-2">•</span> RTR (expected temp increase): <span className="font-semibold ml-1">{calculateRTR(assimilate.temperature, assimilate.parLight).toFixed(1)}°C</span> (based on 0.2°C/mol PAR)</li>
-                  <li className="flex items-start"><span className="text-blue-600 dark:text-blue-400 mr-2">•</span> Daily Light Integral: <span className="font-semibold ml-1">{dli.toFixed(1)} mol/m²/day</span> (target: 15-30 for tomatoes)</li>
-                  <li className="flex items-start"><span className="text-blue-600 dark:text-blue-400 mr-2">•</span> VPD: <span className="font-semibold ml-1">{vpd.toFixed(2)} kPa</span> (optimal: 0.8-1.2 kPa)</li>
-                  <li className="flex items-start">
-                    <span className={`mr-2 ${vpd > 2.5 || vpd < 0.5 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>•</span>
-                    {vpd > 2.5 ? (
-                      <span className="flex items-center gap-1">
-                        <AlertTriangle className="w-4 h-4 text-orange-500 inline" />
-                        VPD too high - stomata closing!
-                      </span>
-                    ) : vpd < 0.5 ? (
-                      <span className="flex items-center gap-1">
-                        <AlertTriangle className="w-4 h-4 text-orange-500 inline" />
-                        VPD too low - disease risk!
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1">
-                        <CheckCircle className="w-4 h-4 text-green-500 inline" />
-                        VPD in good range
-                      </span>
-                    )}
-                  </li>
+                  {selectedBalance === 'assimilate' ? (
+                    <>
+                      <li className="flex items-start"><span className="text-blue-600 dark:text-blue-400 mr-2">•</span> RTR (expected temp increase): <span className="font-semibold ml-1">{calculateRTR(assimilate.temperature, assimilate.parLight).toFixed(1)}°C</span> (based on 0.2°C/mol PAR)</li>
+                      <li className="flex items-start"><span className="text-blue-600 dark:text-blue-400 mr-2">•</span> Daily Light Integral: <span className="font-semibold ml-1">{dli.toFixed(1)} mol/m²/day</span> (target: 15-30 for tomatoes)</li>
+                      <li className="flex items-start"><span className="text-blue-600 dark:text-blue-400 mr-2">•</span> VPD: <span className="font-semibold ml-1">{vpd.toFixed(2)} kPa</span> (optimal: 0.8-1.2 kPa)</li>
+                      <li className="flex items-start">
+                        <span className={`mr-2 ${vpd > 2.5 || vpd < 0.5 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>•</span>
+                        {vpd > 2.5 ? (
+                          <span className="flex items-center gap-1">
+                            <AlertTriangle className="w-4 h-4 text-orange-500 inline" />
+                            VPD too high - stomata closing!
+                          </span>
+                        ) : vpd < 0.5 ? (
+                          <span className="flex items-center gap-1">
+                            <AlertTriangle className="w-4 h-4 text-orange-500 inline" />
+                            VPD too low - disease risk!
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1">
+                            <CheckCircle className="w-4 h-4 text-green-500 inline" />
+                            VPD in good range
+                          </span>
+                        )}
+                      </li>
+                    </>
+                  ) : selectedBalance === 'water' && waterBalance ? (
+                    <>
+                      <li className="flex items-start"><span className="text-blue-600 dark:text-blue-400 mr-2">•</span> Water Flow Rate: <span className="font-semibold ml-1">{((waterBalance.irrigationSupply / 3600) * 1000).toFixed(3)} L/m²/s</span> (current irrigation rate)</li>
+                      <li className="flex items-start"><span className="text-blue-600 dark:text-blue-400 mr-2">•</span> VPDi Plant-GH Air: <span className="font-semibold ml-1">{vpdi.toFixed(2)} kPa</span> (optimal: 0.8-1.2 kPa)</li>
+                      <li className="flex items-start"><span className="text-blue-600 dark:text-blue-400 mr-2">•</span> Stomatal Conductance: <span className="font-semibold ml-1">{waterBalance.stomatalConductance.toFixed(0)} mmol/m²/s</span> (affected by VPD & light)</li>
+                      <li className="flex items-start">
+                        <span className={`mr-2 ${vpdi > 2.5 || vpdi < 0.5 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>•</span>
+                        {vpdi > 2.5 ? (
+                          <span className="flex items-center gap-1">
+                            <AlertTriangle className="w-4 h-4 text-orange-500 inline" />
+                            VPDi too high - stomata closing!
+                          </span>
+                        ) : vpdi < 0.5 ? (
+                          <span className="flex items-center gap-1">
+                            <AlertTriangle className="w-4 h-4 text-orange-500 inline" />
+                            VPDi too low - condensation risk!
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1">
+                            <CheckCircle className="w-4 h-4 text-green-500 inline" />
+                            VPDi in good range
+                          </span>
+                        )}
+                      </li>
+                    </>
+                  ) : selectedBalance === 'energy' && energyBalance ? (
+                    <>
+                      <li className="flex items-start"><span className="text-blue-600 dark:text-blue-400 mr-2">•</span> RTR (expected temp increase): <span className="font-semibold ml-1">{calculateRTR(assimilate.temperature, assimilate.parLight).toFixed(1)}°C</span> (based on 0.2°C/mol PAR)</li>
+                      <li className="flex items-start"><span className="text-blue-600 dark:text-blue-400 mr-2">•</span> Daily Light Integral: <span className="font-semibold ml-1">{dli.toFixed(1)} mol/m²/day</span> (target: 15-30 for tomatoes)</li>
+                      <li className="flex items-start"><span className="text-blue-600 dark:text-blue-400 mr-2">•</span> VPD: <span className="font-semibold ml-1">{vpd.toFixed(2)} kPa</span> (optimal: 0.8-1.2 kPa)</li>
+                      <li className="flex items-start">
+                        <span className={`mr-2 ${vpd > 2.5 || vpd < 0.5 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>•</span>
+                        {vpd > 2.5 ? (
+                          <span className="flex items-center gap-1">
+                            <AlertTriangle className="w-4 h-4 text-orange-500 inline" />
+                            VPD too high - stomata closing!
+                          </span>
+                        ) : vpd < 0.5 ? (
+                          <span className="flex items-center gap-1">
+                            <AlertTriangle className="w-4 h-4 text-orange-500 inline" />
+                            VPD too low - disease risk!
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1">
+                            <CheckCircle className="w-4 h-4 text-green-500 inline" />
+                            VPD in good range
+                          </span>
+                        )}
+                      </li>
+                    </>
+                  ) : null}
                 </>
               )}
-              {selectedPeriod === 'real-time' && (
+              {selectedPeriod === 'real-time' && selectedBalance === 'assimilate' && (
                 <>
                   <li className="flex items-start"><span className="text-purple-600 dark:text-purple-400 mr-2">•</span> {t('plantBalance.co2Gradient')}: <span className="font-semibold ml-1">{(assimilate.co2Level * 0.34).toFixed(0)} {t('plantBalance.units.co2')}</span> (34% {t('plantBalance.ofAmbient')})</li>
                   <li className="flex items-start"><span className="text-purple-600 dark:text-purple-400 mr-2">•</span> {t('plantBalance.stomatalLimitation')}: <span className="font-semibold ml-1">{vpd > 2.5 ? 'High VPD limiting' : vpd > 1.5 ? 'Partial limitation' : t('plantBalance.noLimitation')}</span></li>
@@ -849,14 +1022,17 @@ const PlantBalanceDashboard: React.FC = () => {
                       <span className="font-semibold text-yellow-900 dark:text-yellow-100">{formatValue(energyBalance.netRadiation, 0)} W/m²</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-yellow-700 dark:text-yellow-300">PAR Absorption:</span>
+                      <span className="text-sm text-yellow-700 dark:text-yellow-300">PAR Absorbed:</span>
                       <span className="font-semibold text-yellow-900 dark:text-yellow-100">{formatValue(energyBalance.parAbsorption, 0)} W/m²</span>
+                    </div>
+                    <div className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
+                      (PAR is part of total radiation)
                     </div>
                     <Separator className="bg-yellow-300 dark:bg-yellow-700" />
                     <div className="flex justify-between text-lg">
                       <span className="font-semibold text-yellow-900 dark:text-yellow-200">Total Input:</span>
                       <span className="font-bold text-yellow-900 dark:text-yellow-100">
-                        {formatValue(energyBalance.netRadiation + energyBalance.parAbsorption, 0)} W/m²
+                        {formatValue(energyBalance.netRadiation, 0)} W/m²
                       </span>
                     </div>
                   </div>

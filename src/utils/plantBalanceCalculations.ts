@@ -229,10 +229,10 @@ export const formatValue = (value: number, decimals: number = 1): string => {
 export const calculateStomatalConductance = (
   vpd: number, // kPa
   light: number, // μmol/m²/s
-  co2: number // ppm
+  co2: number = 0 // ppm - optional, not used in water balance
 ): number => {
   // EDUCATIONAL SIMPLIFICATION:
-  // Stomata open/close based on light and humidity
+  // For water balance, stomata response depends on VPD and light only
   // High light = stomata open more
   // Low humidity (high VPD) = stomata close to save water
 
@@ -287,13 +287,14 @@ export const calculateWaterBalance = (
   humidity: number,
   parLight: number,
   rootTemperature: number,
-  co2Level: number,
+  co2Level: number, // Kept for interface compatibility, not used
   irrigation: number = 2.5 // Default irrigation L/m²/h
 ): WaterBalance => {
   const vpd = calculateVPD(temperature, humidity) / 1000; // kPa
   const radiation = parLight * 0.5; // Estimate total radiation from PAR
 
-  const stomatalConductance = calculateStomatalConductance(vpd, parLight, co2Level);
+  // For water balance, stomatal conductance depends only on VPD and light
+  const stomatalConductance = calculateStomatalConductance(vpd, parLight);
   const transpiration = calculateTranspiration(temperature, radiation, humidity);
   const rootUptake = calculateRootUptake(rootTemperature, vpd, radiation);
   const growthWater = calculateGrowthWater(15); // Assuming moderate assimilation
@@ -385,9 +386,17 @@ export const calculateEnergyBalance = (
   parLight: number,
   photosynthesis: number
 ): EnergyBalance => {
-  // Calculate radiation components
-  const netRadiation = parLight * 0.5 * 4.6; // Convert PAR to total radiation W/m²
-  const parAbsorption = parLight * 0.85 * 4.6; // 85% absorption, convert to W/m²
+  // Calculate radiation components - Fixed calculation
+  // PAR is approximately 45% of total solar radiation
+  // Total solar radiation from PAR: PAR / 0.45
+  const totalSolarRadiation = (parLight * 4.6) / 0.45; // Convert PAR µmol/m²/s to W/m² and extrapolate total
+
+  // Net radiation is incoming minus outgoing (longwave radiation losses)
+  // Simplified: Net radiation is about 75% of total incoming radiation
+  const netRadiation = totalSolarRadiation * 0.75;
+
+  // PAR absorption by leaves (85% of PAR radiation)
+  const parAbsorption = parLight * 4.6 * 0.85; // Convert PAR to W/m² with 85% absorption
 
   // Calculate heat transfer components
   const boundaryLayerConductance = calculateBoundaryLayerConductance();
@@ -399,7 +408,8 @@ export const calculateEnergyBalance = (
   const photochemical = calculatePhotochemicalEnergy(photosynthesis);
 
   // Calculate net balance
-  const totalInput = netRadiation + parAbsorption;
+  // Total input is just net radiation (PAR absorption is part of it)
+  const totalInput = netRadiation;
   const totalOutput = sensibleHeat + latentHeat + photochemical;
   const netEnergyBalance = totalInput - totalOutput;
 

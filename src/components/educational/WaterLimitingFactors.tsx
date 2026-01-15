@@ -19,7 +19,32 @@ export const WaterLimitingFactors: React.FC<WaterLimitingFactorsProps> = ({
 }) => {
   // Calculate factor percentages
 
-  // 1. Root Zone Temperature (optimal 20-22°C)
+  // 1. Water Flow Rate (L/m²/s) - Convert from L/m²/h to L/m²/s for display
+  const waterFlowRate = irrigationRate / 3600; // Convert to per second
+  let waterFlowPercent;
+  const optimalWaterFlow = 0.0014; // ~5 L/m²/h converted to L/m²/s
+  if (waterFlowRate >= optimalWaterFlow * 0.8 && waterFlowRate <= optimalWaterFlow * 1.2) {
+    waterFlowPercent = 100;
+  } else if (waterFlowRate < optimalWaterFlow * 0.8) {
+    waterFlowPercent = Math.max(30, (waterFlowRate / (optimalWaterFlow * 0.8)) * 100);
+  } else {
+    waterFlowPercent = Math.max(60, 100 - ((waterFlowRate - optimalWaterFlow * 1.2) / (optimalWaterFlow * 0.8)) * 40);
+  }
+
+  // 2. VPDi Plant-Greenhouse Air (optimal 0.8-1.2 kPa)
+  let vpdiPercent;
+  if (vpdi >= 0.8 && vpdi <= 1.2) {
+    vpdiPercent = 100;
+  } else if (vpdi < 0.8) {
+    if (vpdi < 0.3) vpdiPercent = 40;
+    else vpdiPercent = 40 + ((vpdi - 0.3) / 0.5) * 60;
+  } else {
+    // Above optimal
+    if (vpdi > 2.5) vpdiPercent = 30;
+    else vpdiPercent = 100 - ((vpdi - 1.2) / 1.3) * 70;
+  }
+
+  // 3. Root Zone Temperature (optimal 20-22°C)
   let rootTempPercent;
   if (rootZoneTemp >= 20 && rootZoneTemp <= 22) {
     rootTempPercent = 100;
@@ -33,45 +58,29 @@ export const WaterLimitingFactors: React.FC<WaterLimitingFactorsProps> = ({
     else rootTempPercent = 100 - ((rootZoneTemp - 22) / 8) * 60;
   }
 
-  // 2. VPDi (optimal 0.8-1.2 kPa)
-  let vpdiPercent;
-  if (vpdi >= 0.8 && vpdi <= 1.2) {
-    vpdiPercent = 100;
-  } else if (vpdi < 0.8) {
-    if (vpdi < 0.3) vpdiPercent = 40;
-    else vpdiPercent = 40 + ((vpdi - 0.3) / 0.5) * 60;
-  } else {
-    // Above optimal
-    if (vpdi > 2.5) vpdiPercent = 30;
-    else vpdiPercent = 100 - ((vpdi - 1.2) / 1.3) * 70;
-  }
-
-  // 3. Irrigation Adequacy
-  const irrigationPercent = Math.min(100, (irrigationRate / waterDemand) * 100);
-
   // 4. Stomatal Conductance (max 800 mmol/m²/s)
   const stomatalPercent = Math.min(100, (stomatalConductance / 800) * 100);
 
   const factors = [
+    {
+      name: 'Water Flow',
+      value: Math.round(waterFlowPercent),
+      actual: `${(waterFlowRate * 1000).toFixed(3)} L/m²/s`
+    },
+    {
+      name: 'VPDi Plant-GH Air',
+      value: Math.round(vpdiPercent),
+      actual: `${vpdi.toFixed(2)} kPa`
+    },
     {
       name: 'Root Zone Temp',
       value: Math.round(rootTempPercent),
       actual: `${rootZoneTemp.toFixed(1)}°C`
     },
     {
-      name: 'VPDi (Plant)',
-      value: Math.round(vpdiPercent),
-      actual: `${vpdi.toFixed(2)} kPa`
-    },
-    {
-      name: 'Irrigation',
-      value: Math.round(irrigationPercent),
-      actual: `${irrigationRate.toFixed(1)} L/m²`
-    },
-    {
-      name: 'Stomatal Flow',
+      name: 'Stomatal Conduct.',
       value: Math.round(stomatalPercent),
-      actual: `${Math.round(stomatalConductance)} mmol`
+      actual: `${Math.round(stomatalConductance)} mmol/m²/s`
     }
   ];
 
@@ -103,21 +112,21 @@ export const WaterLimitingFactors: React.FC<WaterLimitingFactorsProps> = ({
           let maxValue = '';
 
           switch (factor.name) {
+            case 'Water Flow':
+              minValue = '0';
+              maxValue = '0.003 L/m²/s';
+              break;
+            case 'VPDi Plant-GH Air':
+              minValue = '0';
+              maxValue = '3 kPa';
+              break;
             case 'Root Zone Temp':
               minValue = '15°C';
               maxValue = '30°C';
               break;
-            case 'VPDi (Plant)':
+            case 'Stomatal Conduct.':
               minValue = '0';
-              maxValue = '3 kPa';
-              break;
-            case 'Irrigation':
-              minValue = '0';
-              maxValue = '10 L/m²';
-              break;
-            case 'Stomatal Flow':
-              minValue = '0';
-              maxValue = '800';
+              maxValue = '800 mmol/m²/s';
               break;
           }
 
