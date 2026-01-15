@@ -28,10 +28,8 @@ import {
   EducationalTooltip,
   tooltipContent
 } from '../components/educational/EducationalTooltips';
-import {
-  LimitingFactorsChart,
-  calculateLimitingFactors
-} from '../components/educational/LimitingFactorsChart';
+import { RTRLijnPAR } from '../components/educational/RTRLijnPAR';
+import { ParametersOverview } from '../components/educational/ParametersOverview';
 import { WaterLimitingFactors } from '../components/educational/WaterLimitingFactors';
 import { EnergyLimitingFactors } from '../components/educational/EnergyLimitingFactors';
 import {
@@ -412,94 +410,106 @@ const PlantBalanceDashboard: React.FC = () => {
         <CardContent className="p-6">
           {renderTimePeriodInfo()}
 
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-            <Leaf className="w-6 h-6 text-green-600 dark:text-green-400" />
-            {t('plantBalance.inputParameters')}
-          </h3>
+          {/* Parameters Overview - Show different parameters based on time period */}
+          {(selectedPeriod === 'short-term' || selectedPeriod === 'long-term') && (
+            <div className="mb-6">
+              <ParametersOverview period={selectedPeriod} />
+            </div>
+          )}
 
-          {/* Parameter Controls - Manual adjustment only */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <Slider
-              label={t('plantBalance.parLight')}
-              value={assimilate.parLight}
-              onChange={(v) => setAssimilate({
-                ...assimilate,
-                parLight: v
-              })}
-              min={0}
-              max={1500}
-              unit={t('plantBalance.units.parLight')}
-              icon={<Sun className="w-5 h-5 text-amber-500 dark:text-amber-400" />}
-              tooltipKey="parLight"
-            />
+          {/* Manual controls for real-time only */}
+          {selectedPeriod === 'real-time' && (
+            <>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+                <Leaf className="w-6 h-6 text-green-600 dark:text-green-400" />
+                {t('plantBalance.inputParameters')}
+              </h3>
 
-            <Slider
-              label={t('plantBalance.co2Level')}
-              value={assimilate.co2Level}
-              onChange={(v) => setAssimilate({
-                ...assimilate,
-                co2Level: v
-              })}
-              min={200}
-              max={1500}
-              unit={t('plantBalance.units.co2')}
-              icon={<Cloud className="w-5 h-5 text-slate-600 dark:text-slate-400" />}
-              tooltipKey="co2Level"
-            />
+              {/* Parameter Controls - Manual adjustment only */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <Slider
+                  label={t('plantBalance.parLight')}
+                  value={assimilate.parLight}
+                  onChange={(v) => setAssimilate({
+                    ...assimilate,
+                    parLight: v
+                  })}
+                  min={0}
+                  max={1500}
+                  unit={t('plantBalance.units.parLight')}
+                  icon={<Sun className="w-5 h-5 text-amber-500 dark:text-amber-400" />}
+                  tooltipKey="parLight"
+                />
 
-            <Slider
-              label="Greenhouse Temperature"
-              value={assimilate.temperature}
-              onChange={(v) => setAssimilate({
-                ...assimilate,
-                temperature: v
-              })}
-              min={10}
-              max={40}
-              unit={t('plantBalance.units.temperature')}
-              icon={<Thermometer className="w-5 h-5 text-red-500 dark:text-red-400" />}
-              tooltipKey="temperature"
-            />
+                <Slider
+                  label={t('plantBalance.co2Level')}
+                  value={assimilate.co2Level}
+                  onChange={(v) => setAssimilate({
+                    ...assimilate,
+                    co2Level: v
+                  })}
+                  min={200}
+                  max={1500}
+                  unit={t('plantBalance.units.co2')}
+                  icon={<Cloud className="w-5 h-5 text-slate-600 dark:text-slate-400" />}
+                  tooltipKey="co2Level"
+                />
 
-            <Slider
-              label={t('plantBalance.humidity')}
-              value={assimilate.humidity}
-              onChange={(v) => setAssimilate({
-                ...assimilate,
-                humidity: v
-              })}
-              min={30}
-              max={95}
-              unit={t('plantBalance.units.humidity')}
-              icon={<Droplet className="w-5 h-5 text-blue-500 dark:text-blue-400" />}
-              tooltipKey="vpd"
-            />
+                <Slider
+                  label="Greenhouse Temperature"
+                  value={assimilate.temperature}
+                  onChange={(v) => setAssimilate({
+                    ...assimilate,
+                    temperature: v
+                  })}
+                  min={10}
+                  max={40}
+                  unit={t('plantBalance.units.temperature')}
+                  icon={<Thermometer className="w-5 h-5 text-red-500 dark:text-red-400" />}
+                  tooltipKey="temperature"
+                />
 
-            <Slider
-              label="Plant/Leaf Temperature"
-              value={assimilate.leafTemperature}
-              onChange={(v) => setAssimilate({
-                ...assimilate,
-                leafTemperature: v
-              })}
-              min={10}
-              max={45}
-              unit="°C"
-              icon={<Leaf className="w-5 h-5 text-green-600 dark:text-green-500" />}
-              tooltipKey="temperature"
-            />
+                <Slider
+                  label={t('plantBalance.humidity')}
+                  value={assimilate.humidity}
+                  onChange={(v) => setAssimilate({
+                    ...assimilate,
+                    humidity: v
+                  })}
+                  min={30}
+                  max={95}
+                  unit={t('plantBalance.units.humidity')}
+                  icon={<Droplet className="w-5 h-5 text-blue-500 dark:text-blue-400" />}
+                  tooltipKey="vpd"
+                />
 
-            <Slider
-              label="Air Speed (near stomata)"
-              value={airSpeed}
-              onChange={(v) => setAirSpeed(v)}
-              min={0.1}
-              max={3}
-              step={0.1}
-              unit="m/s"
-              icon={<Wind className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />}
-            />
-          </div>
+                <Slider
+                  label="Plant/Leaf Temperature"
+                  value={assimilate.leafTemperature}
+                  onChange={(v) => setAssimilate({
+                    ...assimilate,
+                    leafTemperature: v
+                  })}
+                  min={10}
+                  max={45}
+                  unit="°C"
+                  icon={<Leaf className="w-5 h-5 text-green-600 dark:text-green-500" />}
+                  tooltipKey="temperature"
+                />
+
+                <Slider
+                  label="Air Speed (near stomata)"
+                  value={airSpeed}
+                  onChange={(v) => setAirSpeed(v)}
+                  min={0.1}
+                  max={3}
+                  step={0.1}
+                  unit="m/s"
+                  icon={<Wind className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />}
+                />
+              </div>
+            </>
+          )}
 
           {/* Add extra input controls for water balance */}
           {selectedBalance === 'water' && (
@@ -613,25 +623,12 @@ const PlantBalanceDashboard: React.FC = () => {
             label={t('plantBalance.assimilateBalanceStatus')}
           />
 
-          {/* Limiting Factors Visualization */}
-          <div className="mt-6">
-            <LimitingFactorsChart
-              factors={calculateLimitingFactors(
-                assimilate.parLight,
-                assimilate.co2Level,
-                assimilate.temperature,
-                assimilate.humidity,
-                vpdi
-              )}
-              title="Growth Limiting Factors"
-              actualValues={{
-                parLight: assimilate.parLight,
-                co2Level: assimilate.co2Level,
-                temperature: assimilate.temperature,
-                humidity: assimilate.humidity
-              }}
-            />
-          </div>
+          {/* RTR lijn PAR Visualization - Show for short-term and long-term views */}
+          {(selectedPeriod === 'short-term' || selectedPeriod === 'long-term') && (
+            <div className="mt-6">
+              <RTRLijnPAR period={selectedPeriod} />
+            </div>
+          )}
 
           {/* Time Period Specific Insights */}
           <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
