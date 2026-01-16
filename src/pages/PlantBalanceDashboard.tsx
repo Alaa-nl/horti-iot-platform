@@ -438,16 +438,22 @@ const PlantBalanceDashboard: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 {/* First parameter - varies by balance type */}
                 {selectedBalance === 'energy' || selectedBalance === 'water' ? (
-                  <Slider
-                    label="Water Flow Rate"
-                    value={waterBalance?.irrigationSupply || 2.5}
-                    onChange={(v) => {/* Water flow update handled separately */}}
-                    min={0}
-                    max={10}
-                    unit="cm²/s"
-                    icon={<Droplet className="w-5 h-5 text-blue-500 dark:text-blue-400" />}
-                    tooltipKey="waterBalance"
-                  />
+                  // Static display card for calculated Water Flow Rate
+                  <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 rounded-lg shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-200 flex items-center gap-2">
+                        <Droplet className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+                        Water Flow Rate
+                        <span className="text-xs text-gray-500 dark:text-gray-400 italic">(calculated)</span>
+                      </span>
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {formatValue(((irrigationRate / 3600) * 1000), 3)} L/m²/s
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                      Based on irrigation rate: {formatValue(irrigationRate, 1)} L/m²/h
+                    </div>
+                  </div>
                 ) : (
                   <Slider
                     label={t('plantBalance.parLight')}
@@ -466,16 +472,38 @@ const PlantBalanceDashboard: React.FC = () => {
 
                 {/* Second parameter - varies by balance type */}
                 {selectedBalance === 'energy' || selectedBalance === 'water' ? (
-                  <Slider
-                    label="VPDi (Plant-GH Air) - Calculated"
-                    value={vpdi}
-                    onChange={(v) => {/* VPDi is calculated, not directly adjustable */}}
-                    min={0}
-                    max={3}
-                    unit="kPa"
-                    icon={<Cloud className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />}
-                    tooltipKey="vpd"
-                  />
+                  // Static display card for calculated VPDi
+                  <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 rounded-lg shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-200 flex items-center gap-2">
+                        <Cloud className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                        VPDi (Plant-GH Air)
+                        <span className="text-xs text-gray-500 dark:text-gray-400 italic">(calculated)</span>
+                        {tooltipContent.vpd && <EducationalTooltip {...tooltipContent.vpd} />}
+                      </span>
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {formatValue(vpdi, 2)} kPa
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                      {vpdi > 2.5 ? (
+                        <span className="text-red-600 dark:text-red-400 flex items-center gap-1">
+                          <AlertTriangle className="w-3 h-3" />
+                          Too high - stomata closing
+                        </span>
+                      ) : vpdi < 0.5 ? (
+                        <span className="text-orange-600 dark:text-orange-400 flex items-center gap-1">
+                          <AlertTriangle className="w-3 h-3" />
+                          Too low - condensation risk
+                        </span>
+                      ) : (
+                        <span className="text-green-600 dark:text-green-400 flex items-center gap-1">
+                          <CheckCircle className="w-3 h-3" />
+                          Optimal range
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 ) : (
                   <Slider
                     label={t('plantBalance.co2Level')}
@@ -548,25 +576,39 @@ const PlantBalanceDashboard: React.FC = () => {
                 {/* Energy balance specific parameters */}
                 {selectedBalance === 'energy' && (
                   <>
-                    <Slider
-                      label="Enthalpy Plant (Calculated)"
-                      value={calculateEnthalpy(assimilate.leafTemperature, assimilate.humidity)}
-                      onChange={(v) => {/* Calculated value, not directly adjustable */}}
-                      min={30}
-                      max={80}
-                      unit="kJ/kg"
-                      icon={<Thermometer className="w-5 h-5 text-orange-500 dark:text-orange-400" />}
-                    />
+                    {/* Static display card for calculated Plant Enthalpy */}
+                    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 rounded-lg shadow-sm">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-200 flex items-center gap-2">
+                          <Thermometer className="w-5 h-5 text-orange-500 dark:text-orange-400" />
+                          Enthalpy Plant
+                          <span className="text-xs text-gray-500 dark:text-gray-400 italic">(calculated)</span>
+                        </span>
+                      </div>
+                      <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                        {formatValue(calculateEnthalpy(assimilate.leafTemperature, assimilate.humidity), 1)} kJ/kg
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                        Based on leaf temp: {formatValue(assimilate.leafTemperature, 1)}°C
+                      </div>
+                    </div>
 
-                    <Slider
-                      label="Enthalpy GH Air (Calculated)"
-                      value={enthalpy}
-                      onChange={(v) => {/* Calculated value, not directly adjustable */}}
-                      min={30}
-                      max={80}
-                      unit="kJ/kg"
-                      icon={<Thermometer className="w-5 h-5 text-cyan-500 dark:text-cyan-400" />}
-                    />
+                    {/* Static display card for calculated Greenhouse Air Enthalpy */}
+                    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 rounded-lg shadow-sm">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-200 flex items-center gap-2">
+                          <Thermometer className="w-5 h-5 text-cyan-500 dark:text-cyan-400" />
+                          Enthalpy GH Air
+                          <span className="text-xs text-gray-500 dark:text-gray-400 italic">(calculated)</span>
+                        </span>
+                      </div>
+                      <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                        {formatValue(enthalpy, 1)} kJ/kg
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                        Based on air temp: {formatValue(assimilate.temperature, 1)}°C, RH: {formatValue(assimilate.humidity, 0)}%
+                      </div>
+                    </div>
                   </>
                 )}
               </div>
