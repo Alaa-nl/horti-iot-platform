@@ -18,73 +18,153 @@ interface RTRLijnPARProps {
   currentDLI?: number; // Current calculated DLI (optional, for reference)
 }
 
-// Generate hourly data for short-term analysis (24 hours)
-const generateHourlyRTRData = (): RTRDataPoint[] => {
-  const data: RTRDataPoint[] = [];
-  const baseTemp = 24;
-  const basePAR = 400;
+// Get current Netherlands time
+const getNetherlandsTime = () => {
+  const now = new Date();
+  const netherlandsTime = new Date(now.toLocaleString("en-US", {timeZone: "Europe/Amsterdam"}));
+  return netherlandsTime.getHours();
+};
 
-  for (let hour = 0; hour < 24; hour++) {
-    // Simulate PAR variation throughout the day (higher during midday)
+// Generate hourly data for short-term analysis (24 hours) based on real-time parameters
+const generateHourlyRTRData = (currentPAR: number, currentTemp: number): RTRDataPoint[] => {
+  const data: RTRDataPoint[] = [];
+  const currentHour = getNetherlandsTime();
+
+  for (let i = 0; i < 24; i++) {
+    const hour = (currentHour + i) % 24;
+
+    // Realistic PAR variation throughout the day based on greenhouse lighting schedule
     let par: number;
-    if (hour < 6 || hour > 18) {
-      par = 0; // Night time
+    if (i === 0) {
+      // First hour uses exact current PAR
+      par = currentPAR;
+    } else if (hour < 6 || hour > 18) {
+      // Night time - no artificial lighting
+      par = 0;
+    } else if (hour >= 6 && hour < 8) {
+      // Morning ramp up
+      par = currentPAR * 0.3 * ((hour - 6) / 2);
+    } else if (hour >= 8 && hour < 10) {
+      // Mid-morning increase
+      par = currentPAR * (0.3 + 0.4 * ((hour - 8) / 2));
+    } else if (hour >= 10 && hour < 15) {
+      // Peak hours - full lighting
+      par = currentPAR * (0.9 + 0.1 * Math.sin((hour - 10) * Math.PI / 5));
+    } else if (hour >= 15 && hour < 18) {
+      // Evening ramp down
+      par = currentPAR * (1.0 - 0.3 * ((hour - 15) / 3));
     } else {
-      // Bell curve for daylight hours
-      const dayHour = hour - 6;
-      par = basePAR + 200 * Math.sin((dayHour / 12) * Math.PI) + (Math.random() - 0.5) * 100;
+      par = currentPAR * 0.7;
     }
 
     // Calculate hourly DLI contribution (convert μmol/m²/s to mol/m²/h)
-    const hourlyDLI = (par * 3600) / 1000000; // 3600 seconds in an hour, 1,000,000 μmol in a mol
+    const hourlyDLI = (par * 3600) / 1000000;
 
-    // Temperature varies with some lag behind light
-    const tempVariation = 3 * Math.sin((hour - 2) / 24 * 2 * Math.PI);
-    const temperature = baseTemp + tempVariation + (Math.random() - 0.5) * 2;
+    // Realistic temperature variation with thermal lag
+    let temperature: number;
+    if (i === 0) {
+      // First hour uses exact current temperature
+      temperature = currentTemp;
+    } else {
+      // Temperature lags behind light by ~2 hours with smaller variations
+      const lightLag = 2;
+      const laggedHour = Math.max(0, hour - lightLag);
+
+      if (hour < 6) {
+        // Night cooling
+        temperature = currentTemp - 2 + 0.5 * Math.sin(hour * Math.PI / 6);
+      } else if (hour < 14) {
+        // Day warming following light with lag
+        temperature = currentTemp + (par / currentPAR - 0.5) * 3;
+      } else {
+        // Evening cooling
+        temperature = currentTemp - 0.5 * ((hour - 14) / 10);
+      }
+    }
 
     // Calculate expected temperature based on RTR formula
     const expectedTemp = 16.023 + (hourlyDLI * 0.0534);
     const rtrDeviation = temperature - expectedTemp;
 
+    // Format hour display
+    const displayHour = hour.toString().padStart(2, '0');
+
     data.push({
-      time: `${hour.toString().padStart(2, '0')}:00`,
+      time: `${displayHour}:00`,
       temperature: parseFloat(temperature.toFixed(2)),
       dli: parseFloat(hourlyDLI.toFixed(3)),
       expectedTemp: parseFloat(expectedTemp.toFixed(2)),
       rtrDeviation: parseFloat(rtrDeviation.toFixed(2)),
-      label: `${hour}:00`
+      label: `${displayHour}:00`
     });
   }
 
   return data;
 };
 
-// Generate weekly data for long-term analysis (52 weeks)
-const generateWeeklyRTRData = (): RTRDataPoint[] => {
+// Get current week number
+const getWeekNumber = (date: Date): number => {
+  const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
+  const pastDaysOfYear = (date.getTime() - firstDayOfYear.getTime()) / 86400000;
+  return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
+};
+
+// Generate weekly data for long-term analysis (52 weeks) based on real-time parameters
+const generateWeeklyRTRData = (currentDLI: number, currentTemp: number): RTRDataPoint[] => {
   const data: RTRDataPoint[] = [];
-  const baseTemp = 22;
-  const baseDLI = 25; // mol/m²/week average
+  const now = new Date();
+  const netherlandsTime = new Date(now.toLocaleString("en-US", {timeZone: "Europe/Amsterdam"}));
+  const currentWeek = getWeekNumber(netherlandsTime);
 
-  for (let week = 1; week <= 52; week++) {
-    // Seasonal variation in light (higher in summer)
-    const seasonalFactor = Math.sin((week - 13) * 2 * Math.PI / 52);
-    const weeklyDLI = baseDLI + seasonalFactor * 10 + (Math.random() - 0.5) * 5;
+  for (let i = 0; i < 52; i++) {
+    const weekNum = ((currentWeek - 1 + i) % 52) + 1;
 
-    // Temperature also follows seasonal pattern but with some lag
-    const tempSeasonalFactor = Math.sin((week - 15) * 2 * Math.PI / 52);
-    const temperature = baseTemp + tempSeasonalFactor * 5 + (Math.random() - 0.5) * 2;
+    // Calculate seasonal position (0-1, where 0.5 is mid-summer)
+    const seasonalPosition = (weekNum - 1) / 52;
+
+    // Realistic seasonal variation in DLI for greenhouse with supplemental lighting
+    let weeklyDLI: number;
+    if (i === 0) {
+      // First week uses exact current DLI
+      weeklyDLI = currentDLI;
+    } else {
+      // Seasonal variation: higher in summer (weeks 20-33), lower in winter
+      const summerPeak = 26; // Week 26 is roughly mid-summer
+      const winterTrough = 52; // Week 52/1 is roughly mid-winter
+
+      // Calculate seasonal factor (-1 to 1, where 1 is summer peak)
+      const weeksSinceWinter = weekNum <= 26 ? weekNum : 52 - weekNum + 26;
+      const seasonalFactor = Math.cos((weeksSinceWinter / 26) * Math.PI);
+
+      // DLI varies ±30% from current based on season
+      weeklyDLI = currentDLI * (1 + seasonalFactor * 0.3);
+    }
+
+    // Realistic temperature variation following seasonal pattern with greenhouse control
+    let temperature: number;
+    if (i === 0) {
+      // First week uses exact current temperature
+      temperature = currentTemp;
+    } else {
+      // Temperature in greenhouse is more stable, varies ±4°C seasonally
+      const weeksSinceWinter = weekNum <= 26 ? weekNum : 52 - weekNum + 26;
+      const tempSeasonalFactor = Math.cos((weeksSinceWinter / 26) * Math.PI);
+
+      // Temperature variation is dampened by greenhouse climate control
+      temperature = currentTemp + tempSeasonalFactor * 4;
+    }
 
     // Calculate expected temperature based on RTR formula
     const expectedTemp = 16.023 + (weeklyDLI * 0.0534);
     const rtrDeviation = temperature - expectedTemp;
 
     data.push({
-      time: week,
+      time: `W${weekNum}`,
       temperature: parseFloat(temperature.toFixed(2)),
       dli: parseFloat(weeklyDLI.toFixed(1)),
       expectedTemp: parseFloat(expectedTemp.toFixed(2)),
       rtrDeviation: parseFloat(rtrDeviation.toFixed(2)),
-      label: `Week ${week}`
+      label: `Week ${weekNum}`
     });
   }
 
@@ -97,8 +177,10 @@ export const RTRLijnPAR: React.FC<RTRLijnPARProps> = ({
   currentTemperature = 24,
   currentDLI = 17.3
 }) => {
-  // Generate data based on period
-  const rtrData = period === 'short-term' ? generateHourlyRTRData() : generateWeeklyRTRData();
+  // Generate data based on period using real-time parameters
+  const rtrData = period === 'short-term'
+    ? generateHourlyRTRData(currentPAR, currentTemperature)
+    : generateWeeklyRTRData(currentDLI, currentTemperature);
 
   // Calculate statistics
   const avgDLI = rtrData.reduce((sum, d) => sum + d.dli, 0) / rtrData.length;

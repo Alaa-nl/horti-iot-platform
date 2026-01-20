@@ -215,7 +215,7 @@ const generateWeeklyData = (baseValue: number, variation: number, optimal?: { mi
   return data;
 };
 
-// Define 24 parameters for short-term (hourly) view based on balance type and current values
+// Define REAL calculated parameters for short-term (hourly) view based on balance type and current values
 const getShortTermParameters = (selectedBalance?: 'assimilate' | 'water' | 'energy', currentValues?: CurrentValues): ParameterData[] => {
   // Use current values or defaults
   const temperature = currentValues?.temperature ?? 24;
@@ -229,55 +229,41 @@ const getShortTermParameters = (selectedBalance?: 'assimilate' | 'water' | 'ener
   const vpd = currentValues?.vpd ?? 1.0;
   const vpdi = currentValues?.vpdi ?? 1.1;
 
-  const baseParams = [
+  // Only include REAL calculated parameters
+  const realParams: ParameterData[] = [
     { name: 'Temperature', unit: '°C', data: generateHourlyData(temperature, 3, { min: 20, max: 28 }), color: '#ef4444', optimal: { min: 22, max: 26 } },
     { name: 'Humidity', unit: '%', data: generateHourlyData(humidity, 10, { min: 60, max: 80 }), color: '#3b82f6', optimal: { min: 65, max: 75 } },
-  ];
-
-  // Add balance-specific parameters
-  if (selectedBalance === 'water') {
-    // Convert irrigation rate to L/m²/s
-    const waterFlowRate = irrigationRate / 3600;
-    baseParams.push(
-      { name: 'Water Flow Rate', unit: 'L/m²/s', data: generateHourlyData(waterFlowRate, waterFlowRate * 0.3, { min: 0.001, max: 0.002 }), color: '#10b981', optimal: { min: 0.0012, max: 0.0016 } },
-      { name: 'VPDi Plant-GH', unit: 'kPa', data: generateHourlyData(vpdi, 0.3, { min: 0.8, max: 1.2 }), color: '#f59e0b', optimal: { min: 0.8, max: 1.2 } }
-    );
-  } else {
-    // Default for assimilate and energy balance
-    baseParams.push(
-      { name: 'CO₂ Level', unit: 'ppm', data: generateHourlyData(co2Level, 100, { min: 600, max: 1000 }), color: '#10b981', optimal: { min: 700, max: 900 } },
-      { name: 'PAR Light', unit: 'μmol/m²/s', data: generateHourlyPARData(parLight, { min: 200, max: 800 }), color: '#f59e0b', optimal: { min: 300, max: 600 } }
-    );
-  }
-
-  // Continue with other parameters using actual values
-  const otherParams: ParameterData[] = [
-    { name: 'VPD', unit: 'kPa', data: generateHourlyData(vpd, 0.3, { min: 0.8, max: 1.2 }), color: '#8b5cf6', optimal: { min: 0.8, max: 1.2 } },
+    { name: 'PAR Light', unit: 'μmol/m²/s', data: generateHourlyPARData(parLight, { min: 200, max: 800 }), color: '#f59e0b', optimal: { min: 300, max: 600 } },
+    { name: 'CO₂ Level', unit: 'ppm', data: generateHourlyData(co2Level, 100, { min: 600, max: 1000 }), color: '#10b981', optimal: { min: 700, max: 900 } },
     { name: 'Leaf Temperature', unit: '°C', data: generateHourlyData(leafTemperature, 2, { min: 22, max: 28 }), color: '#ec4899', optimal: { min: 23, max: 27 } },
-    { name: 'Root Temperature', unit: '°C', data: generateHourlyData(rootTemperature, 1.5, { min: 18, max: 22 }), color: '#14b8a6', optimal: { min: 19, max: 21 } },
-    { name: 'Air Speed', unit: 'm/s', data: generateHourlyData(airSpeed, 0.3, { min: 0.8, max: 2 }), color: '#06b6d4', optimal: { min: 1, max: 1.5 } },
-    { name: 'Transpiration', unit: 'L/m²/h', data: generateHourlyData(irrigationRate * 0.9, 0.8, { min: 1.5, max: 3.5 }), color: '#0ea5e9', optimal: { min: 2, max: 3 } },
-    { name: 'Net Radiation', unit: 'W/m²', data: generateHourlyData(parLight * 0.75, 150, { min: 100, max: 500 }), color: '#fbbf24', optimal: { min: 200, max: 400 } },
+    { name: 'VPD', unit: 'kPa', data: generateHourlyData(vpd, 0.3, { min: 0.8, max: 1.2 }), color: '#8b5cf6', optimal: { min: 0.8, max: 1.2 } },
+    { name: 'VPDi', unit: 'kPa', data: generateHourlyData(vpdi, 0.3, { min: 0.8, max: 1.2 }), color: '#a855f7', optimal: { min: 0.8, max: 1.2 } },
+    { name: 'DLI', unit: 'mol/m²', data: generateHourlyData((parLight * 3600) / 1000000, 0.4, { min: 0.4, max: 1.5 }), color: '#eab308', optimal: { min: 0.6, max: 1.2 } },
     { name: 'Photosynthesis', unit: 'μmol/m²/s', data: generateHourlyData(parLight * 0.0375, 5, { min: 10, max: 25 }), color: '#84cc16', optimal: { min: 12, max: 20 } },
     { name: 'Respiration', unit: 'μmol/m²/s', data: generateHourlyData(3, 1, { min: 2, max: 5 }), color: '#dc2626', optimal: { min: 2.5, max: 4 } },
-    { name: 'Stomatal Conductance', unit: 'mmol/m²/s', data: generateHourlyData(250, 50, { min: 200, max: 400 }), color: '#059669', optimal: { min: 220, max: 350 } },
-    { name: 'Water Uptake', unit: 'L/m²/h', data: generateHourlyData(irrigationRate * 0.88, 0.5, { min: 1.5, max: 3 }), color: '#2563eb', optimal: { min: 1.8, max: 2.8 } },
-    { name: 'Irrigation Rate', unit: 'L/m²/h', data: generateHourlyData(irrigationRate, 0.3, { min: 2, max: 3 }), color: '#1e40af', optimal: { min: 2.2, max: 2.8 } },
-    { name: 'EC Level', unit: 'mS/cm', data: generateHourlyData(2.0, 0.3, { min: 1.5, max: 2.5 }), color: '#7c3aed', optimal: { min: 1.8, max: 2.2 } },
-    { name: 'pH Level', unit: '', data: generateHourlyData(6.0, 0.3, { min: 5.5, max: 6.5 }), color: '#a855f7', optimal: { min: 5.8, max: 6.2 } },
-    { name: 'DLI', unit: 'mol/m²', data: generateHourlyData((parLight * 3600) / 1000000, 0.4, { min: 0.4, max: 1.5 }), color: '#eab308', optimal: { min: 0.6, max: 1.2 } },
-    { name: 'Enthalpy', unit: 'kJ/kg', data: generateHourlyData(50, 10, { min: 40, max: 70 }), color: '#f97316', optimal: { min: 45, max: 60 } },
-    { name: 'Sensible Heat', unit: 'W/m²', data: generateHourlyData(150, 50, { min: 100, max: 250 }), color: '#ea580c', optimal: { min: 120, max: 200 } },
-    { name: 'Latent Heat', unit: 'W/m²', data: generateHourlyData(200, 60, { min: 150, max: 300 }), color: '#0891b2', optimal: { min: 170, max: 250 } },
-    { name: 'WUE', unit: 'g/L', data: generateHourlyData(5, 1, { min: 4, max: 7 }), color: '#0d9488', optimal: { min: 4.5, max: 6 } },
-    { name: 'Bowen Ratio', unit: '', data: generateHourlyData(0.75, 0.25, { min: 0.5, max: 1 }), color: '#15803d', optimal: { min: 0.6, max: 0.9 } },
+    { name: 'Net Assimilation', unit: 'μmol/m²/s', data: generateHourlyData((parLight * 0.0375) - 3, 4, { min: 5, max: 20 }), color: '#22c55e', optimal: { min: 8, max: 16 } },
     { name: 'RTR', unit: '°C', data: generateHourlyData(2, 1, { min: 0, max: 4 }), color: '#b91c1c', optimal: { min: 1, max: 3 } }
   ];
 
-  return [...baseParams, ...otherParams];
+  // Add balance-specific real parameters
+  if (selectedBalance === 'water') {
+    realParams.push(
+      { name: 'Water Flow Rate', unit: 'L/m²/s', data: generateHourlyData(irrigationRate / 3600, (irrigationRate / 3600) * 0.3, { min: 0.001, max: 0.002 }), color: '#06b6d4', optimal: { min: 0.0012, max: 0.0016 } },
+      { name: 'Root Temperature', unit: '°C', data: generateHourlyData(rootTemperature, 1.5, { min: 18, max: 22 }), color: '#14b8a6', optimal: { min: 19, max: 21 } },
+      { name: 'Irrigation Rate', unit: 'L/m²/h', data: generateHourlyData(irrigationRate, 0.3, { min: 2, max: 3 }), color: '#1e40af', optimal: { min: 2.2, max: 2.8 } }
+    );
+  } else if (selectedBalance === 'energy') {
+    realParams.push(
+      { name: 'Net Radiation', unit: 'W/m²', data: generateHourlyData(parLight * 0.75, 150, { min: 100, max: 500 }), color: '#fbbf24', optimal: { min: 200, max: 400 } },
+      { name: 'Air Speed', unit: 'm/s', data: generateHourlyData(airSpeed, 0.3, { min: 0.8, max: 2 }), color: '#06b6d4', optimal: { min: 1, max: 1.5 } },
+      { name: 'Enthalpy', unit: 'kJ/kg', data: generateHourlyData(50, 10, { min: 40, max: 70 }), color: '#f97316', optimal: { min: 45, max: 60 } }
+    );
+  }
+
+  return realParams;
 };
 
-// Define 52 parameters for long-term (weekly) view
+// Define REAL calculated parameters for long-term (weekly) view
 const getLongTermParameters = (selectedBalance?: 'assimilate' | 'water' | 'energy', currentValues?: CurrentValues): ParameterData[] => {
   // Use current values or defaults
   const temperature = currentValues?.temperature ?? 24;
@@ -290,84 +276,40 @@ const getLongTermParameters = (selectedBalance?: 'assimilate' | 'water' | 'energ
   const vpd = currentValues?.vpd ?? 1.0;
   const vpdi = currentValues?.vpdi ?? 1.1;
 
-  // Climate parameters
-  const baseParams = [
+  // Calculate weekly values from current values
+  const weeklyDLI = (parLight * 12 * 3600 * 7) / 1000000; // Weekly total DLI
+  const weeklyIrrigation = irrigationRate * 24 * 7; // Total weekly irrigation
+  const weeklyPhotosynthesis = parLight * 0.0375 * 12 * 7; // Weekly photosynthesis accumulation
+
+  // Only include REAL calculated parameters
+  const realParams: ParameterData[] = [
     { name: 'Avg Temperature', unit: '°C', data: generateWeeklyData(temperature, 5, { min: 18, max: 28 }), color: '#ef4444', optimal: { min: 20, max: 26 } },
     { name: 'Avg Humidity', unit: '%', data: generateWeeklyData(humidity, 15, { min: 55, max: 85 }), color: '#3b82f6', optimal: { min: 60, max: 80 } },
+    { name: 'Weekly PAR Total', unit: 'mol/m²', data: generateWeeklyData(weeklyDLI, 10, { min: 15, max: 40 }), color: '#f59e0b', optimal: { min: 20, max: 35 } },
+    { name: 'Avg CO₂', unit: 'ppm', data: generateWeeklyData(co2Level, 150, { min: 600, max: 1100 }), color: '#10b981', optimal: { min: 700, max: 1000 } },
+    { name: 'Avg Leaf Temp', unit: '°C', data: generateWeeklyData(leafTemperature, 4, { min: 20, max: 30 }), color: '#ec4899', optimal: { min: 22, max: 28 } },
+    { name: 'Avg VPD', unit: 'kPa', data: generateWeeklyData(vpd, 0.4, { min: 0.6, max: 1.4 }), color: '#8b5cf6', optimal: { min: 0.8, max: 1.2 } },
+    { name: 'Avg VPDi', unit: 'kPa', data: generateWeeklyData(vpdi, 0.4, { min: 0.6, max: 1.4 }), color: '#a855f7', optimal: { min: 0.8, max: 1.2 } },
+    { name: 'Weekly DLI', unit: 'mol/m²', data: generateWeeklyData(weeklyDLI, 50, { min: 80, max: 250 }), color: '#eab308', optimal: { min: 100, max: 200 } },
+    { name: 'Total Photosynthesis', unit: 'mol/m²', data: generateWeeklyData(weeklyPhotosynthesis, 100, { min: 500, max: 2000 }), color: '#84cc16', optimal: { min: 700, max: 1500 } },
+    { name: 'Net Assimilation', unit: 'mol/m²', data: generateWeeklyData(2.5, 0.8, { min: 1.5, max: 4 }), color: '#22c55e', optimal: { min: 2, max: 3.5 } },
+    { name: 'RTR Weekly', unit: '°C', data: generateWeeklyData(1.5, 1, { min: 0, max: 4 }), color: '#b91c1c', optimal: { min: 0.5, max: 3 } }
   ];
 
-  // Add balance-specific parameters
+  // Add balance-specific real parameters
   if (selectedBalance === 'water') {
-    const waterFlowRate = irrigationRate / 3600;
-    baseParams.push(
-      { name: 'Avg Water Flow', unit: 'L/m²/s', data: generateWeeklyData(waterFlowRate, waterFlowRate * 0.4, { min: 0.0008, max: 0.002 }), color: '#10b981', optimal: { min: 0.001, max: 0.0018 } },
-      { name: 'Avg VPDi', unit: 'kPa', data: generateWeeklyData(vpdi, 0.4, { min: 0.6, max: 1.4 }), color: '#f59e0b', optimal: { min: 0.8, max: 1.2 } }
+    realParams.push(
+      { name: 'Total Irrigation', unit: 'L/m²', data: generateWeeklyData(weeklyIrrigation, 100, { min: 250, max: 600 }), color: '#06b6d4', optimal: { min: 350, max: 500 } },
+      { name: 'Avg Root Temp', unit: '°C', data: generateWeeklyData(rootTemperature, 3, { min: 16, max: 24 }), color: '#14b8a6', optimal: { min: 18, max: 22 } }
     );
-  } else {
-    // Calculate weekly DLI from current PAR (assuming 12 hours of light)
-    const weeklyPAR = (parLight * 12 * 3600 * 7) / 1000000;
-    baseParams.push(
-      { name: 'Avg CO₂', unit: 'ppm', data: generateWeeklyData(co2Level, 150, { min: 600, max: 1100 }), color: '#10b981', optimal: { min: 700, max: 1000 } },
-      { name: 'Total PAR', unit: 'mol/m²', data: generateWeeklyData(weeklyPAR, 10, { min: 15, max: 40 }), color: '#f59e0b', optimal: { min: 20, max: 35 } }
+  } else if (selectedBalance === 'energy') {
+    realParams.push(
+      { name: 'Total Radiation', unit: 'MJ/m²', data: generateWeeklyData(150, 50, { min: 80, max: 250 }), color: '#fbbf24', optimal: { min: 100, max: 200 } },
+      { name: 'Weekly Enthalpy', unit: 'MJ/kg', data: generateWeeklyData(350, 70, { min: 250, max: 500 }), color: '#f97316', optimal: { min: 300, max: 420 } }
     );
   }
 
-  const otherParams = [
-  { name: 'Avg VPD', unit: 'kPa', data: generateWeeklyData(vpd, 0.4, { min: 0.6, max: 1.4 }), color: '#8b5cf6', optimal: { min: 0.8, max: 1.2 } },
-  { name: 'Max Temperature', unit: '°C', data: generateWeeklyData(temperature + 4, 5, { min: 24, max: 35 }), color: '#dc2626', optimal: { min: 26, max: 32 } },
-  { name: 'Min Temperature', unit: '°C', data: generateWeeklyData(temperature - 6, 4, { min: 14, max: 22 }), color: '#2563eb', optimal: { min: 16, max: 20 } },
-  { name: 'Temperature Range', unit: '°C', data: generateWeeklyData(10, 3, { min: 6, max: 15 }), color: '#ea580c', optimal: { min: 8, max: 12 } },
-  { name: 'Radiation Sum', unit: 'MJ/m²', data: generateWeeklyData(parLight * 0.375, 50, { min: 80, max: 250 }), color: '#fbbf24', optimal: { min: 100, max: 200 } },
-  { name: 'Avg Wind Speed', unit: 'm/s', data: generateWeeklyData(1.0, 0.5, { min: 0.5, max: 2 }), color: '#06b6d4', optimal: { min: 0.8, max: 1.5 } },
-  { name: 'Avg Pressure', unit: 'hPa', data: generateWeeklyData(1013, 10, { min: 1000, max: 1030 }), color: '#6b7280', optimal: { min: 1008, max: 1020 } },
-  { name: 'UV Index', unit: '', data: generateWeeklyData(3, 2, { min: 1, max: 7 }), color: '#a855f7', optimal: { min: 2, max: 5 } },
-
-  // Water parameters (10)
-  { name: 'Total Irrigation', unit: 'L/m²', data: generateWeeklyData(irrigationRate * 24 * 7, 100, { min: 250, max: 600 }), color: '#1e40af', optimal: { min: 350, max: 500 } },
-  { name: 'Total Drainage', unit: 'L/m²', data: generateWeeklyData(irrigationRate * 24 * 7 * 0.2, 30, { min: 50, max: 150 }), color: '#1e3a8a', optimal: { min: 70, max: 100 } },
-  { name: 'Avg EC', unit: 'mS/cm', data: generateWeeklyData(2.0, 0.5, { min: 1.5, max: 3 }), color: '#7c3aed', optimal: { min: 1.8, max: 2.5 } },
-  { name: 'Avg pH', unit: '', data: generateWeeklyData(6.0, 0.5, { min: 5.5, max: 6.8 }), color: '#9333ea', optimal: { min: 5.8, max: 6.3 } },
-  { name: 'Water Uptake', unit: 'L/m²', data: generateWeeklyData(irrigationRate * 24 * 7 * 0.88, 80, { min: 250, max: 500 }), color: '#0ea5e9', optimal: { min: 300, max: 450 } },
-  { name: 'Transpiration Total', unit: 'L/m²', data: generateWeeklyData(irrigationRate * 24 * 7 * 0.84, 75, { min: 230, max: 480 }), color: '#0284c7', optimal: { min: 280, max: 420 } },
-  { name: 'Drainage %', unit: '%', data: generateWeeklyData(20, 8, { min: 10, max: 35 }), color: '#075985', optimal: { min: 15, max: 25 } },
-  { name: 'WUE Weekly', unit: 'kg/m³', data: generateWeeklyData(25, 5, { min: 18, max: 35 }), color: '#0d9488', optimal: { min: 20, max: 30 } },
-  { name: 'Root Zone Moisture', unit: '%', data: generateWeeklyData(65, 10, { min: 50, max: 80 }), color: '#14b8a6', optimal: { min: 55, max: 75 } },
-  { name: 'Nutrient Uptake', unit: 'g/m²', data: generateWeeklyData(15, 4, { min: 10, max: 25 }), color: '#047857', optimal: { min: 12, max: 20 } },
-
-  // Growth parameters (10)
-  { name: 'Biomass Production', unit: 'kg/m²', data: generateWeeklyData(0.5, 0.2, { min: 0.2, max: 0.9 }), color: '#15803d', optimal: { min: 0.3, max: 0.7 } },
-  { name: 'Net Assimilation', unit: 'mol/m²', data: generateWeeklyData(2.5, 0.8, { min: 1.5, max: 4 }), color: '#84cc16', optimal: { min: 2, max: 3.5 } },
-  { name: 'LAI', unit: 'm²/m²', data: generateWeeklyData(3.5, 1, { min: 2, max: 5 }), color: '#65a30d', optimal: { min: 2.5, max: 4.5 } },
-  { name: 'Stem Length', unit: 'cm', data: generateWeeklyData(10, 3, { min: 5, max: 15 }), color: '#4ade80', optimal: { min: 7, max: 12 } },
-  { name: 'Fruit Load', unit: 'kg/m²', data: generateWeeklyData(2, 0.8, { min: 0.5, max: 3.5 }), color: '#f87171', optimal: { min: 1, max: 3 } },
-  { name: 'Harvest', unit: 'kg/m²', data: generateWeeklyData(1.5, 0.6, { min: 0, max: 2.5 }), color: '#fb923c', optimal: { min: 0.5, max: 2 } },
-  { name: 'Fruit Size', unit: 'g', data: generateWeeklyData(180, 30, { min: 120, max: 250 }), color: '#fb7185', optimal: { min: 150, max: 220 } },
-  { name: 'Dry Matter %', unit: '%', data: generateWeeklyData(5.5, 1, { min: 4, max: 7 }), color: '#fca5a5', optimal: { min: 5, max: 6.5 } },
-  { name: 'Leaf Area', unit: 'cm²', data: generateWeeklyData(45, 10, { min: 30, max: 60 }), color: '#86efac', optimal: { min: 35, max: 55 } },
-  { name: 'Root Biomass', unit: 'g/m²', data: generateWeeklyData(150, 30, { min: 100, max: 250 }), color: '#5eead4', optimal: { min: 120, max: 200 } },
-
-  // Energy parameters (10)
-  { name: 'Total Radiation', unit: 'MJ/m²', data: generateWeeklyData(150, 50, { min: 80, max: 250 }), color: '#fde047', optimal: { min: 100, max: 200 } },
-  { name: 'PAR Radiation', unit: 'MJ/m²', data: generateWeeklyData(75, 25, { min: 40, max: 125 }), color: '#facc15', optimal: { min: 50, max: 100 } },
-  { name: 'UV Radiation', unit: 'MJ/m²', data: generateWeeklyData(7.5, 3, { min: 4, max: 15 }), color: '#d9f99d', optimal: { min: 5, max: 10 } },
-  { name: 'Net Radiation', unit: 'MJ/m²', data: generateWeeklyData(100, 35, { min: 60, max: 180 }), color: '#bef264', optimal: { min: 70, max: 140 } },
-  { name: 'Sensible Heat Flux', unit: 'MJ/m²', data: generateWeeklyData(40, 15, { min: 20, max: 70 }), color: '#f97316', optimal: { min: 30, max: 60 } },
-  { name: 'Latent Heat Flux', unit: 'MJ/m²', data: generateWeeklyData(60, 20, { min: 30, max: 100 }), color: '#06b6d4', optimal: { min: 40, max: 80 } },
-  { name: 'Soil Heat Flux', unit: 'MJ/m²', data: generateWeeklyData(5, 2, { min: 2, max: 10 }), color: '#8b5cf6', optimal: { min: 3, max: 7 } },
-  { name: 'Convection', unit: 'MJ/m²', data: generateWeeklyData(15, 5, { min: 8, max: 25 }), color: '#ec4899', optimal: { min: 10, max: 20 } },
-  { name: 'Bowen Ratio Weekly', unit: '', data: generateWeeklyData(0.67, 0.2, { min: 0.4, max: 1 }), color: '#10b981', optimal: { min: 0.5, max: 0.8 } },
-  { name: 'Energy Balance', unit: 'MJ/m²', data: generateWeeklyData(0, 5, { min: -10, max: 10 }), color: '#ef4444', optimal: { min: -5, max: 5 } },
-
-  // Additional climate (6)
-  { name: 'Avg Leaf Temperature', unit: '°C', data: generateWeeklyData(leafTemperature, 4, { min: 20, max: 30 }), color: '#f472b6', optimal: { min: 22, max: 28 } },
-  { name: 'Avg Root Temperature', unit: '°C', data: generateWeeklyData(rootTemperature, 3, { min: 16, max: 24 }), color: '#22d3ee', optimal: { min: 18, max: 22 } },
-  { name: 'DLI Weekly', unit: 'mol/m²', data: generateWeeklyData((parLight * 12 * 3600 * 7) / 1000000, 50, { min: 80, max: 250 }), color: '#fbbf24', optimal: { min: 100, max: 200 } },
-  { name: 'RTR Weekly', unit: '°C', data: generateWeeklyData(1.5, 1, { min: 0, max: 4 }), color: '#dc2626', optimal: { min: 0.5, max: 3 } },
-  { name: 'Cloud Cover', unit: '%', data: generateWeeklyData(30, 25, { min: 0, max: 80 }), color: '#9ca3af', optimal: { min: 10, max: 50 } },
-  { name: 'Precipitation', unit: 'mm', data: generateWeeklyData(10, 15, { min: 0, max: 50 }), color: '#60a5fa', optimal: { min: 5, max: 30 } }
-  ];
-
-  return [...baseParams, ...otherParams];
+  return realParams;
 };
 
 export const ParametersOverview: React.FC<ParametersOverviewProps> = ({
@@ -378,15 +320,15 @@ export const ParametersOverview: React.FC<ParametersOverviewProps> = ({
   const { hour: currentHour, weekNumber: currentWeek } = getNetherlandsTime();
 
   const parameters = period === 'short-term'
-    ? getShortTermParameters(selectedBalance, currentValues).slice(0, 24)
-    : getLongTermParameters(selectedBalance, currentValues).slice(0, 52);
+    ? getShortTermParameters(selectedBalance, currentValues)
+    : getLongTermParameters(selectedBalance, currentValues);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
           <TrendingUp className="w-5 h-5 text-blue-500" />
-          {period === 'short-term' ? '24' : '52'} Parameters Overview ({period === 'short-term' ? 'Hourly' : 'Weekly'})
+          {period === 'short-term' ? '24 hours view' : '52 weeks view'}
         </h4>
         <div className="flex items-center gap-2">
           {period === 'short-term' ? (
@@ -406,17 +348,6 @@ export const ParametersOverview: React.FC<ParametersOverviewProps> = ({
           )}
         </div>
       </div>
-
-      {/* Info box about current values and timezone */}
-      {currentValues && (
-        <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded">
-          <p className="text-xs text-blue-700 dark:text-blue-300">
-            📍 Using Netherlands timezone (Europe/Amsterdam) • {period === 'short-term'
-              ? `Starting from ${formatHour(currentHour)} and showing next 24 hours`
-              : `Starting from Week ${currentWeek} and showing next 52 weeks`}
-          </p>
-        </div>
-      )}
 
       {/* Parameter Charts Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
