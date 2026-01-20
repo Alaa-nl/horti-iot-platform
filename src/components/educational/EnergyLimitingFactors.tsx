@@ -23,16 +23,20 @@ export const EnergyLimitingFactors: React.FC<EnergyLimitingFactorsProps> = ({
 }) => {
   // Calculate factor percentages
 
-  // 1. Radiation Balance (efficiency of radiation capture)
+  // 1. Radiation Balance (based on absolute net radiation value)
   let radiationPercent;
-  if (parInput === 0) {
-    radiationPercent = 0;
+  if (netRadiation <= 0) {
+    radiationPercent = 30; // No radiation or negative = limiting
+  } else if (netRadiation < 100) {
+    radiationPercent = Math.round(30 + (netRadiation / 100) * 30);
+  } else if (netRadiation < 300) {
+    radiationPercent = Math.round(60 + ((netRadiation - 100) / 200) * 35);
+  } else if (netRadiation <= 600) {
+    radiationPercent = 100; // Optimal range 300-600 W/m²
+  } else if (netRadiation <= 1000) {
+    radiationPercent = Math.round(100 - ((netRadiation - 600) / 400) * 20);
   } else {
-    const radiationEfficiency = (netRadiation / parInput);
-    if (radiationEfficiency > 0.8) radiationPercent = 100;
-    else if (radiationEfficiency > 0.6) radiationPercent = 80 + (radiationEfficiency - 0.6) * 100;
-    else if (radiationEfficiency > 0.4) radiationPercent = 60 + (radiationEfficiency - 0.4) * 100;
-    else radiationPercent = Math.max(30, radiationEfficiency * 150);
+    radiationPercent = Math.max(50, Math.round(80 - ((netRadiation - 1000) / 500) * 30));
   }
 
   // 2. Leaf-Air Temperature Difference (optimal 0-2°C)

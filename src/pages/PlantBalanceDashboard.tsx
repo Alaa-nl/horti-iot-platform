@@ -199,8 +199,8 @@ const PlantBalanceDashboard: React.FC = () => {
         description: t('plantBalance.shortTermInfo.description'),
         icon: <Calendar className="w-7 h-7 text-purple-600 dark:text-purple-400" />,
         calculations: selectedBalance === 'water' ? [
-          { label: 'Water Flow Rate', value: `${((irrigationRate / 3600) * 1000).toFixed(3)} L/m²/s`, color: 'blue' },
-          { label: 'VPDi Plant-GH Air', value: `${vpdi.toFixed(2)} ${t('plantBalance.units.vpd')}`, color: 'purple' },
+          { label: 'Water Flow Rate (calculated)', value: `${((irrigationRate / 3600) * 1000).toFixed(3)} L/m²/s`, color: 'blue' },
+          { label: 'VPDi Plant-GH Air (calculated)', value: `${vpdi.toFixed(2)} ${t('plantBalance.units.vpd')}`, color: 'purple' },
           { label: 'Stomatal Conductance', value: `${waterBalance ? waterBalance.stomatalConductance.toFixed(0) : 0} mmol/m²/s`, color: 'green' }
         ] : [
           { label: t('plantBalance.shortTermInfo.dailyLightIntegral'), value: `${dli.toFixed(1)} ${t('plantBalance.units.dli')}`, color: 'blue' },
@@ -213,13 +213,13 @@ const PlantBalanceDashboard: React.FC = () => {
         description: t('plantBalance.realTimeInfo.description'),
         icon: <Zap className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />,
         calculations: selectedBalance === 'water' ? [
-          { label: 'VPDi Plant-GH Air', value: `${vpdi.toFixed(2)} ${t('plantBalance.units.vpd')}`, color: 'purple' },
+          { label: 'VPDi Plant-GH Air (calculated)', value: `${vpdi.toFixed(2)} ${t('plantBalance.units.vpd')}`, color: 'purple' },
           { label: t('plantBalance.transpiration'), value: `${formatValue(transpiration)} ${t('plantBalance.units.transpiration')}`, color: 'blue' },
-          { label: 'Water Flow', value: `${((irrigationRate / 3600) * 1000).toFixed(3)} L/m²/s`, color: 'cyan' }
+          { label: 'Water Flow (calculated)', value: `${((irrigationRate / 3600) * 1000).toFixed(3)} L/m²/s`, color: 'cyan' }
         ] : [
           { label: t('plantBalance.photosynthesis'), value: `${formatValue(assimilate.photosynthesis)} ${t('plantBalance.units.photosynthesis')}`, color: 'green' },
           { label: t('plantBalance.transpiration'), value: `${formatValue(transpiration)} ${t('plantBalance.units.transpiration')}`, color: 'blue' },
-          { label: t('plantBalance.enthalpy'), value: `${formatValue(enthalpy)} ${t('plantBalance.units.enthalpy')}`, color: 'yellow' }
+          { label: `${t('plantBalance.enthalpy')} (calculated)`, value: `${formatValue(enthalpy)} ${t('plantBalance.units.enthalpy')}`, color: 'yellow' }
         ],
       },
     };
@@ -445,6 +445,7 @@ const PlantBalanceDashboard: React.FC = () => {
                         <Droplet className="w-5 h-5 text-blue-500 dark:text-blue-400" />
                         Water Flow Rate
                         <span className="text-xs text-gray-500 dark:text-gray-400 italic">(calculated)</span>
+                        <EducationalTooltip {...tooltipContent.waterFlowRate} />
                       </span>
                     </div>
                     <div className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -479,7 +480,7 @@ const PlantBalanceDashboard: React.FC = () => {
                         <Cloud className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                         VPDi (Plant-GH Air)
                         <span className="text-xs text-gray-500 dark:text-gray-400 italic">(calculated)</span>
-                        {tooltipContent.vpd && <EducationalTooltip {...tooltipContent.vpd} />}
+                        <EducationalTooltip {...tooltipContent.vpdi} />
                       </span>
                     </div>
                     <div className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -583,6 +584,7 @@ const PlantBalanceDashboard: React.FC = () => {
                           <Thermometer className="w-5 h-5 text-orange-500 dark:text-orange-400" />
                           Enthalpy Plant
                           <span className="text-xs text-gray-500 dark:text-gray-400 italic">(calculated)</span>
+                          <EducationalTooltip {...tooltipContent.enthalpyPlant} />
                         </span>
                       </div>
                       <div className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -600,6 +602,7 @@ const PlantBalanceDashboard: React.FC = () => {
                           <Thermometer className="w-5 h-5 text-cyan-500 dark:text-cyan-400" />
                           Enthalpy GH Air
                           <span className="text-xs text-gray-500 dark:text-gray-400 italic">(calculated)</span>
+                          <EducationalTooltip {...tooltipContent.enthalpyGHAir} />
                         </span>
                       </div>
                       <div className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -653,7 +656,11 @@ const PlantBalanceDashboard: React.FC = () => {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
             <div className="bg-indigo-100 dark:bg-indigo-900/30 border border-indigo-300 dark:border-indigo-700 p-3 rounded-lg">
-              <div className="text-xs text-indigo-700 dark:text-indigo-300 font-semibold">VPDi (plant vs greenhouse air)</div>
+              <div className="text-xs text-indigo-700 dark:text-indigo-300 font-semibold flex items-center gap-1">
+                VPDi (plant vs greenhouse air)
+                <span className="text-xxs italic">(calculated)</span>
+                <EducationalTooltip {...tooltipContent.vpdi} />
+              </div>
               <div className="text-lg font-bold text-indigo-900 dark:text-indigo-200">
                 {vpdi.toFixed(2)} kPa
               </div>
@@ -663,7 +670,11 @@ const PlantBalanceDashboard: React.FC = () => {
             </div>
 
             <div className="bg-cyan-100 dark:bg-cyan-900/30 border border-cyan-300 dark:border-cyan-700 p-3 rounded-lg">
-              <div className="text-xs text-cyan-700 dark:text-cyan-300 font-semibold">{t('plantBalance.enthalpy')} (plant vs greenhouse air)</div>
+              <div className="text-xs text-cyan-700 dark:text-cyan-300 font-semibold flex items-center gap-1">
+                {t('plantBalance.enthalpy')} (plant vs greenhouse air)
+                <span className="text-xxs italic">(calculated)</span>
+                <EducationalTooltip {...tooltipContent.enthalpyGHAir} />
+              </div>
               <div className="text-lg font-bold text-cyan-900 dark:text-cyan-200">
                 {enthalpy.toFixed(1)} {t('plantBalance.units.enthalpy')}
               </div>
@@ -734,23 +745,44 @@ const PlantBalanceDashboard: React.FC = () => {
                 factors={[
                   {
                     name: 'Light (PAR)',
-                    value: Math.min(100, (assimilate.parLight / 800) * 100),
+                    value: (() => {
+                      // Optimal: 400-600 μmol/m²/s for tomatoes
+                      if (assimilate.parLight < 200) return Math.round((assimilate.parLight / 200) * 50);
+                      if (assimilate.parLight <= 400) return Math.round(50 + ((assimilate.parLight - 200) / 200) * 30);
+                      if (assimilate.parLight <= 600) return Math.round(80 + ((assimilate.parLight - 400) / 200) * 20);
+                      if (assimilate.parLight <= 800) return 100;
+                      // Above 800, starts to be excessive
+                      return Math.max(70, Math.round(100 - ((assimilate.parLight - 800) / 700) * 30));
+                    })(),
                     color: '#fbbf24',
-                    status: assimilate.parLight < 400 ? 'limiting' : assimilate.parLight < 600 ? 'adequate' : 'optimal'
+                    status: assimilate.parLight < 200 ? 'limiting' : assimilate.parLight < 400 ? 'adequate' : 'optimal'
                   },
                   {
                     name: 'CO₂ Level',
-                    value: Math.min(100, (assimilate.co2Level / 1000) * 100),
+                    value: (() => {
+                      // Optimal: 800-1000 ppm
+                      if (assimilate.co2Level < 400) return Math.round((assimilate.co2Level / 400) * 50);
+                      if (assimilate.co2Level <= 600) return Math.round(50 + ((assimilate.co2Level - 400) / 200) * 30);
+                      if (assimilate.co2Level <= 800) return Math.round(80 + ((assimilate.co2Level - 600) / 200) * 15);
+                      if (assimilate.co2Level <= 1000) return Math.round(95 + ((assimilate.co2Level - 800) / 200) * 5);
+                      // Above 1000, diminishing returns
+                      return Math.max(85, Math.round(100 - ((assimilate.co2Level - 1000) / 500) * 15));
+                    })(),
                     color: '#10b981',
                     status: assimilate.co2Level < 600 ? 'limiting' : assimilate.co2Level < 800 ? 'adequate' : 'optimal'
                   },
                   {
                     name: 'Temperature',
-                    value: assimilate.temperature < 18 || assimilate.temperature > 30
-                      ? 50
-                      : assimilate.temperature >= 22 && assimilate.temperature <= 26
-                        ? 100
-                        : 75,
+                    value: (() => {
+                      // Optimal: 22-26°C
+                      if (assimilate.temperature < 15) return 30;
+                      if (assimilate.temperature < 18) return Math.round(30 + ((assimilate.temperature - 15) / 3) * 30);
+                      if (assimilate.temperature < 22) return Math.round(60 + ((assimilate.temperature - 18) / 4) * 35);
+                      if (assimilate.temperature <= 26) return 100;
+                      if (assimilate.temperature <= 30) return Math.round(100 - ((assimilate.temperature - 26) / 4) * 35);
+                      if (assimilate.temperature <= 35) return Math.round(65 - ((assimilate.temperature - 30) / 5) * 35);
+                      return 30;
+                    })(),
                     color: '#ef4444',
                     status: assimilate.temperature < 18 || assimilate.temperature > 30
                       ? 'limiting'
@@ -759,18 +791,19 @@ const PlantBalanceDashboard: React.FC = () => {
                         : 'adequate'
                   },
                   {
-                    name: 'Humidity',
-                    value: assimilate.humidity < 50 || assimilate.humidity > 85
-                      ? 50
-                      : assimilate.humidity >= 60 && assimilate.humidity <= 75
-                        ? 100
-                        : 75,
+                    name: 'VPDi',
+                    value: (() => {
+                      // Optimal VPDi: 0.8-1.2 kPa
+                      if (vpdi < 0.3) return 30;
+                      if (vpdi < 0.5) return Math.round(30 + ((vpdi - 0.3) / 0.2) * 30);
+                      if (vpdi < 0.8) return Math.round(60 + ((vpdi - 0.5) / 0.3) * 35);
+                      if (vpdi <= 1.2) return 100;
+                      if (vpdi <= 2.0) return Math.round(100 - ((vpdi - 1.2) / 0.8) * 40);
+                      if (vpdi <= 3.0) return Math.round(60 - ((vpdi - 2.0) / 1.0) * 30);
+                      return 30;
+                    })(),
                     color: '#3b82f6',
-                    status: assimilate.humidity < 50 || assimilate.humidity > 85
-                      ? 'limiting'
-                      : assimilate.humidity >= 60 && assimilate.humidity <= 75
-                        ? 'optimal'
-                        : 'adequate'
+                    status: vpdi < 0.5 || vpdi > 2.0 ? 'limiting' : vpdi >= 0.8 && vpdi <= 1.2 ? 'optimal' : 'adequate'
                   }
                 ]}
                 title="Assimilate Balance Limiting Factors"
@@ -851,8 +884,8 @@ const PlantBalanceDashboard: React.FC = () => {
                     </>
                   ) : selectedBalance === 'water' && waterBalance ? (
                     <>
-                      <li className="flex items-start"><span className="text-blue-600 dark:text-blue-400 mr-2">•</span> Water Flow Rate: <span className="font-semibold ml-1">{((waterBalance.irrigationSupply / 3600) * 1000).toFixed(3)} L/m²/s</span> (current irrigation rate)</li>
-                      <li className="flex items-start"><span className="text-blue-600 dark:text-blue-400 mr-2">•</span> VPDi Plant-GH Air: <span className="font-semibold ml-1">{vpdi.toFixed(2)} kPa</span> (optimal: 0.8-1.2 kPa)</li>
+                      <li className="flex items-start"><span className="text-blue-600 dark:text-blue-400 mr-2">•</span> Water Flow Rate (calculated): <span className="font-semibold ml-1">{((waterBalance.irrigationSupply / 3600) * 1000).toFixed(3)} L/m²/s</span> (current irrigation rate)</li>
+                      <li className="flex items-start"><span className="text-blue-600 dark:text-blue-400 mr-2">•</span> VPDi Plant-GH Air (calculated): <span className="font-semibold ml-1">{vpdi.toFixed(2)} kPa</span> (optimal: 0.8-1.2 kPa)</li>
                       <li className="flex items-start"><span className="text-blue-600 dark:text-blue-400 mr-2">•</span> Stomatal Conductance: <span className="font-semibold ml-1">{waterBalance.stomatalConductance.toFixed(0)} mmol/m²/s</span> (affected by VPD & light)</li>
                       <li className="flex items-start">
                         <span className={`mr-2 ${vpdi > 2.5 || vpdi < 0.5 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>•</span>

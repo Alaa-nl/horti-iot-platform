@@ -20,15 +20,22 @@ export const WaterLimitingFactors: React.FC<WaterLimitingFactorsProps> = ({
   // Calculate factor percentages
 
   // 1. Water Flow Rate (L/m²/s) - Convert from L/m²/h to L/m²/s for display
-  const waterFlowRate = irrigationRate / 3600; // Convert to per second
+  const waterFlowRate = (irrigationRate / 3600) * 1000; // Convert to L/m²/s (multiplied by 1000 for mL)
   let waterFlowPercent;
-  const optimalWaterFlow = 0.0014; // ~5 L/m²/h converted to L/m²/s
-  if (waterFlowRate >= optimalWaterFlow * 0.8 && waterFlowRate <= optimalWaterFlow * 1.2) {
-    waterFlowPercent = 100;
+  const optimalWaterFlow = 1.4; // ~5 L/m²/h = 1.4 mL/m²/s
+  const minWaterFlow = 0.3; // ~1 L/m²/h minimum
+  const maxWaterFlow = 2.8; // ~10 L/m²/h maximum
+
+  if (waterFlowRate < minWaterFlow) {
+    waterFlowPercent = Math.round((waterFlowRate / minWaterFlow) * 40);
   } else if (waterFlowRate < optimalWaterFlow * 0.8) {
-    waterFlowPercent = Math.max(30, (waterFlowRate / (optimalWaterFlow * 0.8)) * 100);
+    waterFlowPercent = Math.round(40 + ((waterFlowRate - minWaterFlow) / (optimalWaterFlow * 0.8 - minWaterFlow)) * 40);
+  } else if (waterFlowRate <= optimalWaterFlow * 1.2) {
+    waterFlowPercent = 100;
+  } else if (waterFlowRate <= maxWaterFlow) {
+    waterFlowPercent = Math.round(100 - ((waterFlowRate - optimalWaterFlow * 1.2) / (maxWaterFlow - optimalWaterFlow * 1.2)) * 20);
   } else {
-    waterFlowPercent = Math.max(60, 100 - ((waterFlowRate - optimalWaterFlow * 1.2) / (optimalWaterFlow * 0.8)) * 40);
+    waterFlowPercent = Math.max(50, Math.round(80 - ((waterFlowRate - maxWaterFlow) / maxWaterFlow) * 30));
   }
 
   // 2. VPDi Plant-Greenhouse Air (optimal 0.8-1.2 kPa)
@@ -65,7 +72,7 @@ export const WaterLimitingFactors: React.FC<WaterLimitingFactorsProps> = ({
     {
       name: 'Water Flow',
       value: Math.round(waterFlowPercent),
-      actual: `${(waterFlowRate * 1000).toFixed(3)} L/m²/s`
+      actual: `${waterFlowRate.toFixed(3)} L/m²/s`
     },
     {
       name: 'VPDi Plant-GH Air',

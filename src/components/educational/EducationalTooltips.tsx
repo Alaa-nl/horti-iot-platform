@@ -124,6 +124,26 @@ export const tooltipContent = {
     title: "Water Use Efficiency",
     content: "How many grams of tomatoes you get per liter of water used. Higher = more efficient!",
     example: "Modern greenhouses achieve 30-40 g tomatoes per liter. Traditional farming: only 10-15 g/L."
+  },
+  waterFlowRate: {
+    title: "Water Flow Rate",
+    content: "The rate at which water is supplied through irrigation, measured in liters per square meter per second. This is calculated from your irrigation rate setting.",
+    example: "An irrigation rate of 2.5 L/m²/h equals 0.00069 L/m²/s - this provides continuous water supply to match plant demands."
+  },
+  vpdi: {
+    title: "VPDi (Internal VPD)",
+    content: "Vapor Pressure Deficit at the leaf surface - the actual driving force for transpiration. Calculated using leaf temperature vs air temperature and humidity. More accurate than regular VPD for understanding plant stress.",
+    example: "If leaf is 26°C and air is 24°C at 70% RH, VPDi might be 1.3 kPa (moderate transpiration demand). Above 2.5 kPa causes stomata to close."
+  },
+  enthalpyPlant: {
+    title: "Enthalpy at Plant/Leaf",
+    content: "Total energy content of air at the leaf surface, combining temperature and moisture. Higher values mean the leaf environment contains more energy (heat + water vapor).",
+    example: "At 25°C leaf temperature with 70% humidity, enthalpy ≈ 55 kJ/kg. This energy drives transpiration cooling."
+  },
+  enthalpyGHAir: {
+    title: "Greenhouse Air Enthalpy",
+    content: "Total energy content of greenhouse air, combining sensible heat (temperature) and latent heat (moisture). Used to understand energy exchange between plants and air.",
+    example: "At 24°C and 70% RH, air enthalpy ≈ 53 kJ/kg. The difference from leaf enthalpy shows energy flow direction."
   }
 };
 

@@ -73,15 +73,15 @@ export const RadialBar: React.FC<RadialBarProps> = ({
           show: true,
           name: {
             show: actualValue ? true : false,
-            fontSize: '12px',
+            fontSize: '13px',
             fontFamily: 'inherit',
-            fontWeight: 600,
-            color: '#4b5563',
+            fontWeight: 700,
+            color: color, // Use the same color as the gauge
             offsetY: -12
           },
           value: {
             show: true,
-            offsetY: actualValue ? 8 : 0,
+            offsetY: actualValue ? 5 : 0,
             fontSize: '20px',
             fontFamily: 'inherit',
             fontWeight: 700,

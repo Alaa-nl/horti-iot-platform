@@ -51,6 +51,12 @@ export const LimitingFactorsChart: React.FC<LimitingFactorsChartProps> = ({
           maxValue: '40°C',
           actualValue: actualValues?.temperature ? `${actualValues.temperature}°C` : undefined
         };
+      case 'VPDi':
+        return {
+          minValue: '0',
+          maxValue: '3 kPa',
+          actualValue: actualValues?.humidity ? `${actualValues.humidity}% RH` : undefined
+        };
       case 'VPDi (Water)':
         return {
           minValue: '0',
