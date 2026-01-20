@@ -422,7 +422,22 @@ const PlantBalanceDashboard: React.FC = () => {
           {/* Parameters Overview - Show different parameters based on time period */}
           {(selectedPeriod === 'short-term' || selectedPeriod === 'long-term') && (
             <div className="mb-6">
-              <ParametersOverview period={selectedPeriod} selectedBalance={selectedBalance} />
+              <ParametersOverview
+                period={selectedPeriod}
+                selectedBalance={selectedBalance}
+                currentValues={{
+                  temperature: assimilate.temperature,
+                  leafTemperature: assimilate.leafTemperature,
+                  humidity: assimilate.humidity,
+                  co2Level: assimilate.co2Level,
+                  parLight: assimilate.parLight,
+                  rootTemperature: rootTemperature,
+                  irrigationRate: irrigationRate,
+                  airSpeed: airSpeed,
+                  vpd: vpd,
+                  vpdi: vpdi
+                }}
+              />
             </div>
           )}
 
