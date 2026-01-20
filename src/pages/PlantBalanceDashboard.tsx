@@ -820,7 +820,12 @@ const PlantBalanceDashboard: React.FC = () => {
           {/* RTR lijn PAR Visualization - Show for short-term and long-term views */}
           {(selectedPeriod === 'short-term' || selectedPeriod === 'long-term') && (
             <div className="mt-6">
-              <RTRLijnPAR period={selectedPeriod} />
+              <RTRLijnPAR
+                period={selectedPeriod}
+                currentPAR={assimilate.parLight}
+                currentTemperature={assimilate.temperature}
+                currentDLI={dli}
+              />
             </div>
           )}
 

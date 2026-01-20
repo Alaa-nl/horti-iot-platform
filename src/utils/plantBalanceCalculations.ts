@@ -157,25 +157,27 @@ export const calculateTranspiration = (
 };
 
 // RTR (Expected Temperature Increase from Radiation)
-// Based on supervisor's formula: 0.2°C per mol PAR
+// Based on greenhouse data regression analysis
 export const calculateRTR = (
   temperature: number, // Not used in calculation, kept for compatibility
   parLight: number // μmol/m²/s PAR light
 ): number => {
   // EDUCATIONAL NOTE:
   // RTR tells us how much warmer the greenhouse should be based on light level
-  // Formula from supervisor: RTR = DLI × 0.2°C/mol
-  // Example: 400 μmol/m²/s → 17.3 mol/m²/day → 3.5°C expected increase
+  // Based on actual greenhouse data regression: y = 0.0534x + 16.023
+  // Where x is DLI in mol/m²/day and y is the expected temperature
+  // The slope (0.0534) represents the temperature increase per mol of light
 
   // Convert PAR to Daily Light Integral (DLI)
   // DLI = PAR (μmol/m²/s) × hours × 3600 / 1,000,000 = mol/m²/day
   const hoursOfLight = 12; // Typical photoperiod
   const dli = (parLight * hoursOfLight * 3600) / 1000000; // mol/m²/day
 
-  // RTR = DLI × 0.2°C/mol
-  // This gives the expected temperature increase in °C
-  // The greenhouse temperature should rise by this amount due to solar radiation
-  const rtr = dli * 0.2;
+  // RTR calculation based on regression analysis from actual greenhouse data
+  // Using the more accurate coefficient from the regression: 0.0534°C/mol
+  // Note: Some sources simplify this to 0.2°C/mol (6°C per 30 mol), but
+  // the actual data shows 0.0534°C/mol is more accurate
+  const rtr = dli * 0.0534;
 
   return rtr;
 };
