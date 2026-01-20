@@ -32,14 +32,7 @@ export const RadialBar: React.FC<RadialBarProps> = ({
     return '#22c55e'; // green-500
   };
 
-  const getStatus = (val: number): string => {
-    if (val < 60) return 'Limiting';
-    if (val < 80) return 'Adequate';
-    return 'Optimal';
-  };
-
   const color = getColor(safeValue);
-  const status = getStatus(safeValue);
 
   const options: ApexOptions = {
     chart: {

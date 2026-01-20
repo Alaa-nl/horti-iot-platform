@@ -1,4 +1,4 @@
-import apiService, { ApiResponse } from './apiService';
+import apiService from './apiService';
 import { logger } from '../utils/logger';
 
 export interface User {

@@ -64,7 +64,7 @@ interface HeadThicknessPrediction {
 const ResearcherDashboard: React.FC = () => {
 
   // Authentication state - get from AuthContext
-  const { logout } = useAuth();
+  // Currently not using auth methods directly in this component
 
   // Greenhouse state
   const [selectedGreenhouse, setSelectedGreenhouse] = useState<Greenhouse | null>(null);

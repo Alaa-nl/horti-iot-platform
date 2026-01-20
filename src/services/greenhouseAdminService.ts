@@ -138,4 +138,5 @@ class GreenhouseAdminService {
   }
 }
 
-export default new GreenhouseAdminService();
+const greenhouseAdminService = new GreenhouseAdminService();
+export default greenhouseAdminService;

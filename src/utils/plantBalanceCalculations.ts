@@ -4,9 +4,6 @@ import { AssimilateBalance, WaterBalance, EnergyBalance } from '../types/plantBa
 
 // Constants from scientific calculations
 const ENERGY_PER_LITER = 2500; // KJ to evaporate 1 liter water
-const MOLECULAR_WEIGHT_H2O = 18; // g/mol
-const MOLECULAR_WEIGHT_CO2 = 44; // g/mol
-const DIFFUSION_RATIO = 1.6; // CO2 to H2O diffusion ratio
 
 // Psychrometric calculations
 export const calculateVPD = (temperature: number, humidity: number): number => {

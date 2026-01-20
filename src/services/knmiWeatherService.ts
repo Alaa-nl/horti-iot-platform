@@ -218,7 +218,6 @@ export const fetchKNMIWeatherData = async (location: string = 'Naaldwijk'): Prom
 
     // Process current weather
     const current = data.current;
-    const currentTime = new Date(current.time);
 
     // Calculate rain probability based on precipitation and weather code
     let rainProbability = 0;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { RadialBar, MultiRadialBar } from './RadialBar';
+import { RadialBar } from './RadialBar';
 import { Droplet, AlertTriangle, AlertCircle, CheckCircle } from 'lucide-react';
 
 interface WaterLimitingFactorsProps {

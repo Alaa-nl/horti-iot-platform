@@ -25,8 +25,6 @@ const AdminDashboard: React.FC = () => {
   const [showGreenhouseModal, setShowGreenhouseModal] = useState(false);
   const [editingGreenhouse, setEditingGreenhouse] = useState<GreenhouseListItem | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterCity, setFilterCity] = useState('');
-  const [filterCropType, setFilterCropType] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'created_at' | 'area_m2'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
@@ -67,6 +65,7 @@ const AdminDashboard: React.FC = () => {
     }
     loadUsers();
     loadGreenhouses();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, filterRole, filterActive]);
 
   const loadUsers = async () => {
@@ -155,8 +154,6 @@ const AdminDashboard: React.FC = () => {
       setError(null); // Clear previous errors
       const response = await greenhouseAdminService.getAllGreenhouses({
         search: searchQuery || undefined,
-        city: filterCity || undefined,
-        crop_type: filterCropType || undefined,
         sortBy,
         sortOrder
       });
@@ -272,7 +269,8 @@ const AdminDashboard: React.FC = () => {
     if (activeTab === 'greenhouses') {
       loadGreenhouses();
     }
-  }, [searchQuery, filterCity, filterCropType, sortBy, sortOrder]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, searchQuery, sortBy, sortOrder]);
 
   if (user?.role !== 'admin') {
     return (

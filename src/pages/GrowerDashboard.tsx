@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import Layout from '../components/layout/Layout';
 import Card from '../components/common/Card';
 import ErrorBoundary from '../components/common/ErrorBoundary';
@@ -81,10 +81,8 @@ const mockRevenueData: RevenueData[] = [
 ];
 
 const GrowerDashboard: React.FC = () => {
-  const [timeRange, setTimeRange] = useState('12months');
   const [financialData, setFinancialData] = useState<SimplifiedFinancialData>(mockSimplifiedFinancialData);
   const [revenueData] = useState<RevenueData[]>(mockRevenueData);
-  const [showYearComparison, setShowYearComparison] = useState(true);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -111,12 +109,7 @@ const GrowerDashboard: React.FC = () => {
   // Filter data based on time range
   const getFilteredData = () => {
     const data = [...revenueData];
-    
-    if (timeRange === '6months') {
-      return data.slice(-6);
-    } else if (timeRange === 'ytd') {
-      return data.filter(d => d.date.startsWith('2024'));
-    }
+    // Default to showing last 12 months
     return data.slice(-12);
   };
 

@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -12,8 +12,7 @@ const Login: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { login, user, isLoading: authLoading } = useAuth();
-  const navigate = useNavigate();
+  const { login, user } = useAuth();
   const { t } = useTranslation();
 
   // Clear error when form inputs change

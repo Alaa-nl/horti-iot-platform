@@ -1,6 +1,6 @@
 import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Scatter } from 'recharts';
-import { Sun, Thermometer, TrendingUp, Clock, Calendar } from 'lucide-react';
+import { Sun, Clock, Calendar } from 'lucide-react';
 
 interface RTRDataPoint {
   time: string | number;
@@ -67,9 +67,6 @@ const generateHourlyRTRData = (currentPAR: number, currentTemp: number): RTRData
       temperature = currentTemp;
     } else {
       // Temperature lags behind light by ~2 hours with smaller variations
-      const lightLag = 2;
-      const laggedHour = Math.max(0, hour - lightLag);
-
       if (hour < 6) {
         // Night cooling
         temperature = currentTemp - 2 + 0.5 * Math.sin(hour * Math.PI / 6);
@@ -119,9 +116,6 @@ const generateWeeklyRTRData = (currentDLI: number, currentTemp: number): RTRData
   for (let i = 0; i < 52; i++) {
     const weekNum = ((currentWeek - 1 + i) % 52) + 1;
 
-    // Calculate seasonal position (0-1, where 0.5 is mid-summer)
-    const seasonalPosition = (weekNum - 1) / 52;
-
     // Realistic seasonal variation in DLI for greenhouse with supplemental lighting
     let weeklyDLI: number;
     if (i === 0) {
@@ -129,9 +123,6 @@ const generateWeeklyRTRData = (currentDLI: number, currentTemp: number): RTRData
       weeklyDLI = currentDLI;
     } else {
       // Seasonal variation: higher in summer (weeks 20-33), lower in winter
-      const summerPeak = 26; // Week 26 is roughly mid-summer
-      const winterTrough = 52; // Week 52/1 is roughly mid-winter
-
       // Calculate seasonal factor (-1 to 1, where 1 is summer peak)
       const weeksSinceWinter = weekNum <= 26 ? weekNum : 52 - weekNum + 26;
       const seasonalFactor = Math.cos((weeksSinceWinter / 26) * Math.PI);

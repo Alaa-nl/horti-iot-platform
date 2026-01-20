@@ -1,5 +1,5 @@
 import React from 'react';
-import { RadialBar, MultiRadialBar } from './RadialBar';
+import { RadialBar } from './RadialBar';
 import { AlertTriangle, AlertCircle, CheckCircle } from 'lucide-react';
 
 interface Factor {

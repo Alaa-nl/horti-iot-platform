@@ -36,28 +36,29 @@ interface ChartDataPoint {
 }
 
 // Parse XML response from PhytoSense API
-function parseXmlResponse(xmlString: string): { dateTime: string; value: number }[] {
-  const parser = new DOMParser();
-  const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
-
-  const values: { dateTime: string; value: number }[] = [];
-  const valueElements = xmlDoc.getElementsByTagName('DeviceTransformationChannelValue');
-
-  for (let i = 0; i < valueElements.length; i++) {
-    const element = valueElements[i];
-    const dateTime = element.getAttribute('DateTime');
-    const value = element.getAttribute('Value');
-
-    if (dateTime && value) {
-      values.push({
-        dateTime,
-        value: parseFloat(value)
-      });
-    }
-  }
-
-  return values;
-}
+// Commented out - not currently used but may be needed for direct XML parsing
+// function parseXmlResponse(xmlString: string): { dateTime: string; value: number }[] {
+//   const parser = new DOMParser();
+//   const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
+//
+//   const values: { dateTime: string; value: number }[] = [];
+//   const valueElements = xmlDoc.getElementsByTagName('DeviceTransformationChannelValue');
+//
+//   for (let i = 0; i < valueElements.length; i++) {
+//     const element = valueElements[i];
+//     const dateTime = element.getAttribute('DateTime');
+//     const value = element.getAttribute('Value');
+//
+//     if (dateTime && value) {
+//       values.push({
+//         dateTime,
+//         value: parseFloat(value)
+//       });
+//     }
+//   }
+//
+//   return values;
+// }
 
 // Fetch data through backend proxy to avoid CORS issues
 async function fetchFromPhytoSenseAPI(

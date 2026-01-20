@@ -99,6 +99,7 @@ const PlantBalanceDashboard: React.FC = () => {
       calculated.photosynthesis
     );
     setEnergyBalance(energy);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assimilate.parLight, assimilate.co2Level, assimilate.humidity, assimilate.temperature, rootTemperature, irrigationRate]);
 
   // Calculate additional values
