@@ -8,7 +8,6 @@ import { fetchKNMIWeatherByCoordinates } from '../services/knmiWeatherService';
 import { greenhouseService } from '../services/greenhouseService';
 import { Greenhouse } from '../types/greenhouse';
 import GreenhouseSelector from '../components/greenhouse/GreenhouseSelector';
-import { useAuth } from '../contexts/AuthContext';
 import PhytoSenseOptimizedDirect from '../components/phytosense/PhytoSenseOptimizedDirect';
 import SapFlowCard from '../components/phytosense/SapFlowCard';
 import DiameterCard from '../components/phytosense/DiameterCard';
@@ -62,10 +61,6 @@ interface HeadThicknessPrediction {
 
 
 const ResearcherDashboard: React.FC = () => {
-
-  // Authentication state - get from AuthContext
-  // Currently not using auth methods directly in this component
-
   // Greenhouse state
   const [selectedGreenhouse, setSelectedGreenhouse] = useState<Greenhouse | null>(null);
   const [greenhouses, setGreenhouses] = useState<Greenhouse[]>([]);
