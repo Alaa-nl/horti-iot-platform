@@ -229,20 +229,20 @@ const getShortTermParameters = (selectedBalance?: 'assimilate' | 'water' | 'ener
   const vpd = currentValues?.vpd ?? 1.0;
   const vpdi = currentValues?.vpdi ?? 1.1;
 
-  // Only include REAL calculated parameters
+  // Only include REAL calculated parameters - Updated per client feedback
   const realParams: ParameterData[] = [
-    { name: 'Temperature', unit: '°C', data: generateHourlyData(temperature, 3, { min: 20, max: 28 }), color: '#ef4444', optimal: { min: 22, max: 26 } },
-    { name: 'Humidity', unit: '%', data: generateHourlyData(humidity, 10, { min: 60, max: 80 }), color: '#3b82f6', optimal: { min: 65, max: 75 } },
+    { name: 'Greenhouse Temperature', unit: '°C', data: generateHourlyData(temperature, 3, { min: 20, max: 28 }), color: '#ef4444', optimal: { min: 22, max: 26 } },
+    { name: 'Relative Humidity', unit: '%', data: generateHourlyData(humidity, 10, { min: 60, max: 80 }), color: '#3b82f6', optimal: { min: 65, max: 75 } },
     { name: 'PAR Light', unit: 'μmol/m²/s', data: generateHourlyPARData(parLight, { min: 200, max: 800 }), color: '#f59e0b', optimal: { min: 300, max: 600 } },
     { name: 'CO₂ Level', unit: 'ppm', data: generateHourlyData(co2Level, 100, { min: 600, max: 1000 }), color: '#10b981', optimal: { min: 700, max: 900 } },
     { name: 'Leaf Temperature', unit: '°C', data: generateHourlyData(leafTemperature, 2, { min: 22, max: 28 }), color: '#ec4899', optimal: { min: 23, max: 27 } },
-    { name: 'VPD', unit: 'kPa', data: generateHourlyData(vpd, 0.3, { min: 0.8, max: 1.2 }), color: '#8b5cf6', optimal: { min: 0.8, max: 1.2 } },
-    { name: 'VPDi', unit: 'kPa', data: generateHourlyData(vpdi, 0.3, { min: 0.8, max: 1.2 }), color: '#a855f7', optimal: { min: 0.8, max: 1.2 } },
-    { name: 'DLI', unit: 'mol/m²', data: generateHourlyData((parLight * 3600) / 1000000, 0.4, { min: 0.4, max: 1.5 }), color: '#eab308', optimal: { min: 0.6, max: 1.2 } },
-    { name: 'Photosynthesis', unit: 'μmol/m²/s', data: generateHourlyData(parLight * 0.0375, 5, { min: 10, max: 25 }), color: '#84cc16', optimal: { min: 12, max: 20 } },
-    { name: 'Respiration', unit: 'μmol/m²/s', data: generateHourlyData(3, 1, { min: 2, max: 5 }), color: '#dc2626', optimal: { min: 2.5, max: 4 } },
-    { name: 'Net Assimilation', unit: 'μmol/m²/s', data: generateHourlyData((parLight * 0.0375) - 3, 4, { min: 5, max: 20 }), color: '#22c55e', optimal: { min: 8, max: 16 } },
-    { name: 'RTR', unit: '°C', data: generateHourlyData(2, 1, { min: 0, max: 4 }), color: '#b91c1c', optimal: { min: 1, max: 3 } }
+    // Skip VPD as per client feedback
+    { name: 'VPDi leaf/greenhouse', unit: 'kPa', data: generateHourlyData(vpdi, 0.3, { min: 0.8, max: 1.2 }), color: '#a855f7', optimal: { min: 0.8, max: 1.2 } },
+    // DLI in joules/cm²/day: 1 mol/m² = 1 MJ/m² = 100 J/cm²
+    { name: 'DLI', unit: 'J/cm²/day', data: generateHourlyData(((parLight * 12 * 3600) / 1000000) * 100, 200, { min: 500, max: 3000 }), color: '#eab308', optimal: { min: 1000, max: 2500 } },
+    // Also show DLI in mol/m²/day as requested
+    { name: 'DLI', unit: 'mol/m²/day', data: generateHourlyData((parLight * 12 * 3600) / 1000000, 5, { min: 5, max: 30 }), color: '#fbbf24', optimal: { min: 10, max: 25 } }
+    // Skip the lowest four graphics (Photosynthesis, Respiration, Net Assimilation, RTR) as per client feedback
   ];
 
   // Add balance-specific real parameters
@@ -281,18 +281,18 @@ const getLongTermParameters = (selectedBalance?: 'assimilate' | 'water' | 'energ
   const weeklyIrrigation = irrigationRate * 24 * 7; // Total weekly irrigation
   const weeklyPhotosynthesis = parLight * 0.0375 * 12 * 7; // Weekly photosynthesis accumulation
 
-  // Only include REAL calculated parameters
+  // Only include REAL calculated parameters - Updated per client feedback
   const realParams: ParameterData[] = [
     { name: 'Avg Temperature', unit: '°C', data: generateWeeklyData(temperature, 5, { min: 18, max: 28 }), color: '#ef4444', optimal: { min: 20, max: 26 } },
     { name: 'Avg Humidity', unit: '%', data: generateWeeklyData(humidity, 15, { min: 55, max: 85 }), color: '#3b82f6', optimal: { min: 60, max: 80 } },
-    { name: 'Weekly PAR Total', unit: 'mol/m²', data: generateWeeklyData(weeklyDLI, 10, { min: 15, max: 40 }), color: '#f59e0b', optimal: { min: 20, max: 35 } },
+    // Make Weekly PAR scale with actual PAR values
+    { name: 'Weekly PAR Total', unit: 'mol/m²', data: generateWeeklyData((parLight * 12 * 3600 * 7) / 1000000, 50, { min: 50, max: 250 }), color: '#f59e0b', optimal: { min: 100, max: 200 } },
     { name: 'Avg CO₂', unit: 'ppm', data: generateWeeklyData(co2Level, 150, { min: 600, max: 1100 }), color: '#10b981', optimal: { min: 700, max: 1000 } },
     { name: 'Avg Leaf Temp', unit: '°C', data: generateWeeklyData(leafTemperature, 4, { min: 20, max: 30 }), color: '#ec4899', optimal: { min: 22, max: 28 } },
-    { name: 'Avg VPD', unit: 'kPa', data: generateWeeklyData(vpd, 0.4, { min: 0.6, max: 1.4 }), color: '#8b5cf6', optimal: { min: 0.8, max: 1.2 } },
+    // Skip Avg VPD as per client feedback
     { name: 'Avg VPDi', unit: 'kPa', data: generateWeeklyData(vpdi, 0.4, { min: 0.6, max: 1.4 }), color: '#a855f7', optimal: { min: 0.8, max: 1.2 } },
     { name: 'Weekly DLI', unit: 'mol/m²', data: generateWeeklyData(weeklyDLI, 50, { min: 80, max: 250 }), color: '#eab308', optimal: { min: 100, max: 200 } },
-    { name: 'Total Photosynthesis', unit: 'mol/m²', data: generateWeeklyData(weeklyPhotosynthesis, 100, { min: 500, max: 2000 }), color: '#84cc16', optimal: { min: 700, max: 1500 } },
-    { name: 'Net Assimilation', unit: 'mol/m²', data: generateWeeklyData(2.5, 0.8, { min: 1.5, max: 4 }), color: '#22c55e', optimal: { min: 2, max: 3.5 } },
+    // Skip Total Photosynthesis and Net Assimilation as per client feedback
     { name: 'RTR Weekly', unit: '°C', data: generateWeeklyData(1.5, 1, { min: 0, max: 4 }), color: '#b91c1c', optimal: { min: 0.5, max: 3 } }
   ];
 
@@ -305,7 +305,8 @@ const getLongTermParameters = (selectedBalance?: 'assimilate' | 'water' | 'energ
   } else if (selectedBalance === 'energy') {
     realParams.push(
       { name: 'Total Radiation', unit: 'MJ/m²', data: generateWeeklyData(150, 50, { min: 80, max: 250 }), color: '#fbbf24', optimal: { min: 100, max: 200 } },
-      { name: 'Weekly Enthalpy', unit: 'MJ/kg', data: generateWeeklyData(350, 70, { min: 250, max: 500 }), color: '#f97316', optimal: { min: 300, max: 420 } }
+      // Change to Weekly Enthalpy difference plant/greenhouse
+      { name: 'Weekly Enthalpy Diff (plant/GH)', unit: 'MJ/kg', data: generateWeeklyData(50, 20, { min: 10, max: 100 }), color: '#f97316', optimal: { min: 30, max: 70 } }
     );
   }
 

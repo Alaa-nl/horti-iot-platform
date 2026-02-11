@@ -189,11 +189,8 @@ const PlantBalanceDashboard: React.FC = () => {
         title: t('plantBalance.longTermInfo.title'),
         description: t('plantBalance.longTermInfo.description'),
         icon: <TrendingUp className="w-7 h-7 text-indigo-600 dark:text-indigo-400" />,
-        calculations: [
-          { label: t('plantBalance.longTermInfo.weeklyLightSum'), value: `${(dli * 7).toFixed(1)} ${t('plantBalance.units.weeklyProduction').split('/')[1]}`, color: 'blue' },
-          { label: t('plantBalance.longTermInfo.expectedProduction'), value: `${weeklyProduction.toFixed(2)} ${t('plantBalance.units.weeklyProduction')}`, color: 'green' },
-          { label: t('plantBalance.waterUseEfficiency'), value: `${wue.toFixed(0)} ${t('plantBalance.units.wue')} (standard)`, color: 'cyan' }
-        ],
+        // Skip the 3 topics on top as per client feedback
+        calculations: [],
       },
       'short-term': {
         title: t('plantBalance.shortTermInfo.title'),
@@ -220,7 +217,7 @@ const PlantBalanceDashboard: React.FC = () => {
         ] : [
           { label: t('plantBalance.photosynthesis'), value: `${formatValue(assimilate.photosynthesis)} ${t('plantBalance.units.photosynthesis')}`, color: 'green' },
           { label: t('plantBalance.transpiration'), value: `${formatValue(transpiration)} ${t('plantBalance.units.transpiration')}`, color: 'blue' },
-          { label: `${t('plantBalance.enthalpy')} (calculated)`, value: `${formatValue(enthalpy)} ${t('plantBalance.units.enthalpy')}`, color: 'yellow' }
+          { label: 'Enthalpy Difference (plant/greenhouse)', value: `${formatValue(calculateEnthalpy(assimilate.leafTemperature, assimilate.humidity) - enthalpy)} ${t('plantBalance.units.enthalpy')}`, color: 'yellow' }
         ],
       },
     };
@@ -687,26 +684,12 @@ const PlantBalanceDashboard: React.FC = () => {
 
             <div className="bg-cyan-100 dark:bg-cyan-900/30 border border-cyan-300 dark:border-cyan-700 p-3 rounded-lg">
               <div className="text-xs text-cyan-700 dark:text-cyan-300 font-semibold flex items-center gap-1">
-                {t('plantBalance.enthalpy')} (plant vs greenhouse air)
+                Enthalpy Difference (plant/greenhouse)
                 <span className="text-xxs italic">(calculated)</span>
                 <EducationalTooltip {...tooltipContent.enthalpyGHAir} />
               </div>
               <div className="text-lg font-bold text-cyan-900 dark:text-cyan-200">
-                {enthalpy.toFixed(1)} {t('plantBalance.units.enthalpy')}
-              </div>
-            </div>
-
-            <div className="bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700 p-3 rounded-lg">
-              <div className="text-xs text-blue-700 dark:text-blue-300 font-semibold">{t('plantBalance.transpiration')}</div>
-              <div className="text-lg font-bold text-blue-900 dark:text-blue-200">
-                {transpiration.toFixed(2)} {t('plantBalance.units.transpiration')}
-              </div>
-            </div>
-
-            <div className="bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 p-3 rounded-lg">
-              <div className="text-xs text-amber-700 dark:text-amber-300 font-semibold">{t('plantBalance.waterUseEfficiency')}</div>
-              <div className="text-lg font-bold text-amber-900 dark:text-amber-200">
-                {wue.toFixed(0)} {t('plantBalance.units.wue')}
+                {(calculateEnthalpy(assimilate.leafTemperature, assimilate.humidity) - enthalpy).toFixed(1)} {t('plantBalance.units.enthalpy')}
               </div>
             </div>
           </div>
