@@ -24,6 +24,30 @@ services:
       timeout: 10s
       retries: 3
 
+  # AI Service for Tomato Detection
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: horti-iot-ai
+    environment:
+      - PYTHONUNBUFFERED=1
+      - MODEL_PATH=/app/models
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./ai-service/models:/app/models
+      - ./ai-service/uploads:/app/uploads
+      - ./ai-service/results:/app/results
+    networks:
+      - horti-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   # Optional: PgAdmin for database management
   pgadmin:
     image: dpage/pgadmin4:latest

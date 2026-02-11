@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import Map, { Marker, Popup, NavigationControl, FullscreenControl, ScaleControl } from 'react-map-gl/maplibre';
+import Map, { Marker, Popup, NavigationControl, ScaleControl } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { motion } from 'framer-motion';
 
@@ -21,8 +21,32 @@ interface RealMapProps {
   height?: string;
 }
 
-// Map style - Street Map only
-const MAP_STYLE = 'https://tiles.openfreemap.org/styles/liberty';
+// Map style - Using OpenStreetMap tiles for better street detail
+const MAP_STYLE = {
+  version: 8,
+  sources: {
+    'osm-tiles': {
+      type: 'raster',
+      tiles: [
+        'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png'
+      ],
+      tileSize: 256,
+      attribution: '© OpenStreetMap contributors',
+      maxzoom: 19
+    }
+  },
+  layers: [
+    {
+      id: 'osm-tiles-layer',
+      type: 'raster',
+      source: 'osm-tiles',
+      minzoom: 0,
+      maxzoom: 19
+    }
+  ]
+};
 
 const RealMap: React.FC<RealMapProps> = ({
   center,
@@ -31,7 +55,6 @@ const RealMap: React.FC<RealMapProps> = ({
   className = '',
   height = '400px'
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
   const [selectedMarker, setSelectedMarker] = useState<MapMarker | null>(null);
   const [viewState, setViewState] = useState({
     longitude: center.lng,
@@ -89,11 +112,6 @@ const RealMap: React.FC<RealMapProps> = ({
     return emojis[type as keyof typeof emojis] || '📍';
   };
 
-  // Toggle expanded view
-  const toggleExpanded = () => {
-    setIsExpanded(!isExpanded);
-  };
-
   // Fly to greenhouse location
   const flyToGreenhouse = () => {
     setViewState(prev => ({
@@ -110,10 +128,8 @@ const RealMap: React.FC<RealMapProps> = ({
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className={`relative bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden ${className} ${
-        isExpanded ? 'fixed inset-4 z-[9999]' : ''
-      }`}
-      style={isExpanded ? { height: 'calc(100vh - 2rem)' } : { height }}
+      className={`relative bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden ${className}`}
+      style={{ height }}
     >
       {/* Greenhouse Location Button - Top Left Below Controls */}
       <div className="absolute top-[140px] left-[10px] z-[1000] pointer-events-auto">
@@ -130,15 +146,6 @@ const RealMap: React.FC<RealMapProps> = ({
       {/* Map Controls - Top Right */}
       <div className="absolute top-4 right-4 z-[1000] flex items-center gap-2 pointer-events-none">
         <div className="flex items-center gap-2 pointer-events-auto">
-          {/* Expand/Collapse Button */}
-          <button
-            onClick={toggleExpanded}
-            className="bg-white/95 backdrop-blur-sm rounded-2xl px-3 py-2 shadow-lg text-xs font-medium text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-            title={isExpanded ? 'Exit Fullscreen' : 'Expand Map'}
-          >
-            {isExpanded ? '⬇️ Minimize' : '⬆️ Expand'}
-          </button>
-
           {/* Live Status */}
           <div className="bg-white/95 backdrop-blur-sm rounded-2xl px-3 py-2 shadow-lg">
             <div className="flex items-center text-xs text-gray-600">
@@ -154,14 +161,13 @@ const RealMap: React.FC<RealMapProps> = ({
         ref={mapRef}
         {...viewState}
         onMove={evt => setViewState(evt.viewState)}
-        mapStyle={MAP_STYLE}
+        mapStyle={MAP_STYLE as any}
         style={{ width: '100%', height: '100%' }}
+        maxZoom={19}
+        minZoom={2}
       >
         {/* Navigation Controls (Zoom, Compass) */}
         <NavigationControl position="top-left" showCompass={true} />
-
-        {/* Fullscreen Control */}
-        <FullscreenControl position="top-left" />
 
         {/* Scale Control */}
         <ScaleControl position="bottom-left" />

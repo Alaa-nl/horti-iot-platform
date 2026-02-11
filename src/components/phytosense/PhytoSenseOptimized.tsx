@@ -1,32 +1,35 @@
-// PhytoSense Optimized Component - Smart Data Aggregation
-// Handles historical data (2022-2024) without crashes using adaptive resolution
+// PhytoSense Optimized Component - Raw Data Display
+// Shows exact 5-minute interval sensor data without any aggregation
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { format, subDays, differenceInDays } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import * as XLSX from 'xlsx';
+import PhytoSenseChart from './PhytoSenseChart';
+import { Card } from '../ui/card';
+import { Button } from '../ui/button';
+import { Badge } from '../ui/badge';
 
 interface PhytoSenseOptimizedProps {
   className?: string;
 }
 
-// Full device configurations including historical data
+// Full device configurations including historical data - CORRECTED TDIDs
 const DEVICES = [
-  { id: 'stem051-2022', name: 'Stem051 - NL 2022 MKB Raak', setupId: 1324, fromDate: '2022-10-19T00:00:00', toDate: '2023-06-01T09:42:23', diameterTDID: 33385, sapFlowTDID: 33387, cropType: 'General' },
-  { id: 'stem127-2022', name: 'Stem127 - NL 2022 MKB Raak', setupId: 1324, fromDate: '2022-10-19T00:00:00', toDate: '2023-06-01T09:42:23', diameterTDID: 33386, sapFlowTDID: 33388, cropType: 'General' },
-  { id: 'stem051-tomato', name: 'Stem051 - NL 2023 Tomato', setupId: 1445, fromDate: '2023-06-23T00:00:00', toDate: '2023-08-25T13:30:00', diameterTDID: 38210, sapFlowTDID: 39916, cropType: 'Tomato' },
-  { id: 'stem136-tomato', name: 'Stem136 - NL 2023 Tomato', setupId: 1445, fromDate: '2023-06-23T00:00:00', toDate: '2023-08-25T13:30:00', diameterTDID: 38211, sapFlowTDID: 39915, cropType: 'Tomato' },
-  { id: 'stem051-cucumber', name: 'Stem051 - NL 2023 Cucumber', setupId: 1445, fromDate: '2023-08-25T13:30:00', toDate: '2023-10-20T00:00:00', diameterTDID: 38210, sapFlowTDID: 39916, cropType: 'Cucumber' },
-  { id: 'stem136-cucumber', name: 'Stem136 - NL 2023 Cucumber', setupId: 1445, fromDate: '2023-08-25T13:30:00', toDate: '2023-10-20T00:00:00', diameterTDID: 38211, sapFlowTDID: 39915, cropType: 'Cucumber' },
-  { id: 'stem051-2024', name: 'Stem051 - NL 2023-2024 MKB Raak', setupId: 1508, fromDate: '2023-11-01T00:00:00', toDate: '2024-10-15T12:00:00', diameterTDID: 39999, sapFlowTDID: 39987, cropType: 'General' },
-  { id: 'stem136-2024', name: 'Stem136 - NL 2023-2024 MKB Raak', setupId: 1508, fromDate: '2023-11-01T00:00:00', toDate: '2024-10-15T12:00:00', diameterTDID: 40007, sapFlowTDID: 39981, cropType: 'General' },
+  { id: 'stem051-2022', name: 'Stem051 - NL 2022 MKB Raak', setupId: 1324, fromDate: '2022-10-19T00:00:00', toDate: '2023-06-01T09:42:23', diameterTDID: 33387, sapFlowTDID: 33385, cropType: 'General' },
+  { id: 'stem127-2022', name: 'Stem127 - NL 2022 MKB Raak', setupId: 1324, fromDate: '2022-10-19T00:00:00', toDate: '2023-06-01T09:42:23', diameterTDID: 33388, sapFlowTDID: 33386, cropType: 'General' },
+  { id: 'stem051-tomato', name: 'Stem051 - NL 2023 Tomato', setupId: 1445, fromDate: '2023-06-23T00:00:00', toDate: '2023-08-25T13:30:00', diameterTDID: 39916, sapFlowTDID: 38210, cropType: 'Tomato' },
+  { id: 'stem136-tomato', name: 'Stem136 - NL 2023 Tomato', setupId: 1445, fromDate: '2023-06-23T00:00:00', toDate: '2023-08-25T13:30:00', diameterTDID: 39915, sapFlowTDID: 38211, cropType: 'Tomato' },
+  { id: 'stem051-cucumber', name: 'Stem051 - NL 2023 Cucumber', setupId: 1445, fromDate: '2023-08-25T13:30:00', toDate: '2023-10-20T00:00:00', diameterTDID: 39916, sapFlowTDID: 38210, cropType: 'Cucumber' },
+  { id: 'stem136-cucumber', name: 'Stem136 - NL 2023 Cucumber', setupId: 1445, fromDate: '2023-08-25T13:30:00', toDate: '2023-10-20T00:00:00', diameterTDID: 39915, sapFlowTDID: 38211, cropType: 'Cucumber' },
+  { id: 'stem051-2024', name: 'Stem051 - NL 2023-2024 MKB Raak', setupId: 1508, fromDate: '2023-11-01T00:00:00', toDate: '2024-10-15T12:00:00', diameterTDID: 39987, sapFlowTDID: 39999, cropType: 'General' },
+  { id: 'stem136-2024', name: 'Stem136 - NL 2023-2024 MKB Raak', setupId: 1508, fromDate: '2023-11-01T00:00:00', toDate: '2024-10-15T12:00:00', diameterTDID: 39981, sapFlowTDID: 40007, cropType: 'General' },
 ];
 
 type MeasurementType = 'both' | 'diameter' | 'sapflow';
-type AggregationMode = 'auto' | 'hourly' | '6hour' | 'daily' | 'weekly';
 
 interface ChartDataPoint {
   time: string;
+  fullTimestamp: string;  // Store full timestamp for display
   diameter?: number;
   sapFlow?: number;
 }
@@ -37,32 +40,21 @@ const PhytoSenseOptimized: React.FC<PhytoSenseOptimizedProps> = ({ className = '
   const [dateRange, setDateRange] = useState<'device' | '7days' | '30days' | '90days' | '1year' | 'custom'>('device');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
-  const [aggregationMode, setAggregationMode] = useState<AggregationMode>('auto');
+  // Removed aggregationMode - always fetch raw data
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [dataInfo, setDataInfo] = useState<{
     diameterPoints: number;
     sapFlowPoints: number;
-    aggregation: string;
     dateFrom: string;
     dateTo: string;
+    intervalMinutes: number; // Show actual data interval
   } | null>(null);
 
   const selectedDevice = useMemo(() => DEVICES[selectedDeviceIndex], [selectedDeviceIndex]);
 
-  // Calculate optimal aggregation based on date range
-  const calculateAggregation = useCallback((startDate: Date, endDate: Date, mode: AggregationMode): string => {
-    if (mode !== 'auto') return mode;
-
-    const days = differenceInDays(endDate, startDate);
-
-    if (days <= 7) return 'hourly'; // ≤ 7 days: hourly averages (max ~168 points)
-    if (days <= 30) return 'hourly'; // 8-30 days: hourly (max ~720 points)
-    if (days <= 90) return '6hour'; // 31-90 days: 6-hour intervals (max ~360 points)
-    if (days <= 365) return 'daily'; // 91-365 days: daily (max ~365 points)
-    return 'weekly'; // > 365 days: weekly averages
-  }, []);
+  // Removed aggregation calculation - always fetch raw data
 
   // Get date range for API call
   const getDateRange = useCallback((): { after: string; before: string } => {
@@ -96,7 +88,7 @@ const PhytoSenseOptimized: React.FC<PhytoSenseOptimizedProps> = ({ className = '
     };
   }, [dateRange, customStartDate, customEndDate, selectedDevice]);
 
-  // Fetch data from backend API with aggregation
+  // Fetch data from backend - using DATABASE for historical data (>5 mins old)
   const fetchData = useCallback(async () => {
     if (!selectedDevice) return;
 
@@ -116,85 +108,60 @@ const PhytoSenseOptimized: React.FC<PhytoSenseOptimizedProps> = ({ className = '
       const dates = getDateRange();
       const startDate = new Date(dates.after);
       const endDate = new Date(dates.before);
-      const aggMode = calculateAggregation(startDate, endDate, aggregationMode);
 
-      console.log(`Fetching data from ${dates.after} to ${dates.before} with aggregation: ${aggMode}`);
-
-      const promises: Promise<any>[] = [];
-      const types: ('diameter' | 'sapflow')[] = [];
+      console.log(`📊 Fetching data from YOUR DATABASE (${dates.after} to ${dates.before})`);
 
       // Get API URL from environment
       const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
 
-      // Fetch diameter data if needed
-      if (measurementType === 'both' || measurementType === 'diameter') {
-        const diameterUrl = `${API_URL}/phytosense/data/${selectedDevice.diameterTDID}?setup_id=${selectedDevice.setupId}&channel=0&after=${dates.after}&before=${dates.before}&aggregation=${aggMode}`;
-        promises.push(
-          fetch(diameterUrl, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          }).then(r => r.json())
-        );
-        types.push('diameter');
-      }
+      // Extract sensor code from device name (e.g., "Stem051 - NL 2023 Tomato" -> "Stem051")
+      const sensorCode = selectedDevice.name.split(' - ')[0];
 
-      // Fetch sap flow data if needed
-      if (measurementType === 'both' || measurementType === 'sapflow') {
-        const sapFlowUrl = `${API_URL}/phytosense/data/${selectedDevice.sapFlowTDID}?setup_id=${selectedDevice.setupId}&channel=0&after=${dates.after}&before=${dates.before}&aggregation=${aggMode}`;
-        promises.push(
-          fetch(sapFlowUrl, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          }).then(r => r.json())
-        );
-        types.push('sapflow');
-      }
+      // FETCH FROM DATABASE - All historical data comes from YOUR database
+      const databaseUrl = `${API_URL}/sensors/data?sensorCode=${sensorCode}&startDate=${dates.after}&endDate=${dates.before}&limit=50000`;
 
-      const results = await Promise.all(promises);
-
-      // Process results
-      let diameterData: any[] = [];
-      let sapFlowData: any[] = [];
-
-      results.forEach((result, index) => {
-        if (!result.success) {
-          const errorMsg = result.message || result.error || 'Failed to fetch data';
-          console.warn(`Warning: ${types[index]} data could not be loaded:`, errorMsg);
-          // Continue with partial data instead of throwing error
-        } else {
-          if (types[index] === 'diameter') {
-            diameterData = result.data || [];
-          } else {
-            sapFlowData = result.data || [];
-          }
+      const response = await fetch(databaseUrl, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
 
-      // If both datasets failed, then throw error
-      if (diameterData.length === 0 && sapFlowData.length === 0) {
-        throw new Error('Unable to fetch any data. Please try a different date range or device.');
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to fetch data from database');
       }
 
-      // Combine data for chart
+      // Process database results
+      const dataPoints = result.data || [];
+
+      if (dataPoints.length === 0) {
+        throw new Error('No data available for this sensor in the selected date range.');
+      }
+
+      // Filter data based on measurement type
+      const filteredData = dataPoints.filter((point: any) => {
+        if (measurementType === 'both') return true;
+        if (measurementType === 'diameter') return point.diameter !== null;
+        if (measurementType === 'sapflow') return point.sapFlow !== null;
+        return true;
+      });
+
+      // Create chart data from database results
       const dataMap = new Map<string, ChartDataPoint>();
 
-      diameterData.forEach(point => {
-        const time = format(new Date(point.dateTime), 'MMM dd HH:mm');
-        dataMap.set(point.dateTime, { time, diameter: point.value });
-      });
+      filteredData.forEach((point: any) => {
+        const timestamp = new Date(point.timestamp);
+        const time = format(timestamp, 'MMM dd HH:mm');
+        const fullTimestamp = format(timestamp, 'yyyy-MM-dd HH:mm:ss');
 
-      sapFlowData.forEach(point => {
-        const time = format(new Date(point.dateTime), 'MMM dd HH:mm');
-        const existing = dataMap.get(point.dateTime);
-        if (existing) {
-          existing.sapFlow = point.value;
-        } else {
-          dataMap.set(point.dateTime, { time, sapFlow: point.value });
-        }
+        dataMap.set(point.timestamp, {
+          time,
+          fullTimestamp,
+          diameter: point.diameter,
+          sapFlow: point.sapFlow
+        });
       });
 
       // Sort by date
@@ -204,14 +171,14 @@ const PhytoSenseOptimized: React.FC<PhytoSenseOptimizedProps> = ({ className = '
 
       setChartData(sortedData);
       setDataInfo({
-        diameterPoints: diameterData.length,
-        sapFlowPoints: sapFlowData.length,
-        aggregation: aggMode,
-        dateFrom: format(startDate, 'MMM dd, yyyy'),
-        dateTo: format(endDate, 'MMM dd, yyyy')
+        diameterPoints: filteredData.filter((p: any) => p.diameter !== null).length,
+        sapFlowPoints: filteredData.filter((p: any) => p.sapFlow !== null).length,
+        dateFrom: format(startDate, 'MMM dd, yyyy HH:mm'),
+        dateTo: format(endDate, 'MMM dd, yyyy HH:mm'),
+        intervalMinutes: 5 // Database stores 5-minute interval raw data
       });
 
-      console.log(`Loaded ${sortedData.length} chart points (Diameter: ${diameterData.length}, SapFlow: ${sapFlowData.length})`);
+      console.log(`✅ Loaded ${sortedData.length} data points from YOUR DATABASE (5-min intervals)`);
 
     } catch (err) {
       console.error('Error fetching data:', err);
@@ -219,7 +186,7 @@ const PhytoSenseOptimized: React.FC<PhytoSenseOptimizedProps> = ({ className = '
     } finally {
       setLoading(false);
     }
-  }, [selectedDevice, measurementType, getDateRange, calculateAggregation, aggregationMode]);
+  }, [selectedDevice, measurementType, getDateRange]);
 
   // Export to Excel - Quick export (displayed data)
   const exportQuick = useCallback(() => {
@@ -231,8 +198,13 @@ const PhytoSenseOptimized: React.FC<PhytoSenseOptimizedProps> = ({ className = '
     try {
       const wb = XLSX.utils.book_new();
 
-      // Data sheet
-      const wsData = XLSX.utils.json_to_sheet(chartData);
+      // Data sheet - include full timestamp
+      const exportData = chartData.map(point => ({
+        'Timestamp': point.fullTimestamp || point.time,
+        'Diameter (mm)': point.diameter || '',
+        'Sap Flow (g/h)': point.sapFlow || ''
+      }));
+      const wsData = XLSX.utils.json_to_sheet(exportData);
       XLSX.utils.book_append_sheet(wb, wsData, 'Data');
 
       // Info sheet
@@ -241,9 +213,10 @@ const PhytoSenseOptimized: React.FC<PhytoSenseOptimizedProps> = ({ className = '
         { Property: 'Crop Type', Value: selectedDevice.cropType },
         { Property: 'Date From', Value: dataInfo?.dateFrom || '' },
         { Property: 'Date To', Value: dataInfo?.dateTo || '' },
-        { Property: 'Aggregation', Value: dataInfo?.aggregation || '' },
-        { Property: 'Chart Points', Value: chartData.length },
-        { Property: 'Export Date', Value: format(new Date(), 'MMM dd, yyyy HH:mm') }
+        { Property: 'Data Type', Value: 'RAW (No Aggregation)' },
+        { Property: 'Interval', Value: '5 minutes' },
+        { Property: 'Total Points', Value: chartData.length },
+        { Property: 'Export Date', Value: format(new Date(), 'yyyy-MM-dd HH:mm:ss') }
       ]);
       XLSX.utils.book_append_sheet(wb, wsInfo, 'Info');
 
@@ -257,43 +230,42 @@ const PhytoSenseOptimized: React.FC<PhytoSenseOptimizedProps> = ({ className = '
   }, [chartData, selectedDevice, dataInfo]);
 
   return (
-    <div className={`bg-white rounded-lg shadow-lg p-6 ${className}`}>
+    <Card className={`p-6 ${className}`}>
       {/* Header */}
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">PhytoSense Data (2grow) - Historical View</h2>
-        <p className="text-sm text-gray-600">
-          Sap flow and stem diameter measurements with smart aggregation for performance
-        </p>
+      <div className="mb-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-foreground">PhytoSense Data</h2>
+          <Badge variant="default">
+            📊 Analysis Tool
+          </Badge>
+        </div>
       </div>
 
       {/* Controls Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         {/* Device Selector */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Device</label>
+          <label className="block text-sm font-medium text-foreground mb-1">Device</label>
           <select
             value={selectedDeviceIndex}
             onChange={(e) => setSelectedDeviceIndex(Number(e.target.value))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+            className="select-elevated"
           >
             {DEVICES.map((device, index) => (
               <option key={device.id} value={index}>
-                {device.name} ({device.cropType})
+                {device.name}
               </option>
             ))}
           </select>
-          <p className="text-xs text-gray-500 mt-1">
-            Period: {format(new Date(selectedDevice.fromDate), 'MMM yyyy')} - {format(new Date(selectedDevice.toDate), 'MMM yyyy')}
-          </p>
         </div>
 
         {/* Measurement Type */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Measurement</label>
+          <label className="block text-sm font-medium text-foreground mb-1">Measurement</label>
           <select
             value={measurementType}
             onChange={(e) => setMeasurementType(e.target.value as MeasurementType)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+            className="select-elevated"
           >
             <option value="both">Both (Diameter & Sap Flow)</option>
             <option value="diameter">Diameter Only</option>
@@ -303,11 +275,11 @@ const PhytoSenseOptimized: React.FC<PhytoSenseOptimizedProps> = ({ className = '
 
         {/* Date Range */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Date Range</label>
+          <label className="block text-sm font-medium text-foreground mb-1">Date Range</label>
           <select
             value={dateRange}
             onChange={(e) => setDateRange(e.target.value as any)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+            className="select-elevated"
           >
             <option value="device">Full Device Period</option>
             <option value="7days">Last 7 Days</option>
@@ -321,183 +293,99 @@ const PhytoSenseOptimized: React.FC<PhytoSenseOptimizedProps> = ({ className = '
 
       {/* Custom Date Range */}
       {dateRange === 'custom' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+            <label className="block text-sm font-medium text-foreground mb-1">Start Date</label>
             <input
               type="datetime-local"
               value={customStartDate}
               onChange={(e) => setCustomStartDate(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+              className="w-full px-3 py-2 border bg-background text-foreground rounded-lg focus:ring-2 focus:ring-ring"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+            <label className="block text-sm font-medium text-foreground mb-1">End Date</label>
             <input
               type="datetime-local"
               value={customEndDate}
               onChange={(e) => setCustomEndDate(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+              className="w-full px-3 py-2 border bg-background text-foreground rounded-lg focus:ring-2 focus:ring-ring"
             />
           </div>
         </div>
       )}
 
-      {/* Aggregation Mode (Advanced) */}
-      <div className="mb-6">
-        <details className="bg-gray-50 rounded-lg p-3">
-          <summary className="cursor-pointer text-sm font-medium text-gray-700">
-            Advanced: Data Aggregation Mode (Current: {aggregationMode})
-          </summary>
-          <div className="mt-3 grid grid-cols-2 md:grid-cols-5 gap-2">
-            {(['auto', 'hourly', '6hour', 'daily', 'weekly'] as AggregationMode[]).map(mode => (
-              <button
-                key={mode}
-                onClick={() => setAggregationMode(mode)}
-                className={`px-3 py-1 rounded text-sm ${
-                  aggregationMode === mode
-                    ? 'bg-green-600 text-white'
-                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100'
-                }`}
-              >
-                {mode.charAt(0).toUpperCase() + mode.slice(1)}
-              </button>
-            ))}
-          </div>
-          <p className="text-xs text-gray-500 mt-2">
-            Auto mode automatically selects optimal aggregation based on date range (hourly for ≤30 days, daily for longer periods)
-          </p>
-        </details>
-      </div>
-
       {/* Action Buttons */}
-      <div className="flex gap-3 mb-6">
-        <button
+      <div className="flex gap-3 mb-4">
+        <Button
           onClick={fetchData}
           disabled={loading}
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors font-medium"
+          variant="default"
         >
           {loading ? 'Loading...' : 'Fetch Data'}
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={exportQuick}
           disabled={chartData.length === 0}
-          className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition-colors font-medium"
+          variant="secondary"
         >
           Export to Excel
-        </button>
+        </Button>
       </div>
 
       {/* Error Display */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-          <p className="text-red-700">{error}</p>
+        <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 mb-4">
+          <p className="text-destructive">{error}</p>
         </div>
       )}
 
       {/* Data Info Panel */}
       {dataInfo && chartData.length > 0 && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
+        <div className="bg-primary/10 border border-primary/30 rounded-lg p-3 mb-3">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-xs">
             <div>
-              <span className="text-gray-600">Period:</span>
-              <p className="font-semibold text-gray-900">{dataInfo.dateFrom} - {dataInfo.dateTo}</p>
+              <span className="text-muted-foreground block mb-0.5">Period</span>
+              <p className="font-semibold text-foreground text-sm">{dataInfo.dateFrom} - {dataInfo.dateTo}</p>
             </div>
             <div>
-              <span className="text-gray-600">Aggregation:</span>
-              <p className="font-semibold text-gray-900">{dataInfo.aggregation.toUpperCase()}</p>
+              <span className="text-muted-foreground block mb-0.5">Interval</span>
+              <p className="font-semibold text-foreground text-sm">{dataInfo.intervalMinutes} min</p>
             </div>
             <div>
-              <span className="text-gray-600">Chart Points:</span>
-              <p className="font-semibold text-gray-900">{chartData.length}</p>
+              <span className="text-muted-foreground block mb-0.5">Points</span>
+              <p className="font-semibold text-foreground text-sm">{chartData.length.toLocaleString()}</p>
             </div>
             <div>
-              <span className="text-gray-600">Diameter Data:</span>
-              <p className="font-semibold text-gray-900">{dataInfo.diameterPoints} points</p>
+              <span className="text-muted-foreground block mb-0.5">Diameter</span>
+              <p className="font-semibold text-foreground text-sm">{dataInfo.diameterPoints.toLocaleString()}</p>
             </div>
             <div>
-              <span className="text-gray-600">Sap Flow Data:</span>
-              <p className="font-semibold text-gray-900">{dataInfo.sapFlowPoints} points</p>
+              <span className="text-muted-foreground block mb-0.5">Sap Flow</span>
+              <p className="font-semibold text-foreground text-sm">{dataInfo.sapFlowPoints.toLocaleString()}</p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Chart */}
+      {/* Chart - High Performance uPlot */}
       {chartData.length > 0 && (
-        <div className="bg-gray-50 rounded-lg p-4">
-          <ResponsiveContainer width="100%" height={400}>
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-              <XAxis
-                dataKey="time"
-                tick={{ fontSize: 11 }}
-                stroke="#6B7280"
-                interval="preserveStartEnd"
-              />
-              {(measurementType === 'both' || measurementType === 'diameter') && (
-                <YAxis
-                  yAxisId="diameter"
-                  orientation="left"
-                  tick={{ fontSize: 11 }}
-                  stroke="#10B981"
-                  label={{ value: 'Diameter (mm)', angle: -90, position: 'insideLeft', style: { fontSize: 12 } }}
-                />
-              )}
-              {(measurementType === 'both' || measurementType === 'sapflow') && (
-                <YAxis
-                  yAxisId="sapflow"
-                  orientation="right"
-                  tick={{ fontSize: 11 }}
-                  stroke="#3B82F6"
-                  label={{ value: 'Sap Flow (g/h)', angle: 90, position: 'insideRight', style: { fontSize: 12 } }}
-                />
-              )}
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: '#F9FAFB',
-                  border: '1px solid #E5E7EB',
-                  borderRadius: '8px'
-                }}
-              />
-              <Legend />
-              {(measurementType === 'both' || measurementType === 'diameter') && (
-                <Line
-                  yAxisId="diameter"
-                  type="monotone"
-                  dataKey="diameter"
-                  stroke="#10B981"
-                  strokeWidth={2}
-                  dot={false}
-                  name="Diameter (mm)"
-                />
-              )}
-              {(measurementType === 'both' || measurementType === 'sapflow') && (
-                <Line
-                  yAxisId="sapflow"
-                  type="monotone"
-                  dataKey="sapFlow"
-                  stroke="#3B82F6"
-                  strokeWidth={2}
-                  dot={false}
-                  name="Sap Flow (g/h)"
-                />
-              )}
-            </LineChart>
-          </ResponsiveContainer>
+        <div className="w-full">
+          <PhytoSenseChart
+            data={chartData}
+            measurementType={measurementType}
+            height={500}
+          />
         </div>
       )}
 
       {/* Empty State */}
       {!loading && !error && chartData.length === 0 && (
-        <div className="bg-gray-50 rounded-lg p-8 text-center">
-          <p className="text-gray-600">Select options and click "Fetch Data" to view measurements</p>
-          <p className="text-sm text-gray-500 mt-2">
-            All historical data from 2022-2024 is available with smart aggregation
-          </p>
+        <div className="bg-muted rounded-lg p-8 text-center">
+          <p className="text-muted-foreground">No data available</p>
         </div>
       )}
-    </div>
+    </Card>
   );
 };
 

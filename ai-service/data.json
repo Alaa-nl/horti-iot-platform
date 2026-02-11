@@ -1,0 +1,47 @@
+{
+    "description": "Greenhouse tomato detection training data",
+    "created": "2024-11-19T14:45:00Z",
+    "location": "./ai-service/data/",
+    "size_mb": 715,
+    "contents": {
+        "training_version_2": {
+            "train_images": 1259,
+            "train_labels": 1259,
+            "valid_images": 120,
+            "valid_labels": 120,
+            "test_images": 60,
+            "test_labels": 60,
+            "total_labeled_images": 1439,
+            "label_format": "YOLO polygon segmentation (18 coordinates per tomato)"
+        },
+        "Total": {
+            "images": 600,
+            "format": "PNG",
+            "description": "Time-series greenhouse monitoring",
+            "capture_interval": "30 minutes",
+            "time_span": "12 hours of continuous monitoring"
+        },
+        "training_version2": {
+            "images": 1447,
+            "description": "Additional training images"
+        }
+    },
+    "usage": {
+        "fine_tuning": "Use training_version_2 data to fine-tune existing models",
+        "baseline_testing": "Use test set (60 images) for unbiased performance evaluation",
+        "temporal_analysis": "Use Total folder for growth tracking over time",
+        "model_validation": "Compare model performance across different datasets"
+    },
+    "models_compatible": [
+        "yolov8n_tomato.pt",
+        "yolov8s_tomato.pt",
+        "yolov9t_tomato.pt",
+        "yolov10n_tomato.pt",
+        "yolov11n_tomato.pt"
+    ],
+    "notes": {
+        "git_excluded": true,
+        "reason": "Data size (715MB) too large for version control",
+        "sharing": "Use cloud storage or data versioning tools like DVC for team collaboration"
+    }
+}

@@ -300,7 +300,15 @@ export class GreenhouseController {
       },
       performance: {
         previousYield: Math.round(Math.random() * 50 + 20) // Mock data for now
-      }
+      },
+      // Additional fields for researcher dashboard
+      cropType: greenhouse.crop_type,
+      variety: greenhouse.variety,
+      supplier: greenhouse.supplier,
+      climateSystem: greenhouse.climate_system,
+      lightingSystem: greenhouse.lighting_system,
+      co2TargetPpm: greenhouse.co2_target_ppm,
+      temperatureRangeC: greenhouse.temperature_range_c
     };
   }
 

@@ -1,5 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { Card as ShadcnCard } from '../ui/card';
+import { cn } from '../../lib/utils';
 
 interface CardProps {
   children: React.ReactNode;
@@ -14,11 +16,16 @@ const Card: React.FC<CardProps> = ({ children, className = '', hover = true }) =
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
       whileHover={hover ? { y: -4, transition: { duration: 0.2 } } : undefined}
-      className={`bg-white rounded-2xl shadow-soft border border-gray-100 p-6 transition-all duration-300 ${
-        hover ? 'hover:shadow-medium hover:border-gray-200' : ''
-      } ${className}`}
     >
-      {children}
+      <ShadcnCard
+        className={cn(
+          "p-6 transition-all duration-300 backdrop-blur-sm bg-card/95 dark:bg-card/90 border-border/60",
+          hover && "hover:shadow-elevated-hover hover:border-primary/30 hover:bg-card",
+          className
+        )}
+      >
+        {children}
+      </ShadcnCard>
     </motion.div>
   );
 };

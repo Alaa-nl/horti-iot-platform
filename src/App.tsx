@@ -1,12 +1,15 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import Login from './pages/Login';
 import ResearcherDashboard from './pages/ResearcherDashboard';
 import GrowerDashboard from './pages/GrowerDashboard';
 import StatisticsPage from './pages/StatisticsPage';
 import AdminDashboard from './pages/AdminDashboard';
 import ProfilePage from './pages/ProfilePage';
+import RawSensorDisplay from './components/sensors/RawSensorDisplay';
+import PlantBalanceDashboard from './pages/PlantBalanceDashboard';
 
 // Protected Route Component with multiple allowed roles
 const ProtectedRoute: React.FC<{
@@ -66,6 +69,18 @@ const AppRoutes: React.FC = () => {
         </ProtectedRoute>
       } />
 
+      {/* Plant Balance Dashboard - PUBLIC ACCESS for demo/review */}
+      <Route path="/plant-balance" element={
+        <PlantBalanceDashboard />
+      } />
+
+      {/* Raw Sensor Data Display - accessible by all authenticated users */}
+      <Route path="/sensors" element={
+        <ProtectedRoute allowedRoles={['researcher', 'grower', 'farmer', 'admin']}>
+          <RawSensorDisplay />
+        </ProtectedRoute>
+      } />
+
       {/* Grower/Farmer Dashboard - accessible by all roles (grower/farmer, researcher, admin) */}
       <Route path="/grower" element={
         <ProtectedRoute allowedRoles={['grower', 'farmer', 'researcher', 'admin']}>
@@ -107,9 +122,11 @@ const AppRoutes: React.FC = () => {
 function App() {
   return (
     <Router>
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
+      </ThemeProvider>
     </Router>
   );
 }

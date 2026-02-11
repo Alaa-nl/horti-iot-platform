@@ -4,8 +4,6 @@
  * In production: can be extended to send to error tracking service (Sentry, LogRocket, etc.)
  */
 
-type LogLevel = 'log' | 'info' | 'warn' | 'error' | 'debug';
-
 class Logger {
   private isDevelopment = process.env.NODE_ENV === 'development';
 

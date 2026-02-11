@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import Layout from '../components/layout/Layout';
 import Card from '../components/common/Card';
 import ErrorBoundary from '../components/common/ErrorBoundary';
@@ -81,10 +81,8 @@ const mockRevenueData: RevenueData[] = [
 ];
 
 const GrowerDashboard: React.FC = () => {
-  const [timeRange, setTimeRange] = useState('12months');
   const [financialData, setFinancialData] = useState<SimplifiedFinancialData>(mockSimplifiedFinancialData);
   const [revenueData] = useState<RevenueData[]>(mockRevenueData);
-  const [showYearComparison, setShowYearComparison] = useState(true);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -111,12 +109,7 @@ const GrowerDashboard: React.FC = () => {
   // Filter data based on time range
   const getFilteredData = () => {
     const data = [...revenueData];
-    
-    if (timeRange === '6months') {
-      return data.slice(-6);
-    } else if (timeRange === 'ytd') {
-      return data.filter(d => d.date.startsWith('2024'));
-    }
+    // Default to showing last 12 months
     return data.slice(-12);
   };
 
@@ -126,11 +119,11 @@ const GrowerDashboard: React.FC = () => {
         {/* Simple Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Farm Business Overview</h1>
-            <p className="text-lg text-gray-600 mt-1">Your Investment Performance</p>
+            <h1 className="text-3xl font-bold text-foreground">Farm Business Overview</h1>
+            <p className="text-lg text-muted-foreground mt-1">Your Investment Performance</p>
           </div>
           <div className="text-right">
-            <p className="text-sm text-gray-500">Last Updated</p>
+            <p className="text-sm text-muted-foreground">Last Updated</p>
             <p className="text-lg font-semibold text-green-600">Today</p>
           </div>
         </div>
@@ -140,7 +133,7 @@ const GrowerDashboard: React.FC = () => {
           <Card>
             <div className="text-center p-6">
               <div className="text-4xl mb-2">💰</div>
-              <p className="text-sm text-gray-600 mb-1">This Month's Profit</p>
+              <p className="text-sm text-muted-foreground mb-1">This Month's Profit</p>
               <p className="text-3xl font-bold text-green-600">
                 {formatCurrency(financialData.monthlyRevenue - financialData.operatingCosts.total)}
               </p>
@@ -151,7 +144,7 @@ const GrowerDashboard: React.FC = () => {
           <Card>
             <div className="text-center p-6">
               <div className="text-4xl mb-2">📈</div>
-              <p className="text-sm text-gray-600 mb-1">Annual Return</p>
+              <p className="text-sm text-muted-foreground mb-1">Annual Return</p>
               <p className="text-3xl font-bold text-purple-600">
                 {financialData.roi.toFixed(1)}%
               </p>
@@ -162,7 +155,7 @@ const GrowerDashboard: React.FC = () => {
           <Card>
             <div className="text-center p-6">
               <div className="text-4xl mb-2">⏳</div>
-              <p className="text-sm text-gray-600 mb-1">Break-even in</p>
+              <p className="text-sm text-muted-foreground mb-1">Break-even in</p>
               <p className="text-3xl font-bold text-blue-600">
                 {(financialData.paybackPeriod - 10).toFixed(0)} months
               </p>
@@ -173,21 +166,21 @@ const GrowerDashboard: React.FC = () => {
 
         {/* Your Investment Status */}
         <Card>
-          <h3 className="text-xl font-semibold text-gray-900 mb-4">Your Investment Status</h3>
+          <h3 className="text-xl font-semibold text-foreground mb-4">Your Investment Status</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
-              <div className="flex justify-between items-center p-4 bg-green-50 rounded-lg">
+              <div className="flex justify-between items-center p-4 bg-horti-status-success/10 dark:bg-horti-status-success/20 rounded-lg border border-horti-status-success/20">
                 <div>
-                  <p className="font-semibold text-gray-800">💵 Total Invested</p>
-                  <p className="text-sm text-gray-600">Your initial investment</p>
+                  <p className="font-semibold text-foreground">💵 Total Invested</p>
+                  <p className="text-sm text-muted-foreground">Your initial investment</p>
                 </div>
-                <p className="text-xl font-bold text-gray-900">{formatCurrency(financialData.investments.total)}</p>
+                <p className="text-xl font-bold text-foreground">{formatCurrency(financialData.investments.total)}</p>
               </div>
               
-              <div className="flex justify-between items-center p-4 bg-blue-50 rounded-lg">
+              <div className="flex justify-between items-center p-4 bg-horti-blue-500/10 dark:bg-horti-blue-500/20 rounded-lg border border-horti-blue-500/20">
                 <div>
-                  <p className="font-semibold text-gray-800">💸 Already Earned Back</p>
-                  <p className="text-sm text-gray-600">Money returned so far</p>
+                  <p className="font-semibold text-foreground">💸 Already Earned Back</p>
+                  <p className="text-sm text-muted-foreground">Money returned so far</p>
                 </div>
                 <p className="text-xl font-bold text-green-600">{formatCurrency(financialData.investments.total * 0.35)}</p>
               </div>
@@ -196,18 +189,18 @@ const GrowerDashboard: React.FC = () => {
             <div className="flex flex-col items-center justify-center">
               <div className="relative w-40 h-40">
                 <svg className="w-40 h-40 transform -rotate-90">
-                  <circle cx="80" cy="80" r="70" stroke="#e5e7eb" strokeWidth="16" fill="none" />
-                  <circle 
-                    cx="80" cy="80" r="70" 
-                    stroke="#10b981" 
-                    strokeWidth="16" 
+                  <circle cx="80" cy="80" r="70" className="stroke-muted" strokeWidth="16" fill="none" />
+                  <circle
+                    cx="80" cy="80" r="70"
+                    className="stroke-horti-status-success"
+                    strokeWidth="16"
                     fill="none"
                     strokeDasharray={`${35 * 4.4} 440`}
                   />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-3xl font-bold text-gray-900">35%</span>
-                  <span className="text-sm text-gray-600">Paid Back</span>
+                  <span className="text-3xl font-bold text-foreground">35%</span>
+                  <span className="text-sm text-muted-foreground">Paid Back</span>
                 </div>
               </div>
               <p className="text-center mt-3 text-green-600 font-semibold">Great Progress! 💪</p>
@@ -217,7 +210,7 @@ const GrowerDashboard: React.FC = () => {
 
         {/* Simple Revenue Trend */}
         <Card>
-          <h3 className="text-xl font-semibold text-gray-900 mb-4">📊 How Much You're Making</h3>
+          <h3 className="text-xl font-semibold text-foreground mb-4">📊 How Much You're Making</h3>
           <div className="h-64 mb-4">
             <ErrorBoundary>
               <ResponsiveContainer width="100%" height="100%">
@@ -244,16 +237,16 @@ const GrowerDashboard: React.FC = () => {
             </ErrorBoundary>
           </div>
           <div className="grid grid-cols-3 gap-4">
-            <div className="text-center p-3 bg-green-100 rounded-lg">
-              <p className="text-sm text-gray-700">Growing</p>
+            <div className="text-center p-3 bg-horti-status-success/10 dark:bg-horti-status-success/20 rounded-lg">
+              <p className="text-sm text-muted-foreground">Growing</p>
               <p className="text-lg font-bold text-green-600">📈 +{financialData.yearOverYear.profit}%</p>
             </div>
-            <div className="text-center p-3 bg-blue-100 rounded-lg">
-              <p className="text-sm text-gray-700">This Month</p>
+            <div className="text-center p-3 bg-horti-blue-500/10 dark:bg-horti-blue-500/20 rounded-lg">
+              <p className="text-sm text-muted-foreground">This Month</p>
               <p className="text-lg font-bold text-blue-600">{formatCurrency(financialData.monthlyRevenue - financialData.operatingCosts.total)}</p>
             </div>
-            <div className="text-center p-3 bg-purple-100 rounded-lg">
-              <p className="text-sm text-gray-700">Best Season</p>
+            <div className="text-center p-3 bg-horti-accent-purple/10 dark:bg-horti-accent-purple/20 rounded-lg">
+              <p className="text-sm text-muted-foreground">Best Season</p>
               <p className="text-lg font-bold text-purple-600">☀️ Summer</p>
             </div>
           </div>
@@ -261,49 +254,49 @@ const GrowerDashboard: React.FC = () => {
 
         {/* What's Coming Next - Future Plans */}
         <Card>
-          <h3 className="text-xl font-semibold text-gray-900 mb-4">🔮 What's Coming Next</h3>
+          <h3 className="text-xl font-semibold text-foreground mb-4">🔮 What's Coming Next</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
-              <div className="p-4 bg-green-50 rounded-lg">
+              <div className="p-4 bg-horti-status-success/10 dark:bg-horti-status-success/20 rounded-lg border border-horti-status-success/20">
                 <div className="flex items-center space-x-3">
                   <span className="text-3xl">📈</span>
                   <div>
-                    <p className="font-semibold text-gray-800">Next Month's Profit</p>
-                    <p className="text-xl font-bold text-green-600">{formatCurrency(1400)}</p>
-                    <p className="text-sm text-gray-600">Looking good!</p>
+                    <p className="font-semibold text-foreground">Next Month's Profit</p>
+                    <p className="text-xl font-bold text-green-600 dark:text-green-400">{formatCurrency(1400)}</p>
+                    <p className="text-sm text-muted-foreground">Looking good!</p>
                   </div>
                 </div>
               </div>
-              
-              <div className="p-4 bg-blue-50 rounded-lg">
+
+              <div className="p-4 bg-horti-blue-500/10 dark:bg-horti-blue-500/20 rounded-lg border border-horti-blue-500/20">
                 <div className="flex items-center space-x-3">
                   <span className="text-3xl">💰</span>
                   <div>
-                    <p className="font-semibold text-gray-800">3-Month Total Profit</p>
-                    <p className="text-xl font-bold text-blue-600">€47,200</p>
-                    <p className="text-sm text-gray-600">Keep up the great work!</p>
+                    <p className="font-semibold text-foreground">3-Month Total Profit</p>
+                    <p className="text-xl font-bold text-blue-600 dark:text-blue-400">€47,200</p>
+                    <p className="text-sm text-muted-foreground">Keep up the great work!</p>
                   </div>
                 </div>
               </div>
             </div>
             
             <div className="space-y-4">
-              <div className="p-4 bg-yellow-50 rounded-lg">
+              <div className="p-4 bg-horti-accent-yellow/10 dark:bg-horti-accent-yellow/20 rounded-lg border border-horti-accent-yellow/20">
                 <div className="flex items-start space-x-3">
                   <span className="text-2xl">💡</span>
                   <div>
-                    <p className="font-semibold text-gray-800">Ways to Save Money</p>
-                    <p className="text-sm text-gray-600">Adjust LED lights to save €890/month</p>
+                    <p className="font-semibold text-foreground">Ways to Save Money</p>
+                    <p className="text-sm text-muted-foreground">Adjust LED lights to save €890/month</p>
                   </div>
                 </div>
               </div>
-              
-              <div className="p-4 bg-purple-50 rounded-lg">
+
+              <div className="p-4 bg-horti-accent-purple/10 dark:bg-horti-accent-purple/20 rounded-lg border border-horti-accent-purple/20">
                 <div className="flex items-start space-x-3">
                   <span className="text-2xl">🚀</span>
                   <div>
-                    <p className="font-semibold text-gray-800">Growth Opportunity</p>
-                    <p className="text-sm text-gray-600">Consider expanding by 20% to make even more!</p>
+                    <p className="font-semibold text-foreground">Growth Opportunity</p>
+                    <p className="text-sm text-muted-foreground">Consider expanding by 20% to make even more!</p>
                   </div>
                 </div>
               </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { motion } from 'framer-motion';
 import Layout from '../components/layout/Layout';
 import RealMap from '../components/common/RealMap';
@@ -8,9 +8,10 @@ import { fetchKNMIWeatherByCoordinates } from '../services/knmiWeatherService';
 import { greenhouseService } from '../services/greenhouseService';
 import { Greenhouse } from '../types/greenhouse';
 import GreenhouseSelector from '../components/greenhouse/GreenhouseSelector';
-import { useAuth } from '../contexts/AuthContext';
-import authService from '../services/authService';
-import PhytoSenseOptimized from '../components/phytosense/PhytoSenseOptimized';
+import PhytoSenseOptimizedDirect from '../components/phytosense/PhytoSenseOptimizedDirect';
+import SapFlowCard from '../components/phytosense/SapFlowCard';
+import DiameterCard from '../components/phytosense/DiameterCard';
+import GreenhouseHeatmap from '../components/heatmap/GreenhouseHeatmap';
 
 // Data interfaces
 interface FarmDetails {
@@ -56,25 +57,10 @@ interface HeadThicknessPrediction {
   lastUpdated: string;
 }
 
-interface SapFlowPrediction {
-  current: number;
-  unit: string;
-  predictions: Array<{
-    time: string;
-    predicted: number;
-    actual?: number;
-  }>;
-  nextUpdate: number; // seconds until next update
-  accuracy: number;
-  lastUpdated: string;
-}
+// Removed SapFlowData interface - now handled by separate card components
 
 
 const ResearcherDashboard: React.FC = () => {
-
-  // Authentication state - get from AuthContext
-  const { user, logout } = useAuth();
-
   // Greenhouse state
   const [selectedGreenhouse, setSelectedGreenhouse] = useState<Greenhouse | null>(null);
   const [greenhouses, setGreenhouses] = useState<Greenhouse[]>([]);
@@ -104,17 +90,7 @@ const ResearcherDashboard: React.FC = () => {
   const [weatherLoading, setWeatherLoading] = useState(true);
   const [weatherError, setWeatherError] = useState<string | null>(null);
 
-  // Detector data state
-  const [detectorData, setDetectorData] = useState<any>({
-    moisture: 0,
-    waterConsumption: {
-      current: 0,
-      previous: 0
-    }
-  });
-
-  // Yield data state
-  const [yieldData, setYieldData] = useState<any[]>([]);
+  // Removed detector and yield data states - not currently used
 
   // ML Predictions State
   const [headThickness, setHeadThickness] = useState<HeadThicknessPrediction>({
@@ -128,65 +104,13 @@ const ResearcherDashboard: React.FC = () => {
     lastUpdated: new Date().toLocaleTimeString()
   });
 
-  const [sapFlow, setSapFlow] = useState<SapFlowPrediction>({
-    current: 45.2,
-    unit: 'g/h',
-    predictions: [],
-    nextUpdate: 300,
-    accuracy: 94.5,
-    lastUpdated: new Date().toLocaleTimeString()
-  });
+  // Removed sap flow state - now handled by separate SapFlowCard and DiameterCard components
 
 
-  // Initialize sap flow predictions
+  // Removed fetchSapFlowData - now handled by separate SapFlowCard and DiameterCard components
+
+  // Update head thickness daily (simulated with faster interval for demo)
   useEffect(() => {
-    // Generate initial 30-minute predictions
-    const now = new Date();
-    const predictions: Array<{time: string; predicted: number; actual?: number}> = [];
-    for (let i = 0; i < 30; i++) {
-      const time = new Date(now.getTime() + i * 60000);
-      const base = 45 + Math.sin(i / 5) * 10;
-      predictions.push({
-        time: time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        predicted: Math.round((base + Math.random() * 5) * 10) / 10,
-        actual: i < 10 ? Math.round((base + Math.random() * 3) * 10) / 10 : undefined
-      });
-    }
-    setSapFlow(prev => ({ ...prev, predictions }));
-
-    // Update sap flow every 5 seconds for demo (would be 5 minutes in production)
-    const sapFlowInterval = setInterval(() => {
-      setSapFlow(prev => {
-        const now = new Date();
-        const newPredictions = [...prev.predictions.slice(1)];
-        const lastValue = newPredictions[newPredictions.length - 1]?.predicted || 45;
-        newPredictions.push({
-          time: new Date(now.getTime() + 29 * 60000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          predicted: Math.round((lastValue + (Math.random() - 0.5) * 3) * 10) / 10
-        });
-
-        // Update actuals
-        const updatedPredictions = newPredictions.map((pred, idx) => {
-          if (idx < 10 && !pred.actual) {
-            return {
-              ...pred,
-              actual: Math.round((pred.predicted + (Math.random() - 0.5) * 2) * 10) / 10
-            };
-          }
-          return pred;
-        });
-
-        return {
-          ...prev,
-          current: updatedPredictions[0]?.actual || updatedPredictions[0]?.predicted || 45,
-          predictions: updatedPredictions,
-          lastUpdated: new Date().toLocaleTimeString(),
-          nextUpdate: 300
-        };
-      });
-    }, 5000);
-
-    // Update head thickness daily (simulated with faster interval for demo)
     const headThicknessInterval = setInterval(() => {
       setHeadThickness(prev => ({
         ...prev,
@@ -195,10 +119,7 @@ const ResearcherDashboard: React.FC = () => {
       }));
     }, 30000);
 
-    return () => {
-      clearInterval(sapFlowInterval);
-      clearInterval(headThicknessInterval);
-    };
+    return () => clearInterval(headThicknessInterval);
   }, []);
 
   // Initialize greenhouses on mount
@@ -312,55 +233,71 @@ const ResearcherDashboard: React.FC = () => {
 
 
 
-  // Handle logout using AuthContext
-  const handleLogout = async () => {
-    if (window.confirm('Are you sure you want to logout?')) {
-      await logout();
-    }
-  };
+  // Logout is handled directly via AuthContext when needed
 
 
 
   const getWeatherIcon = (condition: string) => {
-    switch (condition.toLowerCase()) {
-      case 'sunny': return '☀️';
-      case 'cloudy': return '☁️';
-      case 'partly cloudy': return '⛅';
-      case 'rainy': return '🌧️';
-      case 'weather data unavailable': return '❌';
-      case 'unavailable': return '❓';
-      default: return '☀️';
-    }
+    const conditionLower = condition.toLowerCase();
+
+    // Clear conditions
+    if (conditionLower.includes('clear')) return '☀️';
+    if (conditionLower.includes('mainly clear')) return '🌤️';
+
+    // Cloudy conditions
+    if (conditionLower.includes('partly cloudy')) return '⛅';
+    if (conditionLower.includes('overcast')) return '☁️';
+
+    // Fog
+    if (conditionLower.includes('fog')) return '🌫️';
+
+    // Rain conditions
+    if (conditionLower.includes('drizzle')) return '🌦️';
+    if (conditionLower.includes('rain showers')) return '🌧️';
+    if (conditionLower.includes('rain')) return '🌧️';
+
+    // Snow conditions
+    if (conditionLower.includes('snow')) return '❄️';
+
+    // Thunderstorm
+    if (conditionLower.includes('thunderstorm')) return '⛈️';
+    if (conditionLower.includes('hail')) return '⛈️';
+
+    // Error states
+    if (conditionLower.includes('unavailable')) return '❌';
+    if (conditionLower.includes('unknown')) return '❓';
+
+    return '☀️';
   };
 
 
 
   const greenhouseContent = (
     <div>
-      <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Greenhouse Information</h3>
+      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Greenhouse Information</h3>
       <div className="space-y-3">
-        <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-200">
-          <p className="text-xs text-gray-500 font-medium mb-1">Selected Greenhouse:</p>
-          <p className="text-sm font-bold text-gray-800">
+        <div className="bg-card rounded-lg p-3 border">
+          <p className="text-xs text-muted-foreground font-medium mb-1">Selected Greenhouse:</p>
+          <p className="text-sm font-bold text-foreground">
             {selectedGreenhouse ? selectedGreenhouse.name : 'No greenhouse selected'}
           </p>
         </div>
-        <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-          <p className="text-xs text-gray-500 font-medium mb-1">Location:</p>
-          <p className="text-sm font-bold text-gray-800">
+        <div className="bg-card rounded-lg p-3 border">
+          <p className="text-xs text-muted-foreground font-medium mb-1">Location:</p>
+          <p className="text-sm font-bold text-foreground">
             {selectedGreenhouse ? `${selectedGreenhouse.location.city}, ${selectedGreenhouse.location.region}` : 'No greenhouse selected'}
           </p>
         </div>
-        <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-          <p className="text-xs text-gray-500 font-medium mb-1">Farm ID:</p>
-          <p className="text-sm font-bold text-gray-800">
+        <div className="bg-card rounded-lg p-3 border">
+          <p className="text-xs text-muted-foreground font-medium mb-1">Farm ID:</p>
+          <p className="text-sm font-bold text-foreground">
             {selectedGreenhouse ? (selectedGreenhouse.farmCode || 'N/A') : 'N/A'}
           </p>
         </div>
         {selectedGreenhouse && (
-          <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-            <p className="text-xs text-gray-500 font-medium mb-1">Land Area:</p>
-            <p className="text-sm font-bold text-gray-800">{farmDetails.landArea} m²</p>
+          <div className="bg-card rounded-lg p-3 border">
+            <p className="text-xs text-muted-foreground font-medium mb-1">Land Area:</p>
+            <p className="text-sm font-bold text-foreground">{farmDetails.landArea} m²</p>
           </div>
         )}
       </div>
@@ -369,17 +306,17 @@ const ResearcherDashboard: React.FC = () => {
 
   return (
     <Layout sidebarContent={greenhouseContent}>
-      <div className="min-h-screen bg-gradient-to-br from-horti-green-50/50 via-white to-horti-blue-50/30 p-6">
+      <div className="min-h-screen bg-background p-6">
 
         {/* Top Section - Greenhouse Selector with Farm Details and Weather */}
         <div className="max-w-full mx-auto mb-8 px-4">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left: Greenhouse Selector merged with Farm Details */}
-            <div className="card-elevated p-8 lg:col-span-2">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-                <span className="w-3 h-3 bg-horti-green-500 rounded-full mr-3 animate-pulse-soft shadow-glow-green"></span>
+            <div className="card-elevated group lg:col-span-2 p-8">
+              <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center group-hover:translate-x-1 transition-transform duration-200">
+                <span className="w-3 h-3 bg-primary rounded-full mr-3 animate-pulse-soft shadow-glow-green-sm"></span>
                 <span className="text-2xl mr-2">🏡</span>
-                Greenhouse Control Panel
+                <span className="gradient-text-subtle">Greenhouse Control Panel</span>
               </h2>
 
               {/* Greenhouse Selector */}
@@ -394,33 +331,56 @@ const ResearcherDashboard: React.FC = () => {
 
               {/* Farm Details Grid */}
               {selectedGreenhouse && (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <div className="bg-gradient-to-br from-horti-green-50 to-horti-green-100/50 rounded-xl p-4 border border-horti-green-200/50 hover:shadow-soft transition-all duration-200">
-                    <p className="text-xs text-gray-600 font-medium mb-1">Farm ID</p>
-                    <p className="text-sm font-bold text-gray-900 truncate">{selectedGreenhouse?.farmCode || farmDetails.farmId}</p>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <div className="group bg-card/50 backdrop-blur-sm rounded-xl p-3 border border-border/50 hover:bg-card hover:shadow-soft-sm hover:border-primary/20 hover:scale-105 transition-all duration-200 cursor-default">
+                    <p className="text-xs text-muted-foreground font-medium mb-1 group-hover:text-primary/80 transition-colors">🆔 Farm ID</p>
+                    <p className="text-sm font-bold text-foreground truncate">{selectedGreenhouse?.farmCode || farmDetails.farmId}</p>
                   </div>
-                  <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-4 border border-gray-200 hover:shadow-soft transition-all duration-200">
-                    <p className="text-xs text-gray-600 font-medium mb-1">Location</p>
-                    <p className="text-sm font-bold text-gray-900 truncate">{farmDetails.location}</p>
+                  <div className="group bg-card/50 backdrop-blur-sm rounded-xl p-3 border border-border/50 hover:bg-card hover:shadow-soft-sm hover:border-primary/20 hover:scale-105 transition-all duration-200 cursor-default">
+                    <p className="text-xs text-muted-foreground font-medium mb-1 group-hover:text-primary/80 transition-colors">📍 Location</p>
+                    <p className="text-sm font-bold text-foreground truncate">{selectedGreenhouse.location.city}, {selectedGreenhouse.location.region}</p>
                   </div>
-                  <div className="bg-gradient-to-br from-horti-blue-50 to-horti-blue-100/50 rounded-xl p-4 border border-horti-blue-200/50 hover:shadow-soft transition-all duration-200">
-                    <p className="text-xs text-gray-600 font-medium mb-1">Land Area</p>
-                    <p className="text-sm font-bold text-gray-900">{farmDetails.landArea} m²</p>
+                  <div className="group bg-card/50 backdrop-blur-sm rounded-xl p-3 border border-border/50 hover:bg-card hover:shadow-soft-sm hover:border-primary/20 hover:scale-105 transition-all duration-200 cursor-default">
+                    <p className="text-xs text-muted-foreground font-medium mb-1 group-hover:text-primary/80 transition-colors">📏 Area (m²)</p>
+                    <p className="text-sm font-bold text-foreground">{selectedGreenhouse.details.landArea}</p>
                   </div>
-                  <div className="bg-gradient-to-br from-horti-sky-50 to-horti-sky-100/50 rounded-xl p-4 border border-horti-sky-200/50 hover:shadow-soft transition-all duration-200">
-                    <p className="text-xs text-gray-600 font-medium mb-1">Crops</p>
-                    <p className="text-sm font-bold text-gray-900">{farmDetails.cropsGrown} types</p>
+                  <div className="group bg-card/50 backdrop-blur-sm rounded-xl p-3 border border-border/50 hover:bg-card hover:shadow-soft-sm hover:border-primary/20 hover:scale-105 transition-all duration-200 cursor-default">
+                    <p className="text-xs text-muted-foreground font-medium mb-1 group-hover:text-primary/80 transition-colors">🌱 Crop Type</p>
+                    <p className="text-sm font-bold text-foreground capitalize">{selectedGreenhouse.cropType || 'N/A'}</p>
                   </div>
-                  <div className="bg-gradient-to-br from-horti-earth-50 to-horti-earth-100/50 rounded-xl p-4 border border-horti-earth-200/50 hover:shadow-soft transition-all duration-200">
-                    <p className="text-xs text-gray-600 font-medium mb-1">Previous Yield</p>
-                    <p className="text-sm font-bold text-gray-900">{farmDetails.previousYield} kg/m²</p>
+                  <div className="group bg-card/50 backdrop-blur-sm rounded-xl p-3 border border-border/50 hover:bg-card hover:shadow-soft-sm hover:border-primary/20 hover:scale-105 transition-all duration-200 cursor-default">
+                    <p className="text-xs text-muted-foreground font-medium mb-1 group-hover:text-primary/80 transition-colors">🍅 Variety</p>
+                    <p className="text-sm font-bold text-foreground truncate">{selectedGreenhouse.variety || 'N/A'}</p>
+                  </div>
+                  <div className="group bg-card/50 backdrop-blur-sm rounded-xl p-3 border border-border/50 hover:bg-card hover:shadow-soft-sm hover:border-primary/20 hover:scale-105 transition-all duration-200 cursor-default">
+                    <p className="text-xs text-muted-foreground font-medium mb-1 group-hover:text-primary/80 transition-colors">📦 Supplier</p>
+                    <p className="text-sm font-bold text-foreground truncate">{selectedGreenhouse.supplier || 'N/A'}</p>
+                  </div>
+                  <div className="group bg-card/50 backdrop-blur-sm rounded-xl p-3 border border-border/50 hover:bg-card hover:shadow-soft-sm hover:border-primary/20 hover:scale-105 transition-all duration-200 cursor-default">
+                    <p className="text-xs text-muted-foreground font-medium mb-1 group-hover:text-primary/80 transition-colors">🌡️ Climate System</p>
+                    <p className="text-sm font-bold text-foreground truncate">{selectedGreenhouse.climateSystem || 'N/A'}</p>
+                  </div>
+                  <div className="group bg-card/50 backdrop-blur-sm rounded-xl p-3 border border-border/50 hover:bg-card hover:shadow-soft-sm hover:border-primary/20 hover:scale-105 transition-all duration-200 cursor-default">
+                    <p className="text-xs text-muted-foreground font-medium mb-1 group-hover:text-primary/80 transition-colors">💡 Lighting System</p>
+                    <p className="text-sm font-bold text-foreground truncate">{selectedGreenhouse.lightingSystem || 'N/A'}</p>
+                  </div>
+                  <div className="group bg-card/50 backdrop-blur-sm rounded-xl p-3 border border-border/50 hover:bg-card hover:shadow-soft-sm hover:border-primary/20 hover:scale-105 transition-all duration-200 cursor-default">
+                    <p className="text-xs text-muted-foreground font-medium mb-1 group-hover:text-primary/80 transition-colors">💨 CO2 Target (ppm)</p>
+                    <p className="text-sm font-bold text-foreground">{selectedGreenhouse.co2TargetPpm || 'N/A'}</p>
+                  </div>
+                  <div className="group bg-card/50 backdrop-blur-sm rounded-xl p-3 border border-border/50 hover:bg-card hover:shadow-soft-sm hover:border-primary/20 hover:scale-105 transition-all duration-200 cursor-default">
+                    <p className="text-xs text-muted-foreground font-medium mb-1 group-hover:text-primary/80 transition-colors">🌡️ Temperature Range (°C)</p>
+                    <p className="text-sm font-bold text-foreground">{selectedGreenhouse.temperatureRangeC || 'N/A'}</p>
                   </div>
                 </div>
               )}
             </div>
 
             {/* Right: Weather Card */}
-            <div className="bg-gradient-to-br from-horti-blue-600 via-horti-blue-700 to-horti-blue-800 rounded-3xl shadow-strong p-4 text-white relative overflow-hidden hover:shadow-[0_20px_60px_0_rgba(37,99,235,0.3)] hover:-translate-y-1 transition-all duration-300 flex flex-col border border-horti-blue-500/20 h-fit">
+            <div className="relative bg-gradient-to-br from-horti-blue-500 via-horti-blue-600 to-horti-blue-700 rounded-xl shadow-glow-blue overflow-hidden group hover:shadow-glow-blue-lg hover:scale-[1.02] transition-all duration-300 h-fit">
+              <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-horti-accent-indigo/20 via-transparent to-transparent"></div>
+              <div className="p-6 text-white relative flex flex-col">
               {weatherLoading && (
                 <div className="absolute inset-0 bg-blue-900/50 backdrop-blur-sm rounded-2xl flex items-center justify-center z-10">
                   <div className="text-white text-center">
@@ -436,21 +396,25 @@ const ResearcherDashboard: React.FC = () => {
               )}
 
               <div className="flex-shrink-0">
-                <div className="flex justify-between items-start mb-4">
+                <div className="flex justify-between items-start mb-6">
                   <div>
-                    <h3 className="text-lg font-bold mb-1">Today's Weather</h3>
-                    <p className="text-white/80 text-base">{weatherData.today.condition}</p>
-                    <p className="text-white/70 text-base mt-1">
+                    <h3 className="text-xl font-bold mb-2 text-white/95">Today's Weather</h3>
+                    <p className="text-white/90 text-base font-medium">{weatherData.today.condition}</p>
+                    <p className="text-white/80 text-sm mt-1 flex items-center">
+                      <span className="mr-1">📍</span>
                       {selectedGreenhouse?.location.city || 'Loading...'}
                     </p>
                   </div>
                   <div className="text-right">
-                    <div className="text-4xl font-light">{weatherData.today.temp}°C</div>
+                    <div className="text-5xl font-light text-white flex items-start">
+                      <span>{weatherData.today.temp}</span>
+                      <span className="text-2xl font-normal ml-1 mt-1">°C</span>
+                    </div>
                     {weatherData.today.feelsLike && (
-                      <p className="text-base text-white/70 mt-1">Feels like {weatherData.today.feelsLike}°C</p>
+                      <p className="text-sm text-white/80 mt-1">Feels like {weatherData.today.feelsLike}°C</p>
                     )}
-                    <div className="flex items-center justify-end mt-2">
-                      <span className="text-4xl">{getWeatherIcon(weatherData.today.condition)}</span>
+                    <div className="flex items-center justify-end mt-3">
+                      <span className="text-5xl filter drop-shadow-lg">{getWeatherIcon(weatherData.today.condition)}</span>
                     </div>
                   </div>
                 </div>
@@ -458,17 +422,17 @@ const ResearcherDashboard: React.FC = () => {
 
               {/* Weather Stats */}
               <div className="grid grid-cols-3 gap-2 mb-4 flex-shrink-0">
-                <div className="bg-white/15 backdrop-blur-md rounded-lg p-4 text-center hover:bg-white/25 hover:scale-105 transition-all duration-200 border border-white/20 shadow-soft">
-                  <p className="text-base text-white/80 mb-1">💧 Humidity</p>
-                  <p className="text-xl font-bold">{weatherData.today.humidity}%</p>
+                <div className="bg-gradient-to-br from-white/15 to-white/10 backdrop-blur-md rounded-lg p-4 text-center hover:from-white/20 hover:to-white/15 hover:scale-105 transition-all duration-200 border border-white/25 shadow-soft cursor-default">
+                  <p className="text-sm text-white/90 mb-1 font-medium">💧 Humidity</p>
+                  <p className="text-2xl font-bold text-white">{weatherData.today.humidity}%</p>
                 </div>
-                <div className="bg-white/15 backdrop-blur-md rounded-lg p-4 text-center hover:bg-white/25 hover:scale-105 transition-all duration-200 border border-white/20 shadow-soft">
-                  <p className="text-base text-white/80 mb-1">💨 Wind</p>
-                  <p className="text-xl font-bold">{weatherData.today.windSpeed} m/s</p>
+                <div className="bg-gradient-to-br from-white/15 to-white/10 backdrop-blur-md rounded-lg p-4 text-center hover:from-white/20 hover:to-white/15 hover:scale-105 transition-all duration-200 border border-white/25 shadow-soft cursor-default">
+                  <p className="text-sm text-white/90 mb-1 font-medium">💨 Wind</p>
+                  <p className="text-2xl font-bold text-white">{weatherData.today.windSpeed} m/s</p>
                 </div>
-                <div className="bg-white/15 backdrop-blur-md rounded-lg p-4 text-center hover:bg-white/25 hover:scale-105 transition-all duration-200 border border-white/20 shadow-soft">
-                  <p className="text-base text-white/80 mb-1">{weatherData.today.pressure ? '🌡️ Pressure' : '🌧️ Rain'}</p>
-                  <p className="text-xl font-bold">
+                <div className="bg-gradient-to-br from-white/15 to-white/10 backdrop-blur-md rounded-lg p-4 text-center hover:from-white/20 hover:to-white/15 hover:scale-105 transition-all duration-200 border border-white/25 shadow-soft cursor-default">
+                  <p className="text-sm text-white/90 mb-1 font-medium">{weatherData.today.pressure ? '🌡️ Pressure' : '🌧️ Rain'}</p>
+                  <p className="text-2xl font-bold text-white">
                     {weatherData.today.pressure ? `${weatherData.today.pressure} hPa` : `${weatherData.today.rainProbability}%`}
                   </p>
                 </div>
@@ -478,10 +442,10 @@ const ResearcherDashboard: React.FC = () => {
               <div className="grid grid-cols-4 gap-2 mb-4">
                 {weatherData.forecast.length > 0 ? (
                   weatherData.forecast.map((day, index) => (
-                    <div key={index} className="text-center p-3 bg-white/15 backdrop-blur-md rounded-lg border border-white/20 hover:bg-white/25 hover:scale-105 transition-all duration-200 flex flex-col justify-center shadow-soft">
-                      <p className="text-base text-white/80 mb-1 font-medium">{day.day}</p>
+                    <div key={index} className="text-center p-3 bg-gradient-to-br from-white/15 to-white/10 backdrop-blur-md rounded-lg border border-white/25 hover:from-white/20 hover:to-white/15 hover:scale-105 transition-all duration-200 flex flex-col justify-center shadow-soft cursor-default">
+                      <p className="text-xs text-white/95 mb-1 font-semibold uppercase tracking-wide">{day.day}</p>
                       <div className="text-3xl mb-1">{getWeatherIcon(day.condition)}</div>
-                      <p className="font-bold text-base">{day.temp}°C</p>
+                      <p className="font-bold text-lg text-white">{day.temp}°C</p>
                     </div>
                   ))
                 ) : (
@@ -492,11 +456,16 @@ const ResearcherDashboard: React.FC = () => {
               </div>
 
               {weatherData.today.sunrise && weatherData.today.sunset && (
-                <div className="mt-4 pt-4 border-t border-white/20 flex justify-center gap-4 text-base text-white/80 flex-shrink-0">
-                  <span className="bg-white/10 px-3 py-1.5 rounded-full">☀️ {weatherData.today.sunrise}</span>
-                  <span className="bg-white/10 px-3 py-1.5 rounded-full">🌙 {weatherData.today.sunset}</span>
+                <div className="mt-4 pt-4 border-t border-white/25 flex justify-center gap-4 text-sm text-white flex-shrink-0">
+                  <span className="bg-gradient-to-r from-yellow-400/20 to-orange-400/20 backdrop-blur px-4 py-2 rounded-full hover:from-yellow-400/30 hover:to-orange-400/30 transition-all duration-200 cursor-default border border-white/20 font-medium">
+                    ☀️ {weatherData.today.sunrise}
+                  </span>
+                  <span className="bg-gradient-to-r from-indigo-400/20 to-purple-400/20 backdrop-blur px-4 py-2 rounded-full hover:from-indigo-400/30 hover:to-purple-400/30 transition-all duration-200 cursor-default border border-white/20 font-medium">
+                    🌙 {weatherData.today.sunset}
+                  </span>
                 </div>
               )}
+              </div>
             </div>
           </div>
         </div>
@@ -509,59 +478,55 @@ const ResearcherDashboard: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             className="grid grid-cols-1 lg:grid-cols-12 gap-6"
           >
-            {/* ML Predictions and Map Section - Full width */}
-            <div className="col-span-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Head Thickness Prediction Panel */}
-              <div className="card-elevated p-6 hover:-translate-y-2">
+            {/* ML Predictions and Plant Monitoring Section - Full width with 4 cards */}
+            <div className="col-span-12">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                {/* Head Thickness Prediction Panel */}
+                <div className="bg-card rounded-xl shadow-lg border border-border/50 overflow-hidden hover:shadow-xl transition-all duration-300">
+                  <div className="p-6">
                 <div className="mb-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-lg font-bold text-gray-900">Head Thickness</h3>
-                    <div className="badge-success">
-                      🤖 AI Prediction
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-600 font-medium">89% accuracy</p>
+                  <h3 className="text-lg font-bold text-foreground">Head Thickness</h3>
                 </div>
 
                 {/* Current Value Display */}
-                <div className="bg-gradient-to-br from-horti-green-50 to-horti-green-100/50 rounded-xl p-4 mb-4 border border-horti-green-200/50">
+                <div className="bg-primary/10 rounded-xl p-4 mb-4 border border-primary/30">
                   <div className="flex items-baseline justify-between">
                     <div>
-                      <p className="text-sm text-gray-700 mb-1 font-medium">Current Measurement</p>
+                      <p className="text-sm text-muted-foreground mb-1 font-medium">Current Measurement</p>
                       <div className="flex items-baseline">
-                        <span className="text-3xl font-bold text-horti-green-700">{headThickness.current}</span>
-                        <span className="text-base text-horti-green-600 ml-2 font-semibold">{headThickness.unit}</span>
+                        <span className="text-3xl font-bold text-primary">{headThickness.current}</span>
+                        <span className="text-base text-primary ml-2 font-semibold">{headThickness.unit}</span>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs text-gray-600 font-medium">Last Updated</p>
-                      <p className="text-xs font-semibold text-gray-800">{headThickness.lastUpdated}</p>
+                      <p className="text-xs text-muted-foreground font-medium">Last Updated</p>
+                      <p className="text-xs font-semibold text-foreground">{headThickness.lastUpdated}</p>
                     </div>
                   </div>
                 </div>
 
                 {/* 3-Day Forecast Chart */}
                 <div className="mb-4">
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">3-Day Forecast</h4>
+                  <h4 className="text-sm font-medium text-muted-foreground mb-3">3-Day Forecast</h4>
                   <ResponsiveContainer width="100%" height={140}>
                     <AreaChart data={headThickness.forecast}>
                       <defs>
                         <linearGradient id="headThicknessGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#10B981" stopOpacity={0.8}/>
-                          <stop offset="95%" stopColor="#10B981" stopOpacity={0.1}/>
+                          <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.1}/>
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                      <XAxis dataKey="day" tick={{ fontSize: 12 }} stroke="#6B7280" />
-                      <YAxis tick={{ fontSize: 12 }} stroke="#6B7280" domain={['dataMin - 1', 'dataMax + 1']} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="day" tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} />
+                      <YAxis tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} domain={['dataMin - 1', 'dataMax + 1']} />
                       <Tooltip
-                        contentStyle={{ backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '8px' }}
-                        labelStyle={{ color: '#111827', fontWeight: 'bold' }}
+                        contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', color: 'hsl(var(--foreground))' }}
+                        labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 'bold' }}
                       />
                       <Area
                         type="monotone"
                         dataKey="predicted"
-                        stroke="#10B981"
+                        stroke="hsl(var(--primary))"
                         strokeWidth={2}
                         fill="url(#headThicknessGradient)"
                       />
@@ -572,172 +537,90 @@ const ResearcherDashboard: React.FC = () => {
                 {/* Daily Predictions */}
                 <div className="space-y-2">
                   {headThickness.forecast.map((day, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-gray-50 to-white hover:from-horti-green-50/50 hover:to-white hover:shadow-soft transition-all duration-200 border border-gray-100">
+                    <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-card hover:bg-secondary hover:shadow-soft transition-all duration-200 border">
                       <div className="flex items-center">
                         <div className={`w-2 h-10 rounded-full mr-3 ${
-                          day.trend === 'up' ? 'bg-gradient-to-b from-horti-green-500 to-horti-green-600 shadow-glow-green' :
-                          day.trend === 'down' ? 'bg-gradient-to-b from-red-500 to-red-600' : 'bg-gradient-to-b from-yellow-500 to-yellow-600'
+                          day.trend === 'up' ? 'bg-primary shadow-glow-green' :
+                          day.trend === 'down' ? 'bg-red-500' : 'bg-yellow-500'
                         }`}></div>
                         <div>
-                          <p className="text-sm font-semibold text-gray-900">{day.day}</p>
-                          <p className="text-xs text-gray-600">{day.date}</p>
+                          <p className="text-sm font-semibold text-foreground">{day.day}</p>
+                          <p className="text-xs text-muted-foreground">{day.date}</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-lg font-bold text-gray-900">{day.predicted} {headThickness.unit}</p>
-                        <p className="text-xs text-gray-600 font-medium">Confidence: {day.confidence}%</p>
+                        <p className="text-lg font-bold text-foreground">{day.predicted} {headThickness.unit}</p>
+                        <p className="text-xs text-muted-foreground font-medium">Confidence: {day.confidence}%</p>
                       </div>
                     </div>
                   ))}
                 </div>
+                  </div>
+                </div>
+
+                {/* Sap Flow Card */}
+                <SapFlowCard />
+
+                {/* Diameter Card */}
+                <DiameterCard />
+
+                {/* Environmental Heatmap Card */}
+                <GreenhouseHeatmap greenhouseId={selectedGreenhouse?.id} />
               </div>
-
-              {/* Sap Flow Prediction Panel */}
-              <div className="card-elevated p-6 hover:-translate-y-2">
-                <div className="mb-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-lg font-bold text-gray-900">Sap Flow</h3>
-                    <div className="badge-success animate-pulse-soft">
-                      ⚡ Real-Time
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-600 font-medium">Updates every 5 minutes</p>
-                </div>
-
-                {/* Current Value and Stats */}
-                <div className="bg-gradient-to-br from-horti-green-50 to-horti-green-100/50 rounded-xl p-4 mb-4 border border-horti-green-200/50">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-gray-700 mb-1 font-medium">Current Flow Rate</p>
-                      <div className="flex items-baseline">
-                        <span className="text-3xl font-bold text-horti-green-700">{sapFlow.current}</span>
-                        <span className="text-base text-horti-green-600 ml-2 font-semibold">{sapFlow.unit}</span>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-gray-700 mb-1 font-medium">Model Accuracy</p>
-                      <div className="flex items-center justify-end">
-                        <span className="text-3xl font-bold text-horti-green-700">{sapFlow.accuracy}%</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-3 pt-3 border-t border-horti-green-300/50">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-700 font-medium">Last Updated: {sapFlow.lastUpdated}</span>
-                      <span className="text-gray-700 font-medium">Next Update: {Math.floor(sapFlow.nextUpdate / 60)}m {sapFlow.nextUpdate % 60}s</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 30-Minute Forecast Timeline */}
-                <div className="mb-4">
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">30-Minute Forecast</h4>
-                  <div className="overflow-x-auto">
-                    <ResponsiveContainer width="100%" height={140}>
-                      <LineChart data={sapFlow.predictions.slice(0, 30)}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                        <XAxis
-                          dataKey="time"
-                          tick={{ fontSize: 10 }}
-                          stroke="#6B7280"
-                          interval={4}
-                        />
-                        <YAxis
-                          tick={{ fontSize: 12 }}
-                          stroke="#6B7280"
-                          domain={['dataMin - 5', 'dataMax + 5']}
-                        />
-                        <Tooltip
-                          contentStyle={{ backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '8px' }}
-                          labelStyle={{ color: '#111827', fontWeight: 'bold' }}
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="predicted"
-                          stroke="#10B981"
-                          strokeWidth={2}
-                          dot={false}
-                          name="Predicted"
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="actual"
-                          stroke="#3B82F6"
-                          strokeWidth={2}
-                          strokeDasharray="5 5"
-                          dot={false}
-                          name="Actual"
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-
-                {/* Legend and Stats */}
-                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-100">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center">
-                      <div className="w-3 h-0.5 bg-horti-green-500 mr-2"></div>
-                      <span className="text-xs text-gray-700 font-medium">Predicted</span>
-                    </div>
-                    <div className="flex items-center">
-                      <div className="w-3 h-0.5 bg-horti-blue-500 mr-2" style={{ borderTop: '2px dashed' }}></div>
-                      <span className="text-xs text-gray-700 font-medium">Actual</span>
-                    </div>
-                  </div>
-                  <div className="text-xs text-gray-600 font-medium">
-                    Scroll for more →
-                  </div>
-                </div>
-              </div>
-
-              {/* Greenhouse Location Map Panel */}
-              <div className="card-elevated p-6 hover:-translate-y-2">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold text-gray-900">Greenhouse Location</h3>
-                  <div className="badge-info">
-                    🗺️ Live Map
-                  </div>
-                </div>
-                <div className="h-96">
-                  {selectedGreenhouse ? (
-                    <RealMap
-                      center={{
-                        lat: selectedGreenhouse.location.coordinates.lat,
-                        lng: selectedGreenhouse.location.coordinates.lon
-                      }}
-                      zoom={16}
-                      className="h-full rounded-xl overflow-hidden border border-gray-200 shadow-soft"
-                      markers={[
-                        {
-                          id: selectedGreenhouse.id,
-                          lat: selectedGreenhouse.location.coordinates.lat,
-                          lng: selectedGreenhouse.location.coordinates.lon,
-                          title: selectedGreenhouse.name,
-                          type: 'greenhouse',
-                          status: 'active',
-                          description: `${selectedGreenhouse.details.landArea}m² ${selectedGreenhouse.details.type} greenhouse with ${selectedGreenhouse.crops.length} crop types.`
-                        }
-                      ]}
-                    />
-                  ) : (
-                    <div className="h-full bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl flex items-center justify-center border border-gray-200">
-                      <p className="text-gray-600 text-sm font-medium">Select a greenhouse to view map</p>
-                    </div>
-                  )}
-                </div>
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <div className="flex items-center text-sm">
-                    <span className="text-gray-700 font-medium">📍 {selectedGreenhouse?.location.city || 'N/A'}</span>
-                  </div>
-                </div>
-              </div>
-
             </div>
 
-            {/* PhytoSense 2grow Data Panel - Full Width */}
+            {/* Second Row: Location and PhytoSense - Side by Side */}
             <div className="col-span-12 mt-6">
-              <PhytoSenseOptimized />
+              <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+                {/* Greenhouse Location Map - Left side */}
+                <div className="xl:col-span-4">
+                  <div className="bg-card rounded-xl shadow-lg border border-border/50 overflow-hidden hover:shadow-xl transition-all duration-300 h-full">
+                    <div className="p-6 h-full flex flex-col">
+                      <div className="mb-4">
+                        <h3 className="text-lg font-bold text-foreground whitespace-nowrap">Greenhouse Location</h3>
+                      </div>
+                      <div className="flex-1 min-h-[400px]">
+                        {selectedGreenhouse ? (
+                          <RealMap
+                            center={{
+                              lat: selectedGreenhouse.location.coordinates.lat,
+                              lng: selectedGreenhouse.location.coordinates.lon
+                            }}
+                            zoom={16}
+                            className="h-full rounded-lg overflow-hidden"
+                            markers={[
+                              {
+                                id: selectedGreenhouse.id,
+                                lat: selectedGreenhouse.location.coordinates.lat,
+                                lng: selectedGreenhouse.location.coordinates.lon,
+                                title: selectedGreenhouse.name,
+                                type: 'greenhouse',
+                                status: 'active',
+                                description: `${selectedGreenhouse.details.landArea}m² ${selectedGreenhouse.details.type} greenhouse with ${selectedGreenhouse.crops.length} crop types.`
+                              }
+                            ]}
+                          />
+                        ) : (
+                          <div className="h-full bg-secondary rounded-lg flex items-center justify-center">
+                            <p className="text-muted-foreground text-sm font-medium">Select a greenhouse to view map</p>
+                          </div>
+                        )}
+                      </div>
+                      <div className="mt-4 pt-3 border-t">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground font-medium">📍 Location</span>
+                          <span className="font-medium text-foreground">{selectedGreenhouse?.location.city || 'N/A'}, {selectedGreenhouse?.location.region || 'Netherlands'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* PhytoSense Data Panel - Right side with more space */}
+                <div className="xl:col-span-8">
+                  <PhytoSenseOptimizedDirect />
+                </div>
+              </div>
             </div>
 
           </motion.div>

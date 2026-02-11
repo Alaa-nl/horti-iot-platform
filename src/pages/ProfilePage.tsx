@@ -132,21 +132,21 @@ const ProfilePage: React.FC = () => {
 
   const getRoleColor = (role: string) => {
     switch (role) {
-      case 'admin': return 'bg-purple-100 text-purple-800';
-      case 'researcher': return 'bg-blue-100 text-blue-800';
-      case 'grower': return 'bg-green-100 text-green-800';
-      case 'farmer': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'admin': return 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/30';
+      case 'researcher': return 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/30';
+      case 'grower': return 'bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/30';
+      case 'farmer': return 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border border-yellow-500/30';
+      default: return 'bg-secondary text-foreground border';
     }
   };
 
   if (loading) {
     return (
       <Layout>
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="min-h-screen bg-background flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading profile...</p>
+            <p className="mt-4 text-muted-foreground">Loading profile...</p>
           </div>
         </div>
       </Layout>
@@ -157,16 +157,16 @@ const ProfilePage: React.FC = () => {
     <Layout>
       <div className="max-w-4xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
-          <p className="mt-2 text-gray-600">Manage your account information and preferences</p>
+          <h1 className="text-3xl font-bold text-foreground">My Profile</h1>
+          <p className="mt-2 text-muted-foreground">Manage your account information and preferences</p>
         </div>
 
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+          <div className="mb-6 bg-destructive/10 border border-destructive/30 text-destructive px-4 py-3 rounded">
             {error}
             <button
               onClick={() => setError(null)}
-              className="ml-4 text-red-500 hover:text-red-700"
+              className="ml-4 text-destructive hover:text-destructive"
             >
               ×
             </button>
@@ -174,11 +174,11 @@ const ProfilePage: React.FC = () => {
         )}
 
         {success && (
-          <div className="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded">
+          <div className="mb-6 bg-horti-status-success/10 dark:bg-horti-status-success/20 border border-horti-status-success/30 text-horti-status-success px-4 py-3 rounded">
             {success}
             <button
               onClick={() => setSuccess(null)}
-              className="ml-4 text-green-500 hover:text-green-700"
+              className="ml-4 text-horti-status-success hover:text-horti-status-success/80"
             >
               ×
             </button>
@@ -194,18 +194,18 @@ const ProfilePage: React.FC = () => {
                   <img
                     src={`${process.env.REACT_APP_API_URL?.replace('/api', '')}${profile.profile_photo}`}
                     alt="Profile"
-                    className="w-32 h-32 rounded-full mx-auto object-cover border-4 border-gray-200"
+                    className="w-32 h-32 rounded-full mx-auto object-cover border-4 border"
                   />
                 ) : (
-                  <div className="w-32 h-32 rounded-full mx-auto bg-gray-200 flex items-center justify-center">
-                    <span className="text-gray-500 text-4xl font-semibold">
+                  <div className="w-32 h-32 rounded-full mx-auto bg-secondary flex items-center justify-center">
+                    <span className="text-muted-foreground text-4xl font-semibold">
                       {profile?.name?.charAt(0).toUpperCase()}
                     </span>
                   </div>
                 )}
               </div>
 
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">{profile?.name}</h3>
+              <h3 className="text-lg font-semibold text-foreground mb-2">{profile?.name}</h3>
               <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getRoleColor(profile?.role || '')}`}>
                 {profile?.role}
               </span>
@@ -221,7 +221,7 @@ const ProfilePage: React.FC = () => {
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
-                  className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                  className="w-full bg-primary text-primary-foreground py-2 px-4 rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
                 >
                   {uploading ? 'Uploading...' : 'Upload Photo'}
                 </button>
@@ -230,7 +230,7 @@ const ProfilePage: React.FC = () => {
                   <button
                     onClick={handleRemovePhoto}
                     disabled={uploading}
-                    className="w-full bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+                    className="w-full bg-horti-status-error text-white py-2 px-4 rounded-lg hover:bg-horti-status-error/90 disabled:opacity-50 transition-colors"
                   >
                     Remove Photo
                   </button>
@@ -247,7 +247,7 @@ const ProfilePage: React.FC = () => {
                 {!isEditing ? (
                   <button
                     onClick={() => setIsEditing(true)}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                    className="bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors"
                   >
                     Edit Profile
                   </button>
@@ -266,7 +266,7 @@ const ProfilePage: React.FC = () => {
                           });
                         }
                       }}
-                      className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+                      className="bg-secondary text-secondary-foreground px-4 py-2 rounded-lg hover:bg-secondary/80 transition-colors"
                     >
                       Cancel
                     </button>
@@ -278,63 +278,63 @@ const ProfilePage: React.FC = () => {
                 <form onSubmit={handleUpdateProfile} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-muted-foreground mb-2">
                         Full Name
                       </label>
                       <input
                         type="text"
                         value={formData.name}
                         onChange={(e) => setFormData({...formData, name: e.target.value})}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full bg-background text-foreground border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-muted-foreground mb-2">
                         Phone Number
                       </label>
                       <input
                         type="tel"
                         value={formData.phone_number}
                         onChange={(e) => setFormData({...formData, phone_number: e.target.value})}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full bg-background text-foreground border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-muted-foreground mb-2">
                         Department
                       </label>
                       <input
                         type="text"
                         value={formData.department}
                         onChange={(e) => setFormData({...formData, department: e.target.value})}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full bg-background text-foreground border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-muted-foreground mb-2">
                         Location
                       </label>
                       <input
                         type="text"
                         value={formData.location}
                         onChange={(e) => setFormData({...formData, location: e.target.value})}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full bg-background text-foreground border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-muted-foreground mb-2">
                       Bio
                     </label>
                     <textarea
                       value={formData.bio}
                       onChange={(e) => setFormData({...formData, bio: e.target.value})}
                       rows={4}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full bg-background text-foreground border border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Tell us about yourself..."
                     />
                   </div>
@@ -343,7 +343,7 @@ const ProfilePage: React.FC = () => {
                     <button
                       type="submit"
                       disabled={saving}
-                      className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                      className="bg-primary text-primary-foreground px-6 py-2 rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
                     >
                       {saving ? 'Saving...' : 'Save Changes'}
                     </button>
@@ -353,33 +353,33 @@ const ProfilePage: React.FC = () => {
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                      <p className="text-gray-900">{profile?.email}</p>
+                      <label className="block text-sm font-medium text-muted-foreground mb-1">Email</label>
+                      <p className="text-foreground">{profile?.email}</p>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                      <p className="text-gray-900 capitalize">{profile?.role}</p>
+                      <label className="block text-sm font-medium text-muted-foreground mb-1">Role</label>
+                      <p className="text-foreground capitalize">{profile?.role}</p>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-                      <p className="text-gray-900">{profile?.phone_number || 'Not provided'}</p>
+                      <label className="block text-sm font-medium text-muted-foreground mb-1">Phone Number</label>
+                      <p className="text-foreground">{profile?.phone_number || 'Not provided'}</p>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
-                      <p className="text-gray-900">{profile?.department || 'Not provided'}</p>
+                      <label className="block text-sm font-medium text-muted-foreground mb-1">Department</label>
+                      <p className="text-foreground">{profile?.department || 'Not provided'}</p>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                      <p className="text-gray-900">{profile?.location || 'Not provided'}</p>
+                      <label className="block text-sm font-medium text-muted-foreground mb-1">Location</label>
+                      <p className="text-foreground">{profile?.location || 'Not provided'}</p>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Member Since</label>
-                      <p className="text-gray-900">
+                      <label className="block text-sm font-medium text-muted-foreground mb-1">Member Since</label>
+                      <p className="text-foreground">
                         {profile?.created_at ? new Date(profile.created_at).toLocaleDateString() : 'Unknown'}
                       </p>
                     </div>
@@ -387,8 +387,8 @@ const ProfilePage: React.FC = () => {
 
                   {profile?.bio && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
-                      <p className="text-gray-900 whitespace-pre-wrap">{profile.bio}</p>
+                      <label className="block text-sm font-medium text-muted-foreground mb-1">Bio</label>
+                      <p className="text-foreground whitespace-pre-wrap">{profile.bio}</p>
                     </div>
                   )}
                 </div>
