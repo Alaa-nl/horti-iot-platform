@@ -79,14 +79,16 @@ const PlantBalanceDashboard: React.FC = () => {
     const calculated = calculateNetAssimilation(assimilate);
     setAssimilate(calculated);
 
-    // Calculate water balance
+    // Calculate water balance with all parameters
     const water = calculateWaterBalance(
       assimilate.temperature,
       assimilate.humidity,
       assimilate.parLight,
       rootTemperature,
       assimilate.co2Level,
-      irrigationRate
+      irrigationRate,
+      assimilate.leafTemperature,
+      airSpeed
     );
     setWaterBalance(water);
 
@@ -100,15 +102,18 @@ const PlantBalanceDashboard: React.FC = () => {
     );
     setEnergyBalance(energy);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [assimilate.parLight, assimilate.co2Level, assimilate.humidity, assimilate.temperature, rootTemperature, irrigationRate]);
+  }, [assimilate.parLight, assimilate.co2Level, assimilate.humidity, assimilate.temperature, assimilate.leafTemperature, rootTemperature, irrigationRate, airSpeed]);
 
   // Calculate additional values
   const vpd = calculateVPD(assimilate.temperature, assimilate.humidity) / 1000; // kPa
   const vpdi = calculateVPDi(assimilate.leafTemperature, assimilate.temperature, assimilate.humidity) / 1000; // kPa
   const transpiration = calculateTranspiration(
     assimilate.temperature,
-    assimilate.parLight * 0.5, // Convert PAR to radiation estimate
-    assimilate.humidity
+    assimilate.parLight * 0.22, // Convert PAR to radiation (W/m²)
+    assimilate.humidity,
+    assimilate.leafTemperature,
+    airSpeed,
+    irrigationRate
   );
   const wue = calculateWUE(assimilate.netAssimilation, transpiration);
   const enthalpy = calculateEnthalpy(assimilate.temperature, assimilate.humidity);
@@ -211,8 +216,8 @@ const PlantBalanceDashboard: React.FC = () => {
         description: t('plantBalance.realTimeInfo.description'),
         icon: <Zap className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />,
         calculations: selectedBalance === 'water' ? [
-          { label: 'VPDi Plant-GH Air (calculated)', value: `${vpdi.toFixed(2)} ${t('plantBalance.units.vpd')}`, color: 'purple' },
-          { label: t('plantBalance.transpiration'), value: `${formatValue(transpiration)} ${t('plantBalance.units.transpiration')}`, color: 'blue' },
+          { label: t('plantBalance.transpiration'), value: `${formatValue(waterBalance ? waterBalance.transpiration : transpiration)} ${t('plantBalance.units.transpiration')}`, color: 'blue' },
+          { label: 'Enthalpy Difference (plant/greenhouse)', value: `${formatValue(calculateEnthalpy(assimilate.leafTemperature, 100) - calculateEnthalpy(assimilate.temperature, assimilate.humidity))} ${t('plantBalance.units.enthalpy')}`, color: 'yellow' },
           { label: 'Water Flow (calculated)', value: `${((irrigationRate / 3600) * 1000).toFixed(3)} L/m²/s`, color: 'cyan' }
         ] : [
           { label: t('plantBalance.photosynthesis'), value: `${formatValue(assimilate.photosynthesis)} ${t('plantBalance.units.photosynthesis')}`, color: 'green' },

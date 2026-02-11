@@ -32,11 +32,32 @@ export const calculateVPDi = (
   return (leafSaturatedVP - actualVP) * 1000; // Convert to Pa
 };
 
-// Calculate enthalpy
+// Calculate absolute humidity (g/kg)
+export const calculateAbsoluteHumidity = (temperature: number, relativeHumidity: number): number => {
+  // Saturated vapor pressure at temperature (kPa)
+  const saturatedVP = 0.611 * Math.exp((17.27 * temperature) / (temperature + 237.3));
+  // Actual vapor pressure
+  const actualVP = saturatedVP * (relativeHumidity / 100);
+  // Convert to absolute humidity (g/kg)
+  // Using psychrometric formula: AH = 622 * (e / (P - e)) where P = 101.325 kPa
+  const atmosphericPressure = 101.325; // kPa
+  return 622 * (actualVP / (atmosphericPressure - actualVP)); // g/kg
+};
+
+// Calculate enthalpy - Updated per client specification
 export const calculateEnthalpy = (temperature: number, humidity: number): number => {
-  // Enthalpy = (1 kJ × 1°C × T) + (g_water × 2500)
-  const waterContent = humidity * 0.01 * 12.91; // g/kg at saturation
-  return temperature + (waterContent * ENERGY_PER_LITER / 1000);
+  // Per client: Per 1°C temperature increase above zero, enthalpy increases by 1 kJ/kg (sensible heat)
+  const sensibleHeat = temperature * 1; // kJ/kg
+
+  // Calculate absolute humidity
+  const absoluteHumidity = calculateAbsoluteHumidity(temperature, humidity); // g/kg
+  const absoluteHumidityKg = absoluteHumidity / 1000; // Convert to kg/kg
+
+  // Per client: Per liter (kg) of water it takes 2500 kJ to transpire (latent heat)
+  const latentHeat = absoluteHumidityKg * 2500; // kJ/kg
+
+  // Total enthalpy = sensible + latent heat
+  return sensibleHeat + latentHeat;
 };
 
 // Water Use Efficiency calculation
@@ -127,30 +148,56 @@ export const calculateNetAssimilation = (assimilate: AssimilateBalance): Assimil
   };
 };
 
-// Transpiration calculation (educational model)
+// Transpiration calculation - Updated per client specification
 export const calculateTranspiration = (
   temperature: number,
-  radiation: number,
+  radiation: number, // W/m²
   humidity: number,
-  leafSize: number = 0.05 // m, typical leaf size
+  leafTemperature: number = -999, // Optional, if -999 use temperature + 1
+  airSpeed: number = 1.0, // m/s
+  irrigationRate: number = 2.5 // L/m²/h
 ): number => {
-  // EDUCATIONAL MODEL: How much water plants lose through leaves
-  // Factors: Temperature, Light, and Humidity
+  // Per client specification: transpiration based on radiation and enthalpy difference
 
-  // 1. Temperature effect (warmer = more water loss)
-  const tempEffect = temperature < 15 ? 0.5 : temperature > 30 ? 1.5 : 1;
+  // Use leaf temperature if provided, otherwise assume slightly warmer than air
+  const actualLeafTemp = leafTemperature === -999 ? temperature + 1 : leafTemperature;
 
-  // 2. Light effect (more light = stomata open = more water loss)
-  const lightEffect = Math.min(1.5, radiation / 200);
+  // Calculate VPDi which affects transpiration
+  const vpdi = calculateVPDi(actualLeafTemp, temperature, humidity) / 1000; // kPa
 
-  // 3. Humidity effect (dry air = more water loss)
-  const humidityEffect = humidity < 40 ? 1.5 : humidity > 70 ? 0.7 : 1;
+  // Convert radiation from W/m² to daily value kJ/m²/day
+  // 1 W/m² = 86.4 kJ/m²/day (for 24 hours)
+  // For greenhouse hours (12 hours typical), use half: 43.2
+  const dailyRadiation = radiation * 43.2; // kJ/m²/day for 12 hour photoperiod
 
-  // Basic transpiration rate
-  const baseTranspiration = 2; // L/m²/h typical
+  // Per client: To transpire 1 liter of water you need 2500 kJ/m²
+  const baseTranspiration = dailyRadiation / 2500; // L/m²/day
 
-  // Combined transpiration
-  return baseTranspiration * tempEffect * lightEffect * humidityEffect;
+  // Convert to hourly rate
+  let hourlyTranspiration = baseTranspiration / 24; // L/m²/h
+
+  // Apply VPDi factor (optimal between 0.6 and 1.2 kPa)
+  let vpdiEffect = 1.0;
+  if (vpdi < 0.6) {
+    vpdiEffect = 0.7; // Low VPDi reduces transpiration
+  } else if (vpdi > 1.2) {
+    vpdiEffect = Math.max(0.5, 1.2 / vpdi); // High VPDi reduces transpiration (stomata closing)
+  }
+
+  // Air speed effect (higher air speed increases transpiration)
+  const airSpeedEffect = 0.8 + (airSpeed * 0.2); // 0.8 to 1.4 typically
+
+  // Irrigation effect (more water availability allows more transpiration)
+  const irrigationEffect = Math.min(1.2, irrigationRate / 2.5);
+
+  // Temperature effect on stomatal conductance
+  const tempEffect = temperature < 15 ? 0.6 : temperature > 30 ? 0.7 : 1.0;
+
+  // Combined transpiration with all scaling factors
+  hourlyTranspiration = hourlyTranspiration * vpdiEffect * airSpeedEffect * irrigationEffect * tempEffect;
+
+  // Ensure minimum transpiration
+  return Math.max(0.1, hourlyTranspiration);
 };
 
 // RTR (Expected Temperature Increase from Radiation)
@@ -280,27 +327,69 @@ export const calculateGrowthWater = (
   return dryMatterProduction * (waterContent / (1 - waterContent)) / 1000; // L/m²/h
 };
 
-// Complete water balance calculation
+// Complete water balance calculation - Updated with all scaling parameters
 export const calculateWaterBalance = (
   temperature: number,
   humidity: number,
   parLight: number,
   rootTemperature: number,
-  co2Level: number, // Kept for interface compatibility, not used
-  irrigation: number = 2.5 // Default irrigation L/m²/h
+  co2Level: number, // Kept for interface compatibility
+  irrigation: number = 2.5, // Default irrigation L/m²/h
+  leafTemperature: number = -999, // Optional leaf temperature
+  airSpeed: number = 1.0 // Air speed near stomata (m/s)
 ): WaterBalance => {
-  const vpd = calculateVPD(temperature, humidity) / 1000; // kPa
-  const radiation = parLight * 0.5; // Estimate total radiation from PAR
+  // Use provided leaf temperature or default to slightly warmer than air
+  const actualLeafTemp = leafTemperature === -999 ? temperature + 1 : leafTemperature;
 
-  // For water balance, stomatal conductance depends only on VPD and light
-  const stomatalConductance = calculateStomatalConductance(vpd, parLight);
-  const transpiration = calculateTranspiration(temperature, radiation, humidity);
-  const rootUptake = calculateRootUptake(rootTemperature, vpd, radiation);
-  const growthWater = calculateGrowthWater(15); // Assuming moderate assimilation
+  // Calculate VPD and VPDi
+  const vpd = calculateVPD(temperature, humidity) / 1000; // kPa
+  const vpdi = calculateVPDi(actualLeafTemp, temperature, humidity) / 1000; // kPa
+
+  // Convert PAR to radiation estimate
+  // PAR is ~45% of total solar radiation, convert μmol/m²/s to W/m²
+  // 1 μmol/m²/s PAR ≈ 0.22 W/m² total radiation
+  const radiation = parLight * 0.22;
+
+  // Calculate transpiration with all parameters
+  const transpiration = calculateTranspiration(
+    temperature,
+    radiation,
+    humidity,
+    actualLeafTemp,
+    airSpeed,
+    irrigation
+  );
+
+  // Update root uptake to scale with irrigation and temperature difference
+  const rootTempDiff = Math.abs(rootTemperature - actualLeafTemp);
+  let rootUptake = irrigation * 0.7; // Base uptake is 70% of irrigation
+
+  // Adjust for root temperature (optimal when close to leaf temperature)
+  if (rootTempDiff > 1) {
+    rootUptake *= Math.max(0.5, 1 - (rootTempDiff - 1) * 0.1);
+  }
+
+  // Adjust for VPDi (affects root water demand)
+  if (vpdi > 1.5) {
+    rootUptake *= 1.2; // Increase uptake for high demand
+  } else if (vpdi < 0.5) {
+    rootUptake *= 0.8; // Decrease uptake for low demand
+  }
+
+  // Stomatal conductance with air speed effect
+  const baseStomatalConductance = calculateStomatalConductance(vpdi, parLight);
+  const stomatalConductance = baseStomatalConductance * (0.9 + airSpeed * 0.1);
+
+  // Growth water scales with net assimilation
+  const netAssimilation = parLight * 0.0375 - 1.5; // Simplified
+  const growthWater = calculateGrowthWater(Math.max(0, netAssimilation));
+
+  // Drainage scales with irrigation rate
+  const drainage = irrigation * 0.3; // 30% drainage typical
 
   // Calculate net balance
   const totalInput = rootUptake + irrigation;
-  const totalOutput = transpiration + growthWater + 0.5; // 0.5 L/m²/h typical drainage
+  const totalOutput = transpiration + growthWater + drainage;
   const netWaterBalance = totalInput - totalOutput;
 
   let waterStatus: 'deficit' | 'balanced' | 'surplus';
@@ -313,7 +402,7 @@ export const calculateWaterBalance = (
     irrigationSupply: irrigation,
     transpiration,
     growthWater,
-    drainage: 0.5,
+    drainage,
     vpd,
     rootTemperature,
     stomatalConductance,
