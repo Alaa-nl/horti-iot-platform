@@ -297,16 +297,23 @@ export const calculateStomatalConductance = (
 export const calculateRootUptake = (
   rootTemp: number, // °C
   vpd: number, // kPa
-  radiation: number // W/m² - kept for compatibility, not used in simplified model
+  radiation: number, // W/m² - kept for compatibility, not used in simplified model
+  leafTemperature: number = 20 // Plant/leaf temperature for constraint
 ): number => {
   // EDUCATIONAL MODEL: How much water roots can take up
   // Best root temperature: 18-22°C
-  // Note: radiation parameter kept for compatibility but not used in this simplified version
+  // CONSTRAINT: Root temperature may not be higher or lower than 1°C related to plant temperature (per client)
+
+  // Enforce ±1°C constraint
+  const constrainedRootTemp = Math.max(
+    leafTemperature - 1,
+    Math.min(leafTemperature + 1, rootTemp)
+  );
 
   let uptakeRate;
-  if (rootTemp < 15) uptakeRate = 2; // Cold roots = slow uptake
-  else if (rootTemp > 25) uptakeRate = 3; // Warm roots = reduced uptake
-  else if (rootTemp >= 18 && rootTemp <= 22) uptakeRate = 4; // Optimal uptake
+  if (constrainedRootTemp < 15) uptakeRate = 2; // Cold roots = slow uptake
+  else if (constrainedRootTemp > 25) uptakeRate = 3; // Warm roots = reduced uptake
+  else if (constrainedRootTemp >= 18 && constrainedRootTemp <= 22) uptakeRate = 4; // Optimal uptake
   else uptakeRate = 3.5;
 
   // Increase uptake when plant needs more water (high VPD)
@@ -360,14 +367,11 @@ export const calculateWaterBalance = (
     irrigation
   );
 
-  // Update root uptake to scale with irrigation and temperature difference
-  const rootTempDiff = Math.abs(rootTemperature - actualLeafTemp);
-  let rootUptake = irrigation * 0.7; // Base uptake is 70% of irrigation
+  // Calculate root uptake with proper temperature constraint (±1°C from leaf temp)
+  let rootUptake = calculateRootUptake(rootTemperature, vpdi, radiation, actualLeafTemp);
 
-  // Adjust for root temperature (optimal when close to leaf temperature)
-  if (rootTempDiff > 1) {
-    rootUptake *= Math.max(0.5, 1 - (rootTempDiff - 1) * 0.1);
-  }
+  // Scale by irrigation availability (base uptake rate scaled by irrigation)
+  rootUptake = rootUptake * (irrigation / 2.5); // Normalize to base irrigation rate of 2.5 L/m²/h
 
   // Adjust for VPDi (affects root water demand)
   if (vpdi > 1.5) {

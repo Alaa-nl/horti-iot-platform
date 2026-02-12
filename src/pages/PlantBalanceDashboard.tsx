@@ -120,6 +120,11 @@ const PlantBalanceDashboard: React.FC = () => {
   const dli = calculateDLI(assimilate.parLight);
   const weeklyProduction = estimateWeeklyProduction(assimilate.netAssimilation);
 
+  // Calculate enthalpy difference (plant vs greenhouse)
+  const enthalpyPlant = calculateEnthalpy(assimilate.leafTemperature, 100); // At leaf surface, assume 100% RH
+  const enthalpyGH = enthalpy;
+  const enthalpyDifference = enthalpyPlant - enthalpyGH;
+
   // Slider component for parameter input with tooltips
   const Slider: React.FC<{
     label: string;
@@ -202,8 +207,8 @@ const PlantBalanceDashboard: React.FC = () => {
         description: t('plantBalance.shortTermInfo.description'),
         icon: <Calendar className="w-7 h-7 text-purple-600 dark:text-purple-400" />,
         calculations: selectedBalance === 'water' ? [
-          { label: 'Water Flow Rate (calculated)', value: `${((irrigationRate / 3600) * 1000).toFixed(3)} L/m²/s`, color: 'blue' },
-          { label: 'VPDi Plant-GH Air (calculated)', value: `${vpdi.toFixed(2)} ${t('plantBalance.units.vpd')}`, color: 'purple' },
+          { label: 'Transpiration (calculated)', value: `${formatValue(waterBalance ? waterBalance.transpiration : transpiration)} ${t('plantBalance.units.transpiration')}`, color: 'blue' },
+          { label: 'Water Flow Rate (calculated)', value: `${((irrigationRate / 3600) * 1000).toFixed(3)} L/m²/s`, color: 'cyan' },
           { label: 'Stomatal Conductance', value: `${waterBalance ? waterBalance.stomatalConductance.toFixed(0) : 0} mmol/m²/s`, color: 'green' }
         ] : [
           { label: t('plantBalance.shortTermInfo.dailyLightIntegral'), value: `${dli.toFixed(1)} ${t('plantBalance.units.dli')}`, color: 'blue' },
@@ -455,22 +460,40 @@ const PlantBalanceDashboard: React.FC = () => {
               {/* Parameter Controls - Manual adjustment only */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 {/* First parameter - varies by balance type */}
-                {selectedBalance === 'energy' || selectedBalance === 'water' ? (
-                  // Static display card for calculated Water Flow Rate
+                {selectedBalance === 'water' ? (
+                  // Dynamic display card for calculated Root Uptake (scalable with all parameters)
                   <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 rounded-lg shadow-sm">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-gray-700 dark:text-gray-200 flex items-center gap-2">
-                        <Droplet className="w-5 h-5 text-blue-500 dark:text-blue-400" />
-                        Water Flow Rate
-                        <span className="text-xs text-gray-500 dark:text-gray-400 italic">(calculated)</span>
+                        <Droplet className="w-5 h-5 text-green-500 dark:text-green-400" />
+                        Root Water Uptake
+                        <span className="text-xs text-gray-500 dark:text-gray-400 italic">(scalable)</span>
                         <EducationalTooltip {...tooltipContent.waterFlowRate} />
                       </span>
                     </div>
                     <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {formatValue(((irrigationRate / 3600) * 1000), 3)} L/m²/s
+                      {formatValue(waterBalance ? waterBalance.rootUptake : 2, 2)} L/m²/h
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                      Based on irrigation rate: {formatValue(irrigationRate, 1)} L/m²/h
+                      Scales with root temp, VPDi, and irrigation rate. Constrained ±1°C from plant temp.
+                    </div>
+                  </div>
+                ) : selectedBalance === 'energy' ? (
+                  // Static display card for calculated Transpiration (for energy balance)
+                  <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 rounded-lg shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-200 flex items-center gap-2">
+                        <Droplets className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+                        Transpiration Rate
+                        <span className="text-xs text-gray-500 dark:text-gray-400 italic">(scalable)</span>
+                        <EducationalTooltip {...tooltipContent.waterFlowRate} />
+                      </span>
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {formatValue(transpiration, 2)} L/m²/h
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                      Based on radiation, temperature, and humidity
                     </div>
                   </div>
                 ) : (
@@ -490,37 +513,39 @@ const PlantBalanceDashboard: React.FC = () => {
                 )}
 
                 {/* Second parameter - varies by balance type */}
-                {selectedBalance === 'energy' || selectedBalance === 'water' ? (
-                  // Static display card for calculated VPDi
+                {selectedBalance === 'energy' ? (
+                  // Static display card for calculated Water Flow (for energy balance)
                   <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 rounded-lg shadow-sm">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-gray-700 dark:text-gray-200 flex items-center gap-2">
-                        <Cloud className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                        VPDi (Plant-GH Air)
-                        <span className="text-xs text-gray-500 dark:text-gray-400 italic">(calculated)</span>
-                        <EducationalTooltip {...tooltipContent.vpdi} />
+                        <Droplet className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+                        Transpiration Flow (calculated)
+                        <span className="text-xs text-gray-500 dark:text-gray-400 italic">(scalable)</span>
+                        <EducationalTooltip {...tooltipContent.transpiration} />
                       </span>
                     </div>
                     <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {formatValue(vpdi, 2)} kPa
+                      {formatValue(transpiration, 2)} L/m²/h
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                      {vpdi > 2.5 ? (
-                        <span className="text-red-600 dark:text-red-400 flex items-center gap-1">
-                          <AlertTriangle className="w-3 h-3" />
-                          Too high - stomata closing
-                        </span>
-                      ) : vpdi < 0.5 ? (
-                        <span className="text-orange-600 dark:text-orange-400 flex items-center gap-1">
-                          <AlertTriangle className="w-3 h-3" />
-                          Too low - condensation risk
-                        </span>
-                      ) : (
-                        <span className="text-green-600 dark:text-green-400 flex items-center gap-1">
-                          <CheckCircle className="w-3 h-3" />
-                          Optimal range
-                        </span>
-                      )}
+                      Scales with leaf temp, humidity, light, and air speed
+                    </div>
+                  </div>
+                ) : selectedBalance === 'water' ? (
+                  // For water balance, show water flow based on transpiration demand
+                  <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 rounded-lg shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-200 flex items-center gap-2">
+                        <Droplet className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+                        Transpiration Flow (calculated)
+                        <span className="text-xs text-gray-500 dark:text-gray-400 italic">(scalable)</span>
+                      </span>
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {formatValue(waterBalance ? waterBalance.transpiration : transpiration, 2)} L/m²/h
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                      Driven by VPDi, light, temperature, and humidity
                     </div>
                   </div>
                 ) : (
