@@ -54,20 +54,34 @@ class PhytoSenseService {
     this.config = phytoSenseConfig;
 
     // Create axios instance with default configuration
-    this.axiosInstance = axios.create({
-      baseURL: this.config.baseUrl,
-      auth: {
-        username: this.config.auth.username,
-        password: this.config.auth.password
-      },
-      headers: {
-        'Accept': 'application/xml, text/xml',
-        'User-Agent': 'HORTI-IOT-Platform/1.0'
-      },
-      timeout: this.config.timeout,
-      maxContentLength: this.config.maxContentLength,
-      maxBodyLength: this.config.maxContentLength
-    });
+    // Only configure if PhytoSense is properly configured
+    if (this.config.isConfigured && this.config.baseUrl && this.config.auth) {
+      this.axiosInstance = axios.create({
+        baseURL: this.config.baseUrl,
+        auth: {
+          username: this.config.auth.username,
+          password: this.config.auth.password
+        },
+        headers: {
+          'Accept': 'application/xml, text/xml',
+          'User-Agent': 'HORTI-IOT-Platform/1.0'
+        },
+        timeout: this.config.timeout,
+        maxContentLength: this.config.maxContentLength,
+        maxBodyLength: this.config.maxContentLength
+      });
+    } else {
+      // Create a dummy axios instance for when PhytoSense is not configured
+      this.axiosInstance = axios.create({
+        headers: {
+          'Accept': 'application/xml, text/xml',
+          'User-Agent': 'HORTI-IOT-Platform/1.0'
+        },
+        timeout: this.config.timeout,
+        maxContentLength: this.config.maxContentLength
+      });
+      logger.info('PhytoSenseService initialized without active configuration. PhytoSense features will be unavailable.');
+    }
 
     // Device configurations - CORRECTED TDIDs (were previously swapped)
     this.devices = [
@@ -185,6 +199,26 @@ class PhytoSenseService {
     aggregation: AggregationMode = 'raw',
     retryCount: number = 0
   ): Promise<PhytoSenseResponse> {
+    // Check if PhytoSense is configured
+    if (!this.config.isConfigured) {
+      logger.warn('PhytoSense not configured. Returning empty data response.');
+      return {
+        success: false,
+        aggregation,
+        dataPoints: 0,
+        data: [],
+        metadata: {
+          setupId: params.setup_id,
+          tdid,
+          channel: params.channel,
+          dateRange: {
+            from: params.from || params.after || 'N/A',
+            till: params.till || params.before || 'N/A'
+          }
+        }
+      };
+    }
+
     const maxRetries = 2;
 
     // Generate cache key
@@ -530,6 +564,14 @@ class PhytoSenseService {
    * Health check for PhytoSense API connectivity
    */
   public async healthCheck(): Promise<{ status: string; message: string }> {
+    // Check if PhytoSense is configured
+    if (!this.config.isConfigured) {
+      return {
+        status: 'degraded',
+        message: 'PhytoSense is not configured. Features requiring PhytoSense integration are unavailable.'
+      };
+    }
+
     try {
       // Try to fetch a small amount of data to test connectivity
       const testDevice = this.devices[0];

@@ -4,20 +4,22 @@
 import { logger } from '../utils/logger';
 
 export interface PhytoSenseConfig {
-  baseUrl: string;
-  account: string;
-  appKey: string;
-  auth: {
+  baseUrl?: string;
+  account?: string;
+  appKey?: string;
+  auth?: {
     username: string;
     password: string;
   };
   timeout: number;
   maxContentLength: number;
+  isConfigured: boolean;
 }
 
 /**
- * Validates required environment variables and returns config
- * Throws error if required variables are missing
+ * Validates and loads PhytoSense config from environment variables
+ * Returns null/default config if variables are missing (PhytoSense is optional)
+ * This allows the backend to start without PhytoSense for development/testing
  */
 function validateAndLoadConfig(): PhytoSenseConfig {
   const requiredVars = [
@@ -30,12 +32,24 @@ function validateAndLoadConfig(): PhytoSenseConfig {
 
   const missing = requiredVars.filter(varName => !process.env[varName]);
 
+  // If any variables are missing, log warning and return default config
   if (missing.length > 0) {
-    const error = `Missing required PhytoSense environment variables: ${missing.join(', ')}`;
-    logger.error(error);
-    throw new Error(error);
+    logger.warn(
+      `PhytoSense not fully configured. Missing: ${missing.join(', ')}. ` +
+      'PhytoSense features will be unavailable, but the application will continue to run.'
+    );
+
+    // Return config with default values - PhytoSense integration disabled
+    const config: PhytoSenseConfig = {
+      timeout: parseInt(process.env.PHYTOSENSE_TIMEOUT || '60000'),
+      maxContentLength: parseInt(process.env.PHYTOSENSE_MAX_CONTENT_LENGTH || '100000000'),
+      isConfigured: false
+    };
+
+    return config;
   }
 
+  // If all variables are present, use them
   const config: PhytoSenseConfig = {
     baseUrl: process.env.PHYTOSENSE_BASE_URL!,
     account: process.env.PHYTOSENSE_ACCOUNT!,
@@ -45,13 +59,14 @@ function validateAndLoadConfig(): PhytoSenseConfig {
       password: process.env.PHYTOSENSE_PASSWORD!
     },
     timeout: parseInt(process.env.PHYTOSENSE_TIMEOUT || '60000'),
-    maxContentLength: parseInt(process.env.PHYTOSENSE_MAX_CONTENT_LENGTH || '100000000')
+    maxContentLength: parseInt(process.env.PHYTOSENSE_MAX_CONTENT_LENGTH || '100000000'),
+    isConfigured: true
   };
 
   logger.info('PhytoSense configuration loaded successfully', {
     baseUrl: config.baseUrl,
     account: config.account,
-    username: config.auth.username
+    username: config.auth?.username
   });
 
   return config;
