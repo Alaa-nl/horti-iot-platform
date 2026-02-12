@@ -286,7 +286,8 @@ export const calculateDailyWaterUse = (
   const insideRadiation = globalRadiationJcm2 * transmissionFactor;
 
   // 3. Convert to kJ/m²/day for calculation
-  const insideRadiationKJm2 = insideRadiation * 100; // J/cm² to kJ/m²
+  // 1 J/cm² = 10,000 J/m² = 10 kJ/m²
+  const insideRadiationKJm2 = insideRadiation * 10; // J/cm² to kJ/m²
 
   // 4. Per client: To transpire 1 liter of water you need 2500 kJ/m²
   const waterUsePerDay = insideRadiationKJm2 / 2500; // L/m²/day
