@@ -231,7 +231,7 @@ const PlantBalanceDashboard: React.FC = () => {
         ] : [
           { label: t('plantBalance.photosynthesis'), value: `${formatValue(assimilate.photosynthesis)} ${t('plantBalance.units.photosynthesis')}`, color: 'green' },
           { label: t('plantBalance.transpiration'), value: `${formatValue(transpiration)} ${t('plantBalance.units.transpiration')}`, color: 'blue' },
-          { label: 'Enthalpy Difference (plant/greenhouse)', value: `${formatValue(calculateEnthalpy(assimilate.leafTemperature, assimilate.humidity) - enthalpy)} ${t('plantBalance.units.enthalpy')}`, color: 'yellow' }
+          { label: 'Enthalpy Difference (plant/greenhouse)', value: `${formatValue(calculateEnthalpy(assimilate.leafTemperature, 100) - enthalpy)} ${t('plantBalance.units.enthalpy')}`, color: 'yellow' }
         ],
       },
     };
@@ -723,7 +723,7 @@ const PlantBalanceDashboard: React.FC = () => {
                 <EducationalTooltip {...tooltipContent.enthalpyGHAir} />
               </div>
               <div className="text-lg font-bold text-cyan-900 dark:text-cyan-200">
-                {(calculateEnthalpy(assimilate.leafTemperature, assimilate.humidity) - enthalpy).toFixed(1)} {t('plantBalance.units.enthalpy')}
+                {(calculateEnthalpy(assimilate.leafTemperature, 100) - enthalpy).toFixed(1)} {t('plantBalance.units.enthalpy')}
               </div>
             </div>
           </div>
