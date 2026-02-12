@@ -226,7 +226,6 @@ const getShortTermParameters = (selectedBalance?: 'assimilate' | 'water' | 'ener
   const rootTemperature = currentValues?.rootTemperature ?? 20;
   const irrigationRate = currentValues?.irrigationRate ?? 2.5;
   const airSpeed = currentValues?.airSpeed ?? 1.0;
-  const vpd = currentValues?.vpd ?? 1.0;
   const vpdi = currentValues?.vpdi ?? 1.1;
 
   // Only include REAL calculated parameters - Updated per client feedback
@@ -273,13 +272,11 @@ const getLongTermParameters = (selectedBalance?: 'assimilate' | 'water' | 'energ
   const parLight = currentValues?.parLight ?? 400;
   const rootTemperature = currentValues?.rootTemperature ?? 20;
   const irrigationRate = currentValues?.irrigationRate ?? 2.5;
-  const vpd = currentValues?.vpd ?? 1.0;
   const vpdi = currentValues?.vpdi ?? 1.1;
 
   // Calculate weekly values from current values
   const weeklyDLI = (parLight * 12 * 3600 * 7) / 1000000; // Weekly total DLI
   const weeklyIrrigation = irrigationRate * 24 * 7; // Total weekly irrigation
-  const weeklyPhotosynthesis = parLight * 0.0375 * 12 * 7; // Weekly photosynthesis accumulation
 
   // Only include REAL calculated parameters - Updated per client feedback
   const realParams: ParameterData[] = [
