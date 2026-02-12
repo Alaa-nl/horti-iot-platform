@@ -45,7 +45,8 @@ import {
   calculateWUE,
   calculateEnthalpy,
   calculateWaterBalance,
-  calculateEnergyBalance
+  calculateEnergyBalance,
+  calculateDailyWaterUse
 } from '../utils/plantBalanceCalculations';
 
 const PlantBalanceDashboard: React.FC = () => {
@@ -119,6 +120,9 @@ const PlantBalanceDashboard: React.FC = () => {
   const enthalpy = calculateEnthalpy(assimilate.temperature, assimilate.humidity);
   const dli = calculateDLI(assimilate.parLight);
   const weeklyProduction = estimateWeeklyProduction(assimilate.netAssimilation);
+
+  // Calculate daily water use per client specification (page 3)
+  const dailyWaterUse = calculateDailyWaterUse(assimilate.parLight);
 
   // Calculate enthalpy difference (plant vs greenhouse)
   const enthalpyPlant = calculateEnthalpy(assimilate.leafTemperature, 100); // At leaf surface, assume 100% RH
@@ -223,7 +227,7 @@ const PlantBalanceDashboard: React.FC = () => {
         calculations: selectedBalance === 'water' ? [
           { label: t('plantBalance.transpiration'), value: `${formatValue(waterBalance ? waterBalance.transpiration : transpiration)} ${t('plantBalance.units.transpiration')}`, color: 'blue' },
           { label: 'Enthalpy Difference (plant/greenhouse)', value: `${formatValue(calculateEnthalpy(assimilate.leafTemperature, 100) - calculateEnthalpy(assimilate.temperature, assimilate.humidity))} ${t('plantBalance.units.enthalpy')}`, color: 'yellow' },
-          { label: 'Water Flow (calculated)', value: `${((irrigationRate / 3600) * 1000).toFixed(3)} L/m²/s`, color: 'cyan' }
+          { label: 'Water Flow (calculated)', value: `${formatValue(waterBalance ? waterBalance.transpiration : transpiration)} L/m²/h`, color: 'cyan' }
         ] : [
           { label: t('plantBalance.photosynthesis'), value: `${formatValue(assimilate.photosynthesis)} ${t('plantBalance.units.photosynthesis')}`, color: 'green' },
           { label: t('plantBalance.transpiration'), value: `${formatValue(transpiration)} ${t('plantBalance.units.transpiration')}`, color: 'blue' },
@@ -1079,23 +1083,81 @@ const PlantBalanceDashboard: React.FC = () => {
 
               {/* Environmental Indicators */}
               <div className="grid grid-cols-3 gap-3 mb-6">
-                <div className="bg-purple-100 dark:bg-purple-900/30 border border-purple-300 dark:border-purple-700 p-3 rounded-lg">
-                  <div className="text-xs text-purple-700 dark:text-purple-300 font-semibold">VPD</div>
-                  <div className="text-lg font-bold text-purple-900 dark:text-purple-200">
-                    {formatValue(waterBalance.vpd, 2)} kPa
+                <div className="bg-indigo-100 dark:bg-indigo-900/30 border border-indigo-300 dark:border-indigo-700 p-3 rounded-lg">
+                  <div className="text-xs text-indigo-700 dark:text-indigo-300 font-semibold flex items-center gap-1">
+                    VPDi (leaf/greenhouse)
+                    <span className="text-xxs italic">(scalable)</span>
+                  </div>
+                  <div className="text-lg font-bold text-indigo-900 dark:text-indigo-200">
+                    {formatValue(vpdi, 2)} kPa
+                  </div>
+                  <div className="text-xs text-indigo-600 dark:text-indigo-400">
+                    {vpdi < 0.6 ? 'Too low' : vpdi > 1.2 ? 'Too high' : 'Optimal'}
                   </div>
                 </div>
                 <div className="bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 p-3 rounded-lg">
-                  <div className="text-xs text-green-700 dark:text-green-300 font-semibold">Stomatal Conductance</div>
+                  <div className="text-xs text-green-700 dark:text-green-300 font-semibold flex items-center gap-1">
+                    Stomatal Conductance
+                    <span className="text-xxs italic">(scalable)</span>
+                  </div>
                   <div className="text-lg font-bold text-green-900 dark:text-green-200">
                     {formatValue(waterBalance.stomatalConductance, 0)} mmol/m²/s
                   </div>
+                  <div className="text-xs text-green-600 dark:text-green-400">
+                    Affected by VPDi & air speed
+                  </div>
                 </div>
                 <div className="bg-orange-100 dark:bg-orange-900/30 border border-orange-300 dark:border-orange-700 p-3 rounded-lg">
-                  <div className="text-xs text-orange-700 dark:text-orange-300 font-semibold">Root Temp</div>
+                  <div className="text-xs text-orange-700 dark:text-orange-300 font-semibold flex items-center gap-1">
+                    Root Temp
+                    <span className="text-xxs italic">(constrained)</span>
+                  </div>
                   <div className="text-lg font-bold text-orange-900 dark:text-orange-200">
                     {formatValue(waterBalance.rootTemperature, 1)}°C
                   </div>
+                  <div className="text-xs text-orange-600 dark:text-orange-400">
+                    ±1°C from leaf temp
+                  </div>
+                </div>
+              </div>
+
+              {/* Daily Water Use Calculation - Per Client Specification */}
+              <div className="bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20 p-4 rounded-lg border border-cyan-300 dark:border-cyan-700 mb-6">
+                <h4 className="text-sm font-semibold text-cyan-900 dark:text-cyan-200 mb-3 flex items-center gap-2">
+                  <Droplets className="w-5 h-5" />
+                  Daily Water Use (Full Grown Crop - LAI 3)
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="bg-white/50 dark:bg-gray-800/50 p-3 rounded">
+                    <div className="text-xs text-cyan-700 dark:text-cyan-300 font-medium">Global Radiation</div>
+                    <div className="text-lg font-bold text-cyan-900 dark:text-cyan-100">
+                      {dailyWaterUse.globalRadiation.toFixed(0)} J/cm²/day
+                    </div>
+                    <div className="text-xs text-cyan-600 dark:text-cyan-400 mt-1">
+                      70% transmission
+                    </div>
+                  </div>
+                  <div className="bg-white/50 dark:bg-gray-800/50 p-3 rounded">
+                    <div className="text-xs text-cyan-700 dark:text-cyan-300 font-medium">Water Use (Transpiration)</div>
+                    <div className="text-lg font-bold text-cyan-900 dark:text-cyan-100">
+                      {dailyWaterUse.waterUse.toFixed(2)} L/m²/day
+                    </div>
+                    <div className="text-xs text-cyan-600 dark:text-cyan-400 mt-1">
+                      Radiation ÷ 2,500 kJ/L
+                    </div>
+                  </div>
+                  <div className="bg-white/50 dark:bg-gray-800/50 p-3 rounded">
+                    <div className="text-xs text-cyan-700 dark:text-cyan-300 font-medium">Total Water Gift (30% drainage)</div>
+                    <div className="text-lg font-bold text-cyan-900 dark:text-cyan-100">
+                      {dailyWaterUse.totalWaterGift.toFixed(2)} L/m²/day
+                    </div>
+                    <div className="text-xs text-cyan-600 dark:text-cyan-400 mt-1">
+                      Includes drainage
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-3 text-xs text-cyan-700 dark:text-cyan-300 italic">
+                  Per client specification: VPDi optimal range 0.6-1.2 kPa. Current VPDi: {vpdi.toFixed(2)} kPa
                 </div>
               </div>
 

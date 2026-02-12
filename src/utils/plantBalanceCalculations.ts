@@ -148,7 +148,7 @@ export const calculateNetAssimilation = (assimilate: AssimilateBalance): Assimil
   };
 };
 
-// Transpiration calculation - Updated per client specification
+// Transpiration calculation - Updated per client specification with more visible parameter effects
 export const calculateTranspiration = (
   temperature: number,
   radiation: number, // W/m²
@@ -158,6 +158,7 @@ export const calculateTranspiration = (
   irrigationRate: number = 2.5 // L/m²/h
 ): number => {
   // Per client specification: transpiration based on radiation and enthalpy difference
+  // SIMPLIFIED to make parameter effects more visible
 
   // Use leaf temperature if provided, otherwise assume slightly warmer than air
   const actualLeafTemp = leafTemperature === -999 ? temperature + 1 : leafTemperature;
@@ -176,28 +177,37 @@ export const calculateTranspiration = (
   // Convert to hourly rate
   let hourlyTranspiration = baseTranspiration / 24; // L/m²/h
 
-  // Apply VPDi factor (optimal between 0.6 and 1.2 kPa)
+  // SIMPLIFIED VPDi effect (optimal between 0.6 and 1.2 kPa) - MORE VISIBLE
   let vpdiEffect = 1.0;
   if (vpdi < 0.6) {
-    vpdiEffect = 0.7; // Low VPDi reduces transpiration
+    vpdiEffect = 0.5 + (vpdi / 0.6) * 0.5; // 0.5 to 1.0 range - more dramatic
   } else if (vpdi > 1.2) {
-    vpdiEffect = Math.max(0.5, 1.2 / vpdi); // High VPDi reduces transpiration (stomata closing)
+    vpdiEffect = Math.max(0.3, 1.2 / vpdi); // 1.0 down to 0.3 - more visible reduction
   }
 
-  // Air speed effect (higher air speed increases transpiration)
-  const airSpeedEffect = 0.8 + (airSpeed * 0.2); // 0.8 to 1.4 typically
+  // Air speed effect - MORE VISIBLE (higher air speed increases transpiration significantly)
+  const airSpeedEffect = 0.5 + (airSpeed * 0.5); // 0.5 to 2.0 range (was 0.8 to 1.4)
 
-  // Irrigation effect (more water availability allows more transpiration)
-  const irrigationEffect = Math.min(1.2, irrigationRate / 2.5);
+  // Irrigation effect - MORE VISIBLE (water availability directly affects transpiration)
+  const irrigationEffect = Math.min(2.0, irrigationRate / 2.5); // Up to 2x effect
 
-  // Temperature effect on stomatal conductance
-  const tempEffect = temperature < 15 ? 0.6 : temperature > 30 ? 0.7 : 1.0;
+  // Temperature effect - MORE VISIBLE
+  let tempEffect = 1.0;
+  if (temperature < 15) {
+    tempEffect = 0.3; // Cold = very low transpiration
+  } else if (temperature > 30) {
+    tempEffect = 0.4; // Hot = stomata close, reduced transpiration
+  } else if (temperature >= 20 && temperature <= 26) {
+    tempEffect = 1.0; // Optimal
+  } else {
+    tempEffect = 0.7; // Adequate
+  }
 
   // Combined transpiration with all scaling factors
   hourlyTranspiration = hourlyTranspiration * vpdiEffect * airSpeedEffect * irrigationEffect * tempEffect;
 
   // Ensure minimum transpiration
-  return Math.max(0.1, hourlyTranspiration);
+  return Math.max(0.05, hourlyTranspiration);
 };
 
 // RTR (Expected Temperature Increase from Radiation)
@@ -256,6 +266,44 @@ export const calculateDLI = (parLight: number, hours: number = 12): number => {
   return parLight * 3600 * hours / 1000000;
 };
 
+// Daily water use calculation - Per client specification (page 3)
+export const calculateDailyWaterUse = (
+  parLight: number, // μmol/m²/s
+  drainagePercentage: number = 30, // Default 30% drainage
+  leafAreaIndex: number = 3, // Default LAI for full grown crop
+  transmissionFactor: number = 0.70 // 70% transmission through greenhouse
+): { waterUse: number; totalWaterGift: number; globalRadiation: number } => {
+  // Per client specification:
+  // 1. Convert PAR to global radiation (J/cm²/day)
+  // PAR is ~45% of global radiation
+  // 1 μmol/m²/s = 0.22 W/m²
+  // For 12 hours: W/m² × 43200 s = J/m² = J/m²/day
+  const radiationWm2 = parLight * 0.22 / 0.45; // Total solar radiation from PAR
+  const globalRadiationJm2 = radiationWm2 * 43200; // J/m²/day (12 hour photoperiod)
+  const globalRadiationJcm2 = globalRadiationJm2 / 10000; // Convert to J/cm²/day
+
+  // 2. Account for greenhouse transmission (70% typically)
+  const insideRadiation = globalRadiationJcm2 * transmissionFactor;
+
+  // 3. Convert to kJ/m²/day for calculation
+  const insideRadiationKJm2 = insideRadiation * 100; // J/cm² to kJ/m²
+
+  // 4. Per client: To transpire 1 liter of water you need 2500 kJ/m²
+  const waterUsePerDay = insideRadiationKJm2 / 2500; // L/m²/day
+
+  // 5. Account for LAI (full grown crop = LAI 3)
+  const waterUseWithLAI = waterUsePerDay * (leafAreaIndex / 3);
+
+  // 6. Add drainage percentage
+  const totalWaterGift = waterUseWithLAI * (1 + drainagePercentage / 100);
+
+  return {
+    waterUse: waterUseWithLAI, // L/m²/day actual transpiration
+    totalWaterGift: totalWaterGift, // L/m²/day with drainage
+    globalRadiation: globalRadiationJcm2 // J/cm²/day
+  };
+};
+
 // Helper function to get balance status
 export const getBalanceStatus = (value: number, optimal: number, tolerance: number = 0.2): string => {
   const ratio = value / optimal;
@@ -293,7 +341,7 @@ export const calculateStomatalConductance = (
   return baseConductance * lightResponse * vpdResponse;
 };
 
-// Calculate root water uptake (educational model)
+// Calculate root water uptake - MORE VISIBLE parameter effects
 export const calculateRootUptake = (
   rootTemp: number, // °C
   vpd: number, // kPa
@@ -310,14 +358,27 @@ export const calculateRootUptake = (
     Math.min(leafTemperature + 1, rootTemp)
   );
 
+  // MORE VISIBLE temperature effect on root uptake
   let uptakeRate;
-  if (constrainedRootTemp < 15) uptakeRate = 2; // Cold roots = slow uptake
-  else if (constrainedRootTemp > 25) uptakeRate = 3; // Warm roots = reduced uptake
-  else if (constrainedRootTemp >= 18 && constrainedRootTemp <= 22) uptakeRate = 4; // Optimal uptake
-  else uptakeRate = 3.5;
+  if (constrainedRootTemp < 15) {
+    uptakeRate = 1.0; // Cold roots = very slow uptake
+  } else if (constrainedRootTemp > 25) {
+    uptakeRate = 2.0; // Warm roots = reduced uptake
+  } else if (constrainedRootTemp >= 18 && constrainedRootTemp <= 22) {
+    uptakeRate = 5.0; // Optimal uptake - higher base rate
+  } else {
+    uptakeRate = 3.5;
+  }
 
-  // Increase uptake when plant needs more water (high VPD)
-  const demandFactor = vpd > 2 ? 1.2 : 1;
+  // MORE VISIBLE VPD effect - higher demand = much higher uptake
+  let demandFactor = 1.0;
+  if (vpd < 0.5) {
+    demandFactor = 0.5; // Low demand
+  } else if (vpd > 2.0) {
+    demandFactor = 1.8; // High demand - significant increase
+  } else if (vpd >= 0.8 && vpd <= 1.2) {
+    demandFactor = 1.0; // Optimal
+  }
 
   return uptakeRate * demandFactor; // L/m²/h
 };
@@ -334,7 +395,7 @@ export const calculateGrowthWater = (
   return dryMatterProduction * (waterContent / (1 - waterContent)) / 1000; // L/m²/h
 };
 
-// Complete water balance calculation - Updated with all scaling parameters
+// Complete water balance calculation - Updated with MORE VISIBLE scaling effects
 export const calculateWaterBalance = (
   temperature: number,
   humidity: number,
@@ -370,19 +431,12 @@ export const calculateWaterBalance = (
   // Calculate root uptake with proper temperature constraint (±1°C from leaf temp)
   let rootUptake = calculateRootUptake(rootTemperature, vpdi, radiation, actualLeafTemp);
 
-  // Scale by irrigation availability (base uptake rate scaled by irrigation)
-  rootUptake = rootUptake * (irrigation / 2.5); // Normalize to base irrigation rate of 2.5 L/m²/h
+  // Scale MORE VISIBLY by irrigation availability
+  rootUptake = rootUptake * (irrigation / 2.5); // Direct scaling with irrigation rate
 
-  // Adjust for VPDi (affects root water demand)
-  if (vpdi > 1.5) {
-    rootUptake *= 1.2; // Increase uptake for high demand
-  } else if (vpdi < 0.5) {
-    rootUptake *= 0.8; // Decrease uptake for low demand
-  }
-
-  // Stomatal conductance with air speed effect
+  // Stomatal conductance with MORE VISIBLE air speed effect
   const baseStomatalConductance = calculateStomatalConductance(vpdi, parLight);
-  const stomatalConductance = baseStomatalConductance * (0.9 + airSpeed * 0.1);
+  const stomatalConductance = baseStomatalConductance * (0.5 + airSpeed * 0.5); // 0.5x to 2x range
 
   // Growth water scales with net assimilation
   const netAssimilation = parLight * 0.0375 - 1.5; // Simplified
