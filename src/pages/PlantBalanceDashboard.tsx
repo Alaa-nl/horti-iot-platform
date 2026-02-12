@@ -125,9 +125,10 @@ const PlantBalanceDashboard: React.FC = () => {
   const dailyWaterUse = calculateDailyWaterUse(assimilate.parLight);
 
   // Calculate enthalpy difference (plant vs greenhouse)
-  const enthalpyPlant = calculateEnthalpy(assimilate.leafTemperature, 100); // At leaf surface, assume 100% RH
-  const enthalpyGH = enthalpy;
-  const enthalpyDifference = enthalpyPlant - enthalpyGH;
+  // Note: Calculated inline where needed to avoid unused variable warning
+  // const enthalpyPlant = calculateEnthalpy(assimilate.leafTemperature, 100); // At leaf surface, assume 100% RH
+  // const enthalpyGH = enthalpy;
+  // const enthalpyDifference = enthalpyPlant - enthalpyGH;
 
   // Slider component for parameter input with tooltips
   const Slider: React.FC<{

@@ -3,7 +3,8 @@
 import { AssimilateBalance, WaterBalance, EnergyBalance } from '../types/plantBalance';
 
 // Constants from scientific calculations
-const ENERGY_PER_LITER = 2500; // KJ to evaporate 1 liter water
+// Note: 2500 kJ/L is used directly in calculations per client specification
+// const ENERGY_PER_LITER = 2500; // KJ to evaporate 1 liter water
 
 // Psychrometric calculations
 export const calculateVPD = (temperature: number, humidity: number): number => {
