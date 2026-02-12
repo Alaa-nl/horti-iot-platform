@@ -32,8 +32,10 @@ class DataSyncService {
     this.syncJob.start();
     logger.info('Data sync service started - syncing every 5 minutes');
 
-    // Initial sync on startup
-    this.performInitialSync();
+    // Initial sync on startup (non-blocking)
+    this.performInitialSync().catch(error => {
+      logger.error('Initial sync failed:', error);
+    });
   }
 
   /**
