@@ -1170,6 +1170,7 @@ const PlantBalanceDashboard: React.FC = () => {
                   irrigationRate={waterBalance.irrigationSupply}
                   stomatalConductance={waterBalance.stomatalConductance}
                   waterDemand={waterBalance.transpiration + waterBalance.growthWater}
+                  leafTemperature={assimilate.leafTemperature}
                 />
               </div>
             </>

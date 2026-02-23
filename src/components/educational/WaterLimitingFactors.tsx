@@ -8,6 +8,7 @@ interface WaterLimitingFactorsProps {
   irrigationRate: number;
   stomatalConductance: number;
   waterDemand?: number; // Optional, for calculating irrigation adequacy
+  leafTemperature?: number; // Plant/leaf temperature for constraint checking
 }
 
 export const WaterLimitingFactors: React.FC<WaterLimitingFactorsProps> = ({
@@ -15,8 +16,14 @@ export const WaterLimitingFactors: React.FC<WaterLimitingFactorsProps> = ({
   vpdi,
   irrigationRate,
   stomatalConductance,
-  waterDemand = 5 // Default water demand L/m²/h
+  waterDemand = 5, // Default water demand L/m²/h
+  leafTemperature = 25 // Default leaf temperature if not provided
 }) => {
+  // Calculate root temperature constraint status
+  // Per client: Root temp may not be higher or lower than 1°C from plant temperature
+  const rootTempDifference = Math.abs(rootZoneTemp - leafTemperature);
+  const isRootTempWithinConstraint = rootTempDifference <= 1.0;
+
   // Calculate factor percentages
 
   // 1. Water Flow Rate (L/m²/s) - Convert from L/m²/h to L/m²/s for display
@@ -137,16 +144,40 @@ export const WaterLimitingFactors: React.FC<WaterLimitingFactorsProps> = ({
               break;
           }
 
+          // Special styling for Root Zone Temp based on constraint
+          const isRootTemp = factor.name === 'Root Zone Temp';
+          const rootTempBorderColor = isRootTempWithinConstraint
+            ? 'border-green-500 dark:border-green-400'
+            : 'border-red-500 dark:border-red-400';
+          const rootTempBgColor = isRootTempWithinConstraint
+            ? 'bg-green-50 dark:bg-green-900/10'
+            : 'bg-red-50 dark:bg-red-900/10';
+
           return (
-            <RadialBar
+            <div
               key={index}
-              label={factor.name}
-              value={factor.value}
-              actualValue={factor.actual}
-              minValue={minValue}
-              maxValue={maxValue}
-              size={150}
-            />
+              className={isRootTemp ? `p-2 rounded-lg border-2 ${rootTempBorderColor} ${rootTempBgColor}` : ''}
+            >
+              <RadialBar
+                label={factor.name}
+                value={factor.value}
+                actualValue={factor.actual}
+                minValue={minValue}
+                maxValue={maxValue}
+                size={150}
+              />
+              {isRootTemp && (
+                <div className={`text-center mt-1 text-xs font-semibold ${
+                  isRootTempWithinConstraint
+                    ? 'text-green-700 dark:text-green-400'
+                    : 'text-red-700 dark:text-red-400'
+                }`}>
+                  {isRootTempWithinConstraint
+                    ? `✓ Within ±1°C of plant (${rootTempDifference.toFixed(1)}°C diff)`
+                    : `⚠ Outside ±1°C of plant (${rootTempDifference.toFixed(1)}°C diff)`}
+                </div>
+              )}
+            </div>
           );
         })}
       </div>
